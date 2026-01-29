@@ -1,0 +1,136 @@
+/**
+ * LiVue CSS
+ * Base styles for LiVue components
+ */
+
+/* v-cloak: Hide elements until Vue mounts */
+[v-cloak] {
+    display: none !important;
+}
+
+/* ========================================
+   View Transitions (v-transition)
+   ======================================== */
+
+/* Default cross-fade animation */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.2s;
+}
+
+/* Custom transition animations for named elements */
+@keyframes livue-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes livue-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes livue-slide-out-left {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(-20px); opacity: 0; }
+}
+
+@keyframes livue-slide-in-right {
+    from { transform: translateX(20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes livue-slide-out-right {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(20px); opacity: 0; }
+}
+
+@keyframes livue-slide-in-left {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Step content transition (wizard) */
+::view-transition-old(step-content) {
+    animation: livue-slide-out-left 0.25s ease-out;
+}
+
+::view-transition-new(step-content) {
+    animation: livue-slide-in-right 0.25s ease-in;
+}
+
+/* Generic transitions for auto-named elements (livue-transition-N) */
+[style*="view-transition-name: livue-transition"]::view-transition-old,
+[style*="view-transition-name: livue-transition"]::view-transition-new {
+    animation-duration: 0.2s;
+}
+
+/* Forward direction (e.g., next step in wizard) */
+.livue-transition-forward::view-transition-old(step-content) {
+    animation: livue-slide-out-left 0.25s ease-out;
+}
+
+.livue-transition-forward::view-transition-new(step-content) {
+    animation: livue-slide-in-right 0.25s ease-in;
+}
+
+/* Backward direction (e.g., prev step in wizard) */
+.livue-transition-backward::view-transition-old(step-content) {
+    animation: livue-slide-out-right 0.25s ease-out;
+}
+
+.livue-transition-backward::view-transition-new(step-content) {
+    animation: livue-slide-in-left 0.25s ease-in;
+}
+
+/* Page number transitions (#[Transition] demo) */
+.livue-transition-forward::view-transition-old(page-number) {
+    animation: livue-slide-out-left 0.3s ease-out;
+}
+
+.livue-transition-forward::view-transition-new(page-number) {
+    animation: livue-slide-in-right 0.3s ease-out;
+}
+
+.livue-transition-backward::view-transition-old(page-number) {
+    animation: livue-slide-out-right 0.3s ease-out;
+}
+
+.livue-transition-backward::view-transition-new(page-number) {
+    animation: livue-slide-in-left 0.3s ease-out;
+}
+
+/* ========================================
+   Drag & Drop Sorting (v-sort)
+   ======================================== */
+
+/* Ghost: Placeholder shown during drag */
+.livue-sort-ghost {
+    opacity: 0.4;
+    background: #c8ebfb;
+}
+
+/* Chosen: Selected item before dragging */
+.livue-sort-chosen {
+    background: #f0f9ff;
+}
+
+/* Drag: Item being dragged */
+.livue-sort-drag {
+    background: #ffffff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Handle cursor */
+[data-livue-sort-handle] {
+    cursor: move;
+    cursor: grab;
+}
+
+[data-livue-sort-handle]:active {
+    cursor: grabbing;
+}
+
+/* Disable text selection during drag */
+.sortable-drag {
+    user-select: none;
+}

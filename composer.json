@@ -1,0 +1,47 @@
+{
+    "name": "livue/livue",
+    "description": "Server-driven reactivity for Laravel using Vue.js",
+    "keywords": ["laravel", "vue", "reactivity", "components", "server-driven"],
+    "homepage": "https://livue-laravel.com",
+    "type": "library",
+    "license": "MIT",
+    "support": {
+        "issues": "https://github.com/livue-laravel/livue/issues",
+        "source": "https://github.com/livue-laravel/livue"
+    },
+    "autoload": {
+        "psr-4": {
+            "LiVue\\": "src/"
+        },
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "authors": [
+        {
+            "name": "cCast",
+            "email": "software@ccast.it"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "illuminate/support": "^11.0|^12.0",
+        "illuminate/routing": "^11.0|^12.0",
+        "illuminate/view": "^11.0|^12.0",
+        "illuminate/http": "^11.0|^12.0",
+        "illuminate/encryption": "^11.0|^12.0",
+        "illuminate/validation": "^11.0|^12.0",
+        "illuminate/session": "^11.0|^12.0",
+        "illuminate/filesystem": "^11.0|^12.0"
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "LiVue\\LiVueServiceProvider"
+            ],
+            "aliases": {
+                "LiVue": "LiVue\\Facades\\LiVue"
+            }
+        }
+    }
+}

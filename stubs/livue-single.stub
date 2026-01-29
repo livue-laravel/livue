@@ -1,0 +1,21 @@
+<?php
+
+use LiVue\Component;
+
+new class extends Component {
+    // Declare public properties for your component state
+    // public string $name = '';
+
+    // Define actions as public methods
+    // public function submit(): void
+    // {
+    //     //
+    // }
+};
+?>
+
+<div>
+    {{-- LiVue Single File Component: {{ name }} --}}
+    {{-- Use Vue directives: v-model, v-if, v-for, @click, etc. --}}
+    {{-- Use livue.call('methodName') to trigger server actions --}}
+</div>

@@ -1,0 +1,17 @@
+// Vue Composition API setup for this component
+// Available: ref, computed, watch, onMounted, livue, and all state properties as refs
+
+// Example:
+// const doubleCount = computed(() => count.value * 2);
+//
+// watch(name, (newVal) => {
+//     console.log('Name changed:', newVal);
+// });
+//
+// onMounted(() => {
+//     console.log('Component mounted');
+// });
+
+return {
+    // Export additional bindings to the template
+};

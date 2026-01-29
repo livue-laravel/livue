@@ -1,0 +1,14 @@
+<?php
+
+use LiVue\Component;
+
+new class extends Component {
+    // Declare public properties for your component state
+    // public string $name = '';
+
+    // Define actions as public methods
+    // public function submit(): void
+    // {
+    //     //
+    // }
+};

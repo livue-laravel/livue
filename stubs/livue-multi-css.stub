@@ -1,0 +1,6 @@
+/* Scoped styles for {{ name }} component */
+/* All selectors are automatically scoped to this component */
+
+.container {
+    /* Your styles here */
+}

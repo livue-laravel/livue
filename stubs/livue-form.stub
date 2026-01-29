@@ -1,0 +1,30 @@
+<?php
+
+namespace {{ namespace }};
+
+use LiVue\Attributes\Validate;
+use LiVue\Form;
+
+class {{ class }} extends Form
+{
+    #[Validate('required')]
+    public string $name = '';
+
+    #[Validate('required|email')]
+    public string $email = '';
+
+    /**
+     * Process the form submission.
+     */
+    public function submit(): array
+    {
+        $validated = $this->validate();
+
+        // TODO: Process the form data
+        // Example: Model::create($validated);
+
+        $this->reset();
+
+        return $validated;
+    }
+}

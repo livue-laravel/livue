@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://livue-laravel.com/docs
+    about: Check the documentation before opening an issue
+  - name: Discussions
+    url: https://github.com/livue-laravel/livue/discussions
+    about: Ask questions and discuss ideas

@@ -1,0 +1,25 @@
+# Dependencies
+/node_modules
+/vendor
+
+# Build artifacts (keep /dist for distribution)
+*.log
+*.cache
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.phpunit.result.cache
+coverage
+
+# Misc
+*.bak
+*.tmp

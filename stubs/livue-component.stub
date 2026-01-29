@@ -1,0 +1,22 @@
+<?php
+
+namespace {{ namespace }};
+
+use LiVue\Component;
+
+class {{ class }} extends Component
+{
+    // Declare public properties for your component state
+    // public string $name = '';
+
+    // Define actions as public methods
+    // public function submit(): void
+    // {
+    //     //
+    // }
+
+    protected function render(): string
+    {
+        return 'livue.{{ view }}';
+    }
+}

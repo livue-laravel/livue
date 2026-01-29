@@ -1,0 +1,45 @@
+{
+    "name": "livue",
+    "version": "1.0.0",
+    "description": "Server-driven reactivity for Laravel using Vue.js",
+    "type": "module",
+    "main": "dist/livue.js",
+    "module": "resources/js/livue-esm.js",
+    "style": "dist/livue.css",
+    "exports": {
+        ".": {
+            "import": "./resources/js/livue-esm.js",
+            "require": "./dist/livue.js"
+        },
+        "./dist/*": "./dist/*"
+    },
+    "files": [
+        "dist",
+        "resources/js",
+        "resources/css"
+    ],
+    "scripts": {
+        "build": "vite build --config vite.config.build.js && vite build --config vite.config.esm.js",
+        "build:iife": "vite build --config vite.config.build.js",
+        "build:esm": "vite build --config vite.config.esm.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/livue-laravel/livue"
+    },
+    "homepage": "https://livue-laravel.com",
+    "keywords": [
+        "laravel",
+        "vue",
+        "reactivity",
+        "components",
+        "server-driven"
+    ],
+    "license": "MIT",
+    "peerDependencies": {
+        "vue": "^3.5.0"
+    },
+    "devDependencies": {
+        "vue": "^3.5.0"
+    }
+}

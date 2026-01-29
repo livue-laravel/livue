@@ -1,0 +1,5 @@
+<div>
+    {{-- LiVue Multi File Component: {{ name }} --}}
+    {{-- Use Vue directives: v-model, v-if, v-for, @click, etc. --}}
+    {{-- Use livue.call('methodName') to trigger server actions --}}
+</div>
