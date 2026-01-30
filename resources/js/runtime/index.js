@@ -50,6 +50,9 @@ class LiVueRuntime {
 
         /** @type {Function|null} Setup callback for configuring Vue apps */
         this._setupCallback = null;
+
+        /** @type {Set<string>|null} IDs of components being preserved during navigation */
+        this._preservingIds = null;
     }
 
     /**
@@ -171,6 +174,30 @@ class LiVueRuntime {
 
         // Resume observing
         this._startObserver();
+    }
+
+    /**
+     * Reboot but preserve certain components (don't destroy them).
+     * Used during SPA navigation with @persist elements.
+     */
+    rebootPreserving() {
+        // Only init NEW components (those not already in the map)
+        let allElements = document.querySelectorAll('[data-livue-id]');
+
+        allElements.forEach(function (el) {
+            if (this._isRoot(el)) {
+                this._initComponent(el); // _initComponent already skips existing
+            }
+        }.bind(this));
+
+        // Resume observing AFTER a frame to let Vue finish any pending DOM cleanup
+        // from the destroyed components. Otherwise the observer sees the cleanup
+        // and incorrectly destroys preserved components.
+        // NOTE: We keep _preservingIds set - it will be cleared/replaced by the next navigation
+        let self = this;
+        requestAnimationFrame(function() {
+            self._startObserver();
+        });
     }
 
     /**
@@ -415,12 +442,45 @@ class LiVueRuntime {
      * Destroy all mounted Vue app instances.
      */
     destroy() {
+        // Clear preserving flag
+        this._preservingIds = null;
+
         this.components.forEach(function (component) {
             component.destroy();
         });
         this.components.clear();
 
         // Leave all Echo channels
+        leaveAllEchoChannels();
+    }
+
+    /**
+     * Destroy all mounted Vue app instances EXCEPT those with IDs in the preserveIds set.
+     * Used during SPA navigation to preserve @persist components.
+     *
+     * @param {Set<string>} preserveIds - Set of component IDs to preserve
+     */
+    destroyExcept(preserveIds) {
+        var self = this;
+        var toDelete = [];
+
+        // Store preserveIds so _cleanupComponent can check them
+        // This prevents the MutationObserver from destroying preserved components
+        // when Vue's unmount() triggers DOM removals
+        this._preservingIds = preserveIds;
+
+        this.components.forEach(function (component, id) {
+            if (!preserveIds.has(id)) {
+                component.destroy();
+                toDelete.push(id);
+            }
+        });
+
+        toDelete.forEach(function (id) {
+            self.components.delete(id);
+        });
+
+        // Leave all Echo channels (TODO: preserve channels for persisted components)
         leaveAllEchoChannels();
     }
 
@@ -623,6 +683,11 @@ class LiVueRuntime {
      * @param {string} id
      */
     _cleanupComponent(id) {
+        // Skip if this component is being preserved during navigation
+        if (this._preservingIds && this._preservingIds.has(id)) {
+            return;
+        }
+
         let component = this.components.get(id);
 
         if (component) {

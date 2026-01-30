@@ -13,76 +13,10 @@
  *   .hover    - Prefetch on hover after 60ms delay
  *   .prefetch - Alias for .hover
  *
- * The link will use SPA navigation (fetch + swap) instead of full page reload.
- * On click, navigation happens via LiVue.navigate().
+ * This directive marks links for SPA navigation by setting data attributes.
+ * The actual click handling is done by a global event listener in navigation.js
+ * using event delegation (more robust when elements are moved/preserved in DOM).
  */
-
-import { navigateTo } from '../navigation.js';
-
-/**
- * WeakMap to store cleanup functions.
- * @type {WeakMap<HTMLElement, Function>}
- */
-var cleanups = new WeakMap();
-
-/**
- * Handle click on navigate link.
- *
- * @param {Event} event
- * @param {HTMLElement} el
- */
-function handleClick(event, el) {
-    // Ignore if modifier keys are pressed (let browser handle)
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-        return;
-    }
-
-    // Ignore right-click
-    if (event.button !== 0) {
-        return;
-    }
-
-    var href = el.getAttribute('href');
-
-    if (!href) {
-        return;
-    }
-
-    // Ignore external links
-    try {
-        var url = new URL(href, window.location.origin);
-        if (url.origin !== window.location.origin) {
-            return;
-        }
-    } catch (e) {
-        return;
-    }
-
-    // Ignore anchor links
-    if (href.startsWith('#')) {
-        return;
-    }
-
-    // Ignore javascript: links
-    if (href.startsWith('javascript:')) {
-        return;
-    }
-
-    // Ignore download links
-    if (el.hasAttribute('download')) {
-        return;
-    }
-
-    // Ignore target="_blank" links
-    if (el.getAttribute('target') === '_blank') {
-        return;
-    }
-
-    event.preventDefault();
-
-    // Navigate via LiVue SPA navigation
-    navigateTo(href, true, false);
-}
 
 export default {
     mounted(el, binding) {
@@ -94,7 +28,7 @@ export default {
 
         var modifiers = binding.modifiers || {};
 
-        // Set data attributes for prefetching system
+        // Set data attributes for the navigation system (global click handler)
         el.setAttribute('data-livue-navigate', 'true');
 
         // Set prefetch mode
@@ -102,27 +36,12 @@ export default {
             el.setAttribute('data-livue-navigate-mode', 'hover');
         }
 
-        // Create click handler bound to this element
-        var clickHandler = function (event) {
-            handleClick(event, el);
-        };
-
-        el.addEventListener('click', clickHandler);
-
-        // Store cleanup function
-        cleanups.set(el, function () {
-            el.removeEventListener('click', clickHandler);
-        });
+        // Note: Click handling is done by the global handler in navigation.js
+        // This ensures clicks work even when elements are moved in the DOM
+        // (e.g., during @persist operations)
     },
 
     unmounted(el) {
-        var cleanup = cleanups.get(el);
-
-        if (cleanup) {
-            cleanup();
-            cleanups.delete(el);
-        }
-
         el.removeAttribute('data-livue-navigate');
         el.removeAttribute('data-livue-navigate-mode');
     },

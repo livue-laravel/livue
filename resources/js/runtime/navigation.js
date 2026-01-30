@@ -207,9 +207,12 @@ function restoreScrollPosition(pageKey) {
 }
 
 /**
- * Set up event listeners for prefetching.
+ * Set up event listeners for prefetching and navigation.
  */
 function setupPrefetching() {
+    // Global click handler for v-navigate links (more robust than per-element listeners)
+    document.addEventListener('click', handleGlobalClick, true);
+
     if (!_config.prefetch) {
         return;
     }
@@ -219,6 +222,78 @@ function setupPrefetching() {
     document.addEventListener('mouseleave', handleMouseLeave, true);
     document.addEventListener('mousedown', handleMouseDown, true);
     document.addEventListener('focus', handleFocus, true);
+}
+
+/**
+ * Global click handler for v-navigate links.
+ * Uses event delegation so it works even when elements are moved in the DOM.
+ *
+ * @param {Event} event
+ */
+function handleGlobalClick(event) {
+    if (!event.target || typeof event.target.closest !== 'function') {
+        return;
+    }
+
+    var el = event.target.closest('a[data-livue-navigate], a[v-navigate]');
+
+    if (!el) {
+        return;
+    }
+
+    // Ignore if modifier keys are pressed
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+    }
+
+    // Ignore right-click
+    if (event.button !== 0) {
+        return;
+    }
+
+    var href = el.getAttribute('href');
+
+    if (!href) {
+        return;
+    }
+
+    // Ignore external links
+    try {
+        var url = new URL(href, window.location.origin);
+        if (url.origin !== window.location.origin) {
+            return;
+        }
+    } catch (e) {
+        return;
+    }
+
+    // Ignore anchor links
+    if (href.startsWith('#')) {
+        return;
+    }
+
+    // Ignore javascript: links
+    if (href.startsWith('javascript:')) {
+        return;
+    }
+
+    // Ignore download links
+    if (el.hasAttribute('download')) {
+        return;
+    }
+
+    // Ignore target="_blank" links
+    if (el.getAttribute('target') === '_blank') {
+        return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    console.log('[v-navigate global] Navigating to:', href);
+
+    // Navigate via LiVue SPA navigation
+    navigateTo(href, true, false);
 }
 
 /**
@@ -567,22 +642,42 @@ export async function navigateTo(url, pushState, isPopstate) {
         // 1. Collect @persist elements from current page
         var persistedElements = collectPersistedElements();
 
-        // 2. Destroy all current LiVue components
-        _runtime.destroy();
+        // 2. Collect LiVue IDs that should be preserved (inside @persist elements)
+        var preservedIds = new Set();
+        persistedElements.forEach(function (data) {
+            data.livueIds.forEach(function (id) {
+                preservedIds.add(id);
+            });
+        });
 
-        // 3. Update the page title
+        // 3. Stop the MutationObserver to prevent it from destroying persisted components
+        //    when the body is swapped
+        _runtime._stopObserver();
+
+        // 4. Destroy only non-persisted LiVue components
+        _runtime.destroyExcept(preservedIds);
+
+        // 6. Remove persisted elements from DOM BEFORE body swap
+        //    (otherwise innerHTML = ... will destroy them)
+        persistedElements.forEach(function (data) {
+            if (data.element.parentNode) {
+                data.element.parentNode.removeChild(data.element);
+            }
+        });
+
+        // 7. Update the page title
         var newTitle = doc.querySelector('title');
         if (newTitle) {
             document.title = newTitle.textContent;
         }
 
-        // 4. Swap the <body> content
+        // 8. Swap the <body> content
         document.body.innerHTML = doc.body.innerHTML;
 
-        // 5. Restore @persist elements
+        // 9. Restore @persist elements
         restorePersistedElements(persistedElements);
 
-        // 6. Update CSRF token from the new page
+        // 10. Update CSRF token from the new page
         var newCsrf = doc.querySelector('meta[name="csrf-token"]');
         var oldCsrf = document.querySelector('meta[name="csrf-token"]');
         if (newCsrf && oldCsrf) {
@@ -590,13 +685,10 @@ export async function navigateTo(url, pushState, isPopstate) {
             clearToken();
         }
 
-        // 7. Handle <head> scripts with data-navigate-track
+        // 11. Handle <head> scripts with data-navigate-track
         handleTrackedScripts(doc);
 
-        // 8. Execute body scripts
-        executeBodyScripts(doc);
-
-        // 9. Push or replace history state
+        // 12. Push or replace history state (BEFORE scripts so URL is updated)
         if (pushState) {
             _currentPageKey = generatePageKey();
             history.pushState(
@@ -606,10 +698,14 @@ export async function navigateTo(url, pushState, isPopstate) {
             );
         }
 
-        // 10. Reboot LiVue to discover and mount new components
-        _runtime.reboot();
+        // 13. Execute body scripts (after URL is updated)
+        executeBodyScripts(doc);
 
-        // 11. Restore scroll position (for back/forward) or scroll to top
+        // 14. Reboot LiVue to discover and mount NEW components only
+        //     (preserves already mounted components from @persist)
+        _runtime.rebootPreserving();
+
+        // 15. Restore scroll position (for back/forward) or scroll to top
         if (isPopstate) {
             restoreScrollPosition(_currentPageKey);
         } else {
@@ -626,7 +722,7 @@ export async function navigateTo(url, pushState, isPopstate) {
             }
         }
 
-        // 12. Dispatch livue:navigated event
+        // 13. Dispatch livue:navigated event
         window.dispatchEvent(new CustomEvent('livue:navigated', {
             detail: { url: normalizedUrl },
         }));
@@ -647,7 +743,7 @@ export async function navigateTo(url, pushState, isPopstate) {
  * Collect @persist elements from the current page.
  * These will be preserved across navigation.
  *
- * @returns {Map<string, HTMLElement>}
+ * @returns {Map<string, { element: HTMLElement, livueIds: string[] }>}
  */
 function collectPersistedElements() {
     var persisted = new Map();
@@ -656,10 +752,35 @@ function collectPersistedElements() {
     elements.forEach(function (el) {
         var key = el.dataset.livuePersist;
         if (key) {
-            // Clone the element to preserve it
-            var clone = el.cloneNode(true);
-            // But actually we want to move the original to preserve state (like video playback)
-            persisted.set(key, el);
+            // Collect all LiVue component IDs within this persisted element
+            var livueIds = [];
+            var livueElements = el.querySelectorAll('[data-livue-id]');
+            livueElements.forEach(function (livueEl) {
+                livueIds.push(livueEl.dataset.livueId);
+            });
+            // Also check if the element itself is a LiVue component
+            if (el.dataset.livueId) {
+                livueIds.push(el.dataset.livueId);
+            }
+
+            // Save scroll positions of internal scrollable elements
+            var scrollData = {};
+            var scrollElements = el.querySelectorAll('[data-livue-scroll]');
+            scrollElements.forEach(function (scrollEl) {
+                var scrollKey = scrollEl.dataset.livueScroll;
+                if (scrollKey) {
+                    scrollData[scrollKey] = {
+                        scrollTop: scrollEl.scrollTop,
+                        scrollLeft: scrollEl.scrollLeft,
+                    };
+                }
+            });
+
+            persisted.set(key, {
+                element: el,
+                livueIds: livueIds,
+                scrollData: scrollData,
+            });
         }
     });
 
@@ -669,19 +790,32 @@ function collectPersistedElements() {
 /**
  * Restore @persist elements to the new page.
  *
- * @param {Map<string, HTMLElement>} persisted
+ * @param {Map<string, { element: HTMLElement, livueIds: string[], scrollTop: number, scrollLeft: number }>} persisted
  */
 function restorePersistedElements(persisted) {
     if (persisted.size === 0) {
         return;
     }
 
-    persisted.forEach(function (oldEl, key) {
+    persisted.forEach(function (data, key) {
         var placeholder = document.querySelector('[data-livue-persist="' + key + '"]');
 
         if (placeholder) {
             // Replace the placeholder with the original element
-            placeholder.parentNode.replaceChild(oldEl, placeholder);
+            placeholder.parentNode.replaceChild(data.element, placeholder);
+
+            // Restore scroll positions of internal elements
+            if (data.scrollData) {
+                requestAnimationFrame(function () {
+                    Object.keys(data.scrollData).forEach(function (scrollKey) {
+                        var scrollEl = data.element.querySelector('[data-livue-scroll="' + scrollKey + '"]');
+                        if (scrollEl) {
+                            scrollEl.scrollTop = data.scrollData[scrollKey].scrollTop;
+                            scrollEl.scrollLeft = data.scrollData[scrollKey].scrollLeft;
+                        }
+                    });
+                });
+            }
         }
     });
 }
@@ -742,6 +876,12 @@ function executeBodyScripts(doc) {
 
         // Skip LiVue component scripts (handled separately)
         if (oldScript.type === 'application/livue-setup') {
+            return;
+        }
+
+        // Skip LiVue runtime bundle - it's already loaded and we don't want to reinitialize
+        var src = oldScript.getAttribute('src') || '';
+        if (src.includes('livue')) {
             return;
         }
 

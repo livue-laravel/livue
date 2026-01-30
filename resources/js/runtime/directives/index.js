@@ -22,6 +22,7 @@ import targetDirective from './target.js';
 import streamDirective from './stream.js';
 import clickDirective from './click.js';
 import navigateDirective from './navigate.js';
+import scrollDirective from './scroll.js';
 import {
     debounceDirective,
     throttleDirective,
@@ -94,6 +95,9 @@ export function registerBuiltInDirectives() {
     // v-navigate: SPA navigation for links with prefetching
     addDirective('navigate', navigateDirective, null);
 
+    // v-scroll: Mark element for scroll position preservation during SPA navigation
+    addDirective('scroll', scrollDirective, null);
+
     // v-sort: Drag & Drop sorting (Wave 6.2)
     addDirective('sort', sortDirective, null);
     addDirective('sort-item', sortItemDirective, null);
@@ -123,6 +127,7 @@ export {
     streamDirective,
     clickDirective,
     navigateDirective,
+    scrollDirective,
     sortDirective,
     sortItemDirective,
     sortHandleDirective,
