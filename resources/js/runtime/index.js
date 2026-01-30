@@ -104,8 +104,8 @@ class LiVueRuntime {
      * Starts a MutationObserver to automatically detect new components.
      */
     boot() {
-        // Initialize devtools (lazy, doesn't open panel)
-        if (!this._devtoolsInitialized) {
+        // Initialize devtools only in development (lazy, doesn't open panel)
+        if (import.meta.env.DEV && !this._devtoolsInitialized) {
             devtools.init(this);
             this._devtoolsInitialized = true;
         }
@@ -127,8 +127,10 @@ class LiVueRuntime {
         // Start observing DOM for dynamic component changes
         this._startObserver();
 
-        // Setup keyboard shortcut for devtools (Ctrl+Shift+L)
-        this._setupDevtoolsShortcut();
+        // Setup keyboard shortcut for devtools (Ctrl+Shift+L) - only in development
+        if (import.meta.env.DEV) {
+            this._setupDevtoolsShortcut();
+        }
 
         // Setup HMR (Hot Module Replacement) in development
         hmr.setup(this);
@@ -723,6 +725,7 @@ class LiVueRuntime {
 
     /**
      * Get the DevTools API.
+     * Returns no-op functions in production to avoid errors.
      *
      * @returns {object} DevTools API
      *
@@ -732,6 +735,28 @@ class LiVueRuntime {
      * const components = LiVue.devtools.getComponents();
      */
     get devtools() {
+        if (!import.meta.env.DEV) {
+            // Return no-op API in production
+            return {
+                init: function() {},
+                open: function() {},
+                close: function() {},
+                toggle: function() {},
+                isOpen: function() { return false; },
+                getComponents: function() { return []; },
+                getTimeline: function() { return []; },
+                getEvents: function() { return []; },
+                getPerf: function() { return {}; },
+                clearTimeline: function() {},
+                clearEvents: function() {},
+                clear: function() {},
+                logEvent: function() {},
+                isInitialized: function() { return false; },
+                startCollecting: function() {},
+                stopCollecting: function() {},
+                isCollecting: function() { return false; },
+            };
+        }
         return devtools;
     }
 
