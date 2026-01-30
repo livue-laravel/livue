@@ -35,7 +35,7 @@ return [
     |   LiVue.setup((app) => app.use(vuetify));
     |
     */
-    'custom_vue' => true,
+    'custom_vue' => false,
 
     /*
     |--------------------------------------------------------------------------
