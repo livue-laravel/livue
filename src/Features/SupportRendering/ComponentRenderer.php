@@ -75,7 +75,7 @@ class ComponentRenderer
         // Store view data for testing
         $this->lastViewData = $viewData;
 
-        $html = View::make($viewName, $viewData)->render();
+        $html = $component->renderView($viewName, $viewData);
 
         // Call rendered() hook - allows post-processing HTML
         if (method_exists($component, 'rendered')) {
@@ -204,7 +204,7 @@ class ComponentRenderer
         // Store view data for testing
         $this->lastViewData = $viewData;
 
-        $html = View::make($viewName, $viewData)->render();
+        $html = $component->renderView($viewName, $viewData);
 
         // Call rendered() hook - allows post-processing HTML
         if (method_exists($component, 'rendered')) {

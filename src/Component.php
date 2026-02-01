@@ -99,6 +99,42 @@ abstract class Component
     }
 
     // ---------------------------------------------------------------
+    //  View rendering with $this context
+    // ---------------------------------------------------------------
+
+    /**
+     * Render a Blade view in the context of this component.
+     * This allows $this to be available in the view template, like Livewire.
+     */
+    public function renderView(string $viewName, array $viewData): string
+    {
+        $compiler = app('blade.compiler');
+        $finder = app('view.finder');
+
+        $path = $finder->find($viewName);
+        $compiled = $compiler->getCompiledPath($path);
+
+        if (! file_exists($compiled) || $compiler->isExpired($path)) {
+            $compiler->compile($path);
+        }
+
+        // Blade needs $__env for directives like @foreach, @include, etc.
+        $__env = app(\Illuminate\View\Factory::class);
+
+        // Use private variable names to avoid collisions with view data
+        $__path = $compiled;
+        $__data = $viewData;
+
+        // Extract variables - $this will be available because we're inside a method!
+        extract($__data, EXTR_SKIP);
+
+        ob_start();
+        include $__path;
+
+        return ob_get_clean();
+    }
+
+    // ---------------------------------------------------------------
     //  Event dispatching
     // ---------------------------------------------------------------
 
