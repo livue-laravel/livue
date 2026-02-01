@@ -548,10 +548,23 @@ abstract class Component
     // ---------------------------------------------------------------
 
     /**
-     * Get the component name in kebab-case.
+     * Get the component name.
+     *
+     * Returns the registered name (including hash-based names for components
+     * resolved by class) if available, otherwise falls back to kebab-case
+     * derived from the class short name.
      */
     public function getName(): string
     {
+        // Check if this component class has a registered name
+        $manager = app(LiVueManager::class);
+        $registeredName = $manager->getNameForClass(static::class);
+
+        if ($registeredName !== null) {
+            return $registeredName;
+        }
+
+        // Fallback to kebab-case from class short name
         $class = (new ReflectionClass($this))->getShortName();
 
         return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $class));

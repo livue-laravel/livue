@@ -187,7 +187,11 @@ class LifecycleManager
             }
 
             $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
-            $newMemo = ['name' => $componentName, 'checksum' => $newChecksum];
+            $newMemo = [
+                'name' => $componentName,
+                'class' => $memo['class'] ?? encrypt(get_class($component)),
+                'checksum' => $newChecksum,
+            ];
 
             if (! empty($lockedMemo)) {
                 $newMemo['locked'] = $lockedMemo;
@@ -220,7 +224,11 @@ class LifecycleManager
             }
 
             $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
-            $newMemo = ['name' => $componentName, 'checksum' => $newChecksum];
+            $newMemo = [
+                'name' => $componentName,
+                'class' => $memo['class'] ?? encrypt(get_class($component)),
+                'checksum' => $newChecksum,
+            ];
 
             if (! empty($lockedMemo)) {
                 $newMemo['locked'] = $lockedMemo;
@@ -276,7 +284,11 @@ class LifecycleManager
 
         $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
 
-        $newMemo = ['name' => $componentName, 'checksum' => $newChecksum];
+        $newMemo = [
+            'name' => $componentName,
+            'class' => $memo['class'] ?? encrypt(get_class($component)),
+            'checksum' => $newChecksum,
+        ];
 
         if (! empty($lockedMemo)) {
             $newMemo['locked'] = $lockedMemo;

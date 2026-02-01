@@ -102,13 +102,33 @@ class LiVueUpdateController extends Controller
             return ['error' => 'Unauthorized.', 'status' => 403];
         }
 
-        if (! $manager->componentExists($componentName)) {
+        // Resolve component: prefer encrypted class (new system), fallback to name (legacy)
+        $encryptedClass = $memo['class'] ?? null;
+        $componentClass = null;
+
+        if ($encryptedClass) {
+            try {
+                $componentClass = decrypt($encryptedClass);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // Invalid encrypted class, fall through to name-based resolution
+            }
+        }
+
+        if ($componentClass && class_exists($componentClass)) {
+            // New system: resolve by decrypted class
+            try {
+                $component = $manager->resolveByClass($componentClass);
+            } catch (\InvalidArgumentException $e) {
+                return ['error' => 'Component not found.', 'status' => 404];
+            }
+        } elseif ($manager->componentExists($componentName)) {
+            // Legacy fallback: resolve by name
+            $component = $manager->resolve($componentName);
+        } else {
             return ['error' => 'Component not found.', 'status' => 404];
         }
 
         try {
-            $component = $manager->resolve($componentName);
-
             // Delegate entire lifecycle to LifecycleManager
             return $lifecycle->processUpdate(
                 $component,

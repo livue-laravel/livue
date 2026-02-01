@@ -108,7 +108,11 @@ class ComponentRenderer
             $modelAttr = ' data-livue-model="' . e($options['model']) . '"';
         }
 
-        $memo = ['name' => $componentName, 'checksum' => $checksum];
+        $memo = [
+            'name' => $componentName,
+            'class' => encrypt(get_class($component)),
+            'checksum' => $checksum,
+        ];
 
         // Include locked (encrypted guarded values) in memo
         if (! empty($lockedMemo)) {
@@ -243,10 +247,15 @@ class ComponentRenderer
         // Extract and encrypt #[Guarded] properties (Locked behavior)
         [$dehydratedState, $lockedMemo] = $this->extractLockedProperties($component, $dehydratedState);
 
+        $componentClass = get_class($component);
         $componentName = $component->getName();
         $checksum = StateChecksum::generate($componentName, $dehydratedState);
 
-        $memo = ['name' => $componentName, 'checksum' => $checksum];
+        $memo = [
+            'name' => $componentName,
+            'class' => encrypt($componentClass),
+            'checksum' => $checksum,
+        ];
 
         // Include locked (encrypted guarded values) in memo
         if (! empty($lockedMemo)) {

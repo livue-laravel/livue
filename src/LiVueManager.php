@@ -25,6 +25,12 @@ class LiVueManager
     protected array $components = [];
 
     /**
+     * Reverse mapping: class => registered name.
+     * Used to look up the name for a component resolved by class.
+     */
+    protected array $classToName = [];
+
+    /**
      * Render a component by name, returning the full HTML with wrapper div.
      *
      * @param  string  $name     Component name
@@ -252,7 +258,31 @@ class LiVueManager
      */
     public function register(string $name, string $class): void
     {
-        $this->components[$name] = $class;
+        $normalizedClass = ltrim($class, '\\');
+        $this->components[$name] = $normalizedClass;
+        $this->classToName[$normalizedClass] = $name;
+    }
+
+    /**
+     * Generate a hash-based name for a component class.
+     * Used when components are resolved by class rather than by name.
+     */
+    public function generateHashName(string $class): string
+    {
+        $normalizedClass = ltrim($class, '\\');
+
+        return 'lv' . crc32($normalizedClass);
+    }
+
+    /**
+     * Get the registered name for a component class.
+     * Returns null if the class is not registered.
+     */
+    public function getNameForClass(string $class): ?string
+    {
+        $normalizedClass = ltrim($class, '\\');
+
+        return $this->classToName[$normalizedClass] ?? null;
     }
 
     /**
@@ -333,6 +363,7 @@ class LiVueManager
 
     /**
      * Resolve a component by its fully qualified class name.
+     * Auto-registers the component with a hash-based name for subsequent AJAX lookups.
      */
     public function resolveByClass(string $class): Component
     {
@@ -340,7 +371,15 @@ class LiVueManager
             throw new \InvalidArgumentException("LiVue component class [{$class}] not found.");
         }
 
-        return new $class();
+        $normalizedClass = ltrim($class, '\\');
+
+        // Auto-register with hash name if not already registered
+        if (! isset($this->classToName[$normalizedClass])) {
+            $hashName = $this->generateHashName($normalizedClass);
+            $this->register($hashName, $normalizedClass);
+        }
+
+        return new $normalizedClass();
     }
 
     /**
@@ -361,7 +400,7 @@ class LiVueManager
         $fullClass = $namespace . '\\' . $className;
 
         if (class_exists($fullClass) && is_subclass_of($fullClass, Component::class)) {
-            $this->components[$name] = $fullClass;
+            $this->register($name, $fullClass);
 
             return $fullClass;
         }
@@ -392,8 +431,8 @@ class LiVueManager
 
         $class = $compiler->compile($bladePath, $name);
 
-        // Cache for future lookups
-        $this->components[$name] = $class;
+        // Register for future lookups (populates both mappings)
+        $this->register($name, $class);
 
         return $class;
     }
@@ -421,8 +460,8 @@ class LiVueManager
 
         $class = $compiler->compile($dirPath, $viewName, $name);
 
-        // Cache for future lookups
-        $this->components[$name] = $class;
+        // Register for future lookups (populates both mappings)
+        $this->register($name, $class);
 
         return $class;
     }
