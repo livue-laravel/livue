@@ -308,6 +308,7 @@ trait HandlesValidation
 
     /**
      * Extract public property values matching the given rule keys.
+     * Supports dot notation for nested properties (e.g., 'data.name').
      *
      * @param  array $rules
      * @return array
@@ -316,6 +317,12 @@ trait HandlesValidation
     {
         $state = $this->getState();
 
-        return array_intersect_key($state, $rules);
+        // Extract root keys from dot notation (e.g., 'data.name' -> 'data')
+        $rootKeys = [];
+        foreach (array_keys($rules) as $key) {
+            $rootKeys[explode('.', $key)[0]] = true;
+        }
+
+        return array_intersect_key($state, $rootKeys);
     }
 }
