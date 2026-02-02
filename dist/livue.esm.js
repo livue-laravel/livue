@@ -2292,13 +2292,14 @@ class sa {
    */
   async _applyPluginsAndMount() {
     let e = this, n = this.vueApp, r = jo();
-    if (n.use(r), window.LiVue && window.LiVue._setupCallback)
-      try {
-        let o = window.LiVue._setupCallback(n);
-        o && typeof o.then == "function" && await o;
-      } catch (o) {
-        console.error("[LiVue] Error in setup() callback:", o);
-      }
+    if (n.use(r), window.LiVue && window.LiVue._setupCallbacks && window.LiVue._setupCallbacks.length > 0)
+      for (let o = 0; o < window.LiVue._setupCallbacks.length; o++)
+        try {
+          let a = window.LiVue._setupCallbacks[o](n);
+          a && typeof a.then == "function" && await a;
+        } catch (a) {
+          console.error("[LiVue] Error in setup() callback:", a);
+        }
     let i = Lo();
     for (let o = 0; o < i.length; o++)
       n.directive(i[o].name, i[o].directive);
@@ -4908,7 +4909,7 @@ async function ql() {
 var je = !1, kn = [];
 class Bl {
   constructor() {
-    this.components = /* @__PURE__ */ new Map(), this._observer = null, this._devtoolsInitialized = !1, this._setupCallback = null, this._preservingIds = null;
+    this.components = /* @__PURE__ */ new Map(), this._observer = null, this._devtoolsInitialized = !1, this._setupCallbacks = [], this._preservingIds = null;
   }
   /**
    * Configure Vue apps before they are created.
@@ -4940,7 +4941,7 @@ class Bl {
       console.error("[LiVue] setup() requires a function callback");
       return;
     }
-    this._setupCallback = e;
+    this._setupCallbacks.push(e);
   }
   /**
    * Register a global error handler.

@@ -48,8 +48,8 @@ class LiVueRuntime {
         /** @type {boolean} */
         this._devtoolsInitialized = false;
 
-        /** @type {Function|null} Setup callback for configuring Vue apps */
-        this._setupCallback = null;
+        /** @type {Array<Function>} Setup callbacks for configuring Vue apps */
+        this._setupCallbacks = [];
 
         /** @type {Set<string>|null} IDs of components being preserved during navigation */
         this._preservingIds = null;
@@ -85,7 +85,7 @@ class LiVueRuntime {
             console.error('[LiVue] setup() requires a function callback');
             return;
         }
-        this._setupCallback = callback;
+        this._setupCallbacks.push(callback);
     }
 
     /**

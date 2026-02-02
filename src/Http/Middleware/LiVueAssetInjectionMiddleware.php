@@ -64,13 +64,6 @@ class LiVueAssetInjectionMiddleware
      */
     protected function shouldInjectAssets(BaseResponse $response): bool
     {
-        // Skip injection if custom_vue is enabled
-        // When custom_vue is true, the user imports LiVue in their app.js
-        // and configures it with LiVue.setup() to share Vue instance
-        if (config('livue.custom_vue', false)) {
-            return false;
-        }
-
         // Only process successful HTML responses
         if (! $response instanceof Response) {
             return false;
@@ -104,6 +97,11 @@ class LiVueAssetInjectionMiddleware
      */
     protected function hasScriptsAlready(string $html): bool
     {
+        // Check for the smart loader (data-livue-loader attribute)
+        if (str_contains($html, 'data-livue-loader')) {
+            return true;
+        }
+
         $prefix = config('livue.route_prefix', 'livue');
 
         // Check for route-based URL (e.g., /livue/livue.js)

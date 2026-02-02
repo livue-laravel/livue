@@ -1924,17 +1924,20 @@ export default class LiVueComponent {
         let piniaInstance = createPinia();
         app.use(piniaInstance);
 
-        // 2. Apply user's setup callback AFTER Pinia
+        // 2. Apply user's setup callbacks AFTER Pinia
         // This allows users to add Vuetify, custom components, directives, etc.
-        if (window.LiVue && window.LiVue._setupCallback) {
-            try {
-                let result = window.LiVue._setupCallback(app);
-                // Support async setup callbacks
-                if (result && typeof result.then === 'function') {
-                    await result;
+        // Multiple callbacks are supported (accumulated via LiVue.setup())
+        if (window.LiVue && window.LiVue._setupCallbacks && window.LiVue._setupCallbacks.length > 0) {
+            for (let i = 0; i < window.LiVue._setupCallbacks.length; i++) {
+                try {
+                    let result = window.LiVue._setupCallbacks[i](app);
+                    // Support async setup callbacks
+                    if (result && typeof result.then === 'function') {
+                        await result;
+                    }
+                } catch (error) {
+                    console.error('[LiVue] Error in setup() callback:', error);
                 }
-            } catch (error) {
-                console.error('[LiVue] Error in setup() callback:', error);
             }
         }
 

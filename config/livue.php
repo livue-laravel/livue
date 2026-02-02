@@ -19,26 +19,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Custom Vue Configuration
-    |--------------------------------------------------------------------------
-    |
-    | Set to true if you want to customize the Vue instance (e.g., add Vuetify,
-    | Pinia, or other Vue plugins that need to share the same Vue instance).
-    |
-    | When true, LiVue will NOT auto-inject its bundle. You must import LiVue
-    | in your app.js and configure it with LiVue.setup().
-    |
-    | Example in app.js:
-    |   import LiVue from 'livue';
-    |   import { createVuetify } from 'vuetify';
-    |   const vuetify = createVuetify({...});
-    |   LiVue.setup((app) => app.use(vuetify));
-    |
-    */
-    'custom_vue' => false,
-
-    /*
-    |--------------------------------------------------------------------------
     | Route Prefix
     |--------------------------------------------------------------------------
     |

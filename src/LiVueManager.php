@@ -118,16 +118,19 @@ class LiVueManager
     }
 
     /**
-     * Output the LiVue JavaScript script tag plus component-declared scripts.
+     * Output the LiVue JavaScript loader plus component-declared scripts.
      * Includes nonce attribute if CSP support is enabled and navigation config.
      *
+     * The loader auto-detects whether the user has called LiVue.setup() (ESM mode)
+     * or needs the standalone bundle. This eliminates the need for custom_vue config.
+     *
      * Component scripts (#[Js] attributes and assets() method) are appended
-     * after the main LiVue bundle.
+     * after the main LiVue loader.
      */
     public function renderScripts(): string
     {
         $prefix = config('livue.route_prefix', 'livue');
-        $url = url($prefix . '/livue.js');
+        $bundleUrl = url($prefix . '/livue.js');
         $nonce = $this->getNonce();
         $nonceAttr = $this->getNonceAttribute();
 
@@ -145,10 +148,37 @@ class LiVueManager
         ];
 
         $configScript = '<script' . $nonceAttr . '>window.LiVueConfig = ' . json_encode($jsConfig) . ';</script>';
-        // No defer - must load synchronously so window.LiVue is available for app.js
-        $mainScript = '<script src="' . $url . '"' . $nonceAttr . '></script>';
 
-        $output = $configScript . "\n" . $mainScript;
+        // Smart loader: checks if LiVue.setup() was called (ESM mode)
+        // If not, loads the standalone bundle dynamically
+        $loaderScript = <<<JS
+<script{$nonceAttr} data-livue-loader>
+(function() {
+    function loadStandaloneBundle() {
+        var script = document.createElement('script');
+        script.src = '{$bundleUrl}';
+        document.head.appendChild(script);
+    }
+
+    function check() {
+        // If LiVue exists and has setup callbacks, ESM mode is active
+        if (window.LiVue && window.LiVue._setupCallbacks && window.LiVue._setupCallbacks.length > 0) {
+            return; // ESM mode - do nothing
+        }
+        // No setup called - load standalone bundle
+        loadStandaloneBundle();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', check);
+    } else {
+        check();
+    }
+})();
+</script>
+JS;
+
+        $output = $configScript . "\n" . $loaderScript;
 
         // Append component-declared scripts
         $assetManager = app(AssetManager::class);
