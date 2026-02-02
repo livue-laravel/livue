@@ -2,6 +2,7 @@
 
 namespace LiVue\Http\Controllers;
 
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -15,30 +16,23 @@ class LiVueAssetController
 {
     /**
      * Serve the LiVue JavaScript bundle.
-     */
-    public function script(): BinaryFileResponse|Response
-    {
-        $path = $this->getScriptPath();
-
-        if (! file_exists($path)) {
-            return response('LiVue script not found. Run: npm run build:livue', 404);
-        }
-
-        return $this->serveFile($path, 'application/javascript');
-    }
-
-    /**
-     * Serve the LiVue ES Module bundle.
      *
-     * This version is for use with import maps and bundlers.
-     * It exports LiVue as an ES module.
+     * By default serves the standalone bundle.
+     * With ?module query parameter, serves the ES module version.
+     *
+     * Examples:
+     *   /livue/livue.js         → standalone bundle
+     *   /livue/livue.js?module  → ES module (for import maps)
      */
-    public function esm(): BinaryFileResponse|Response
+    public function script(Request $request): BinaryFileResponse|Response
     {
-        $path = $this->getEsmPath();
+        $isModule = $request->has('module');
+        $path = $isModule ? $this->getEsmPath() : $this->getStandalonePath();
 
         if (! file_exists($path)) {
-            return response('LiVue ESM not found. Run: npm run build:livue', 404);
+            $type = $isModule ? 'ESM' : 'standalone';
+
+            return response("LiVue {$type} bundle not found. Run: npm run build:livue", 404);
         }
 
         return $this->serveFile($path, 'application/javascript');
@@ -46,10 +40,13 @@ class LiVueAssetController
 
     /**
      * Serve the source map for debugging.
+     *
+     * Automatically detects which source map to serve based on ?module parameter.
      */
-    public function sourceMap(): BinaryFileResponse|Response
+    public function sourceMap(Request $request): BinaryFileResponse|Response
     {
-        $path = $this->getScriptPath() . '.map';
+        $isModule = $request->has('module');
+        $path = ($isModule ? $this->getEsmPath() : $this->getStandalonePath()) . '.map';
 
         if (! file_exists($path)) {
             return response('Source map not found', 404);
@@ -59,29 +56,15 @@ class LiVueAssetController
     }
 
     /**
-     * Serve the ESM source map for debugging.
+     * Get the path to the standalone bundle.
      */
-    public function esmSourceMap(): BinaryFileResponse|Response
-    {
-        $path = $this->getEsmPath() . '.map';
-
-        if (! file_exists($path)) {
-            return response('ESM source map not found', 404);
-        }
-
-        return $this->serveFile($path, 'application/json');
-    }
-
-    /**
-     * Get the path to the script file.
-     */
-    protected function getScriptPath(): string
+    protected function getStandalonePath(): string
     {
         return dirname(__DIR__, 3) . '/dist/livue.js';
     }
 
     /**
-     * Get the path to the ESM script file.
+     * Get the path to the ES module bundle.
      */
     protected function getEsmPath(): string
     {

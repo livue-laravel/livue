@@ -155,11 +155,10 @@ class LiVueServiceProvider extends ServiceProvider
             });
 
         // Asset routes (no middleware - public static files)
+        // Use ?module query param for ES module version: /livue/livue.js?module
         Route::prefix($prefix)->group(function () {
             Route::get('/livue.js', [LiVueAssetController::class, 'script'])->name('livue.script');
             Route::get('/livue.js.map', [LiVueAssetController::class, 'sourceMap'])->name('livue.script.map');
-            Route::get('/livue.esm.js', [LiVueAssetController::class, 'esm'])->name('livue.esm');
-            Route::get('/livue.esm.js.map', [LiVueAssetController::class, 'esmSourceMap'])->name('livue.esm.map');
         });
     }
 
