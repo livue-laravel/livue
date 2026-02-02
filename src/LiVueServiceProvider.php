@@ -3,9 +3,11 @@
 namespace LiVue;
 
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use LiVue\Facades\LiVueAsset;
 use LiVue\Blade\LiVueBladeDirectives;
 use LiVue\Compilers\MultiFileCompiler;
 use LiVue\Compilers\SingleFileCompiler;
@@ -90,6 +92,12 @@ class LiVueServiceProvider extends ServiceProvider
 
             return $registry;
         });
+
+        // Register facade alias
+        $this->app->booting(function () {
+            $loader = AliasLoader::getInstance();
+            $loader->alias('LiVueAsset', LiVueAsset::class);
+        });
     }
 
     /**
@@ -150,6 +158,8 @@ class LiVueServiceProvider extends ServiceProvider
         Route::prefix($prefix)->group(function () {
             Route::get('/livue.js', [LiVueAssetController::class, 'script'])->name('livue.script');
             Route::get('/livue.js.map', [LiVueAssetController::class, 'sourceMap'])->name('livue.script.map');
+            Route::get('/livue.esm.js', [LiVueAssetController::class, 'esm'])->name('livue.esm');
+            Route::get('/livue.esm.js.map', [LiVueAssetController::class, 'esmSourceMap'])->name('livue.esm.map');
         });
     }
 

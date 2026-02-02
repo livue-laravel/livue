@@ -2,46 +2,59 @@
 
 namespace LiVue;
 
+use LiVue\Assets\Asset;
+use LiVue\Assets\Css as CssAsset;
+use LiVue\Assets\Js as JsAsset;
 use LiVue\Attributes\Css;
 use LiVue\Attributes\Js;
 use ReflectionClass;
 
 /**
- * Manages CSS and JS assets declared by LiVue components.
+ * Manages CSS and JS assets for LiVue.
  *
- * Collects assets from components rendered during the request and
- * outputs them via @livueScripts / @livueStyles directives.
- * Assets are deduplicated - each unique asset is output only once.
+ * Provides a Filament-style asset management system with:
+ * - Package-based organization
+ * - CSS variables support
+ * - Script data for JavaScript configuration
+ * - Versioning support
+ * - Backward compatibility with attribute-based registration
  */
 class AssetManager
 {
     /**
-     * Collected JS assets, keyed for deduplication.
+     * Registered JS assets grouped by package.
      *
-     * @var array<string, Js>
+     * @var array<string, array<string, JsAsset>>
      */
     protected array $scripts = [];
 
     /**
-     * Collected CSS assets, keyed for deduplication.
+     * Registered CSS assets grouped by package.
      *
-     * @var array<string, Css>
+     * @var array<string, array<string, CssAsset>>
      */
     protected array $styles = [];
 
     /**
-     * Inline JS snippets from components.
+     * CSS variables grouped by package.
      *
-     * @var array<string, string>
+     * @var array<string, array<string, string>>
      */
-    protected array $inlineScripts = [];
+    protected array $cssVariables = [];
 
     /**
-     * Inline CSS snippets from components.
+     * Script data grouped by package.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    protected array $scriptData = [];
+
+    /**
+     * Import map entries for ES modules.
      *
      * @var array<string, string>
      */
-    protected array $inlineStyles = [];
+    protected array $importMap = [];
 
     /**
      * Cache of resolved attributes per class.
@@ -51,41 +64,314 @@ class AssetManager
     protected static array $attributeCache = [];
 
     /**
-     * Register assets from a component class.
-     * Called when a component is rendered.
+     * Register assets with optional package name.
+     *
+     * @param  array<Asset|array>  $assets  Array of Asset objects or legacy format
+     * @param  string  $package  Package name for grouping
      */
-    public function registerFromComponent(Component $component): void
+    public function register(array $assets, string $package = 'app'): void
     {
-        $class = get_class($component);
+        // Check for legacy format: ['scripts' => [...], 'styles' => [...]]
+        if (isset($assets['scripts']) || isset($assets['styles'])) {
+            $this->registerDynamicAssets($assets, $package);
 
-        // Get cached or resolve attributes
-        $assets = $this->resolveComponentAssets($class);
-
-        // Register JS assets
-        foreach ($assets['js'] as $js) {
-            $key = $js->getKey();
-            if (! isset($this->scripts[$key])) {
-                $this->scripts[$key] = $js;
-            }
+            return;
         }
 
-        // Register CSS assets
-        foreach ($assets['css'] as $css) {
-            $key = $css->getKey();
-            if (! isset($this->styles[$key])) {
-                $this->styles[$key] = $css;
-            }
-        }
+        // New typed asset registration
+        foreach ($assets as $asset) {
+            if ($asset instanceof Asset) {
+                $asset->package($package);
 
-        // Check for assets() method
-        if (method_exists($component, 'assets')) {
-            $dynamicAssets = $component->assets();
-            $this->registerDynamicAssets($dynamicAssets);
+                if ($asset instanceof CssAsset) {
+                    $this->styles[$package][$asset->getId()] = $asset;
+                } elseif ($asset instanceof JsAsset) {
+                    $this->scripts[$package][$asset->getId()] = $asset;
+                }
+            }
         }
     }
 
     /**
-     * Register assets from a dynamic assets() method return.
+     * Register a single script.
+     * Backward compatible method for simple script registration.
+     */
+    public function registerScript(string $src, ?string $type = null, bool $defer = true, bool $async = false): void
+    {
+        $id = 'src:' . md5($src);
+        $asset = JsAsset::make($id, $src)
+            ->defer($defer)
+            ->async($async)
+            ->package('app');
+
+        if ($type) {
+            $asset->type($type);
+        }
+
+        $this->scripts['app'][$id] = $asset;
+    }
+
+    /**
+     * Register a single stylesheet.
+     * Backward compatible method for simple style registration.
+     */
+    public function registerStyle(string $href, ?string $media = null): void
+    {
+        $id = 'href:' . md5($href);
+        $asset = CssAsset::make($id, $href)->package('app');
+
+        if ($media) {
+            $asset->media($media);
+        }
+
+        $this->styles['app'][$id] = $asset;
+    }
+
+    /**
+     * Register CSS variables for a package.
+     *
+     * Variables are rendered as :root { --name: value; } blocks.
+     *
+     * @param  array<string, string>  $variables  Variable name => value pairs
+     * @param  string  $package  Package name for grouping
+     */
+    public function registerCssVariables(array $variables, string $package = 'app'): void
+    {
+        if (! isset($this->cssVariables[$package])) {
+            $this->cssVariables[$package] = [];
+        }
+
+        $this->cssVariables[$package] = array_merge($this->cssVariables[$package], $variables);
+    }
+
+    /**
+     * Register script data available to JavaScript.
+     *
+     * Data is rendered as window.LiVueData = {...} before other scripts.
+     *
+     * @param  array<string, mixed>  $data  Data to pass to JavaScript
+     * @param  string  $package  Package name for grouping
+     */
+    public function registerScriptData(array $data, string $package = 'app'): void
+    {
+        if (! isset($this->scriptData[$package])) {
+            $this->scriptData[$package] = [];
+        }
+
+        $this->scriptData[$package] = array_merge($this->scriptData[$package], $data);
+    }
+
+    /**
+     * Get all CSS variables, optionally filtered by packages.
+     *
+     * @param  array<string>|null  $packages  Filter by these packages, or all if null
+     * @return array<string, array<string, string>>
+     */
+    public function getCssVariables(?array $packages = null): array
+    {
+        if ($packages === null) {
+            return $this->cssVariables;
+        }
+
+        return array_intersect_key($this->cssVariables, array_flip($packages));
+    }
+
+    /**
+     * Get all script data merged together, optionally filtered by packages.
+     *
+     * @param  array<string>|null  $packages  Filter by these packages, or all if null
+     * @return array<string, mixed>
+     */
+    public function getScriptData(?array $packages = null): array
+    {
+        $data = [];
+
+        foreach ($this->scriptData as $package => $packageData) {
+            if ($packages !== null && ! in_array($package, $packages)) {
+                continue;
+            }
+
+            $data = array_merge($data, $packageData);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Get all registered styles, optionally filtered by packages.
+     *
+     * @param  array<string>|null  $packages  Filter by these packages, or all if null
+     * @return array<CssAsset>
+     */
+    public function getStyles(?array $packages = null): array
+    {
+        $styles = [];
+
+        foreach ($this->styles as $package => $packageStyles) {
+            if ($packages !== null && ! in_array($package, $packages)) {
+                continue;
+            }
+
+            $styles = array_merge($styles, array_values($packageStyles));
+        }
+
+        return $styles;
+    }
+
+    /**
+     * Get all registered scripts, optionally filtered by packages.
+     *
+     * @param  array<string>|null  $packages  Filter by these packages, or all if null
+     * @return array<JsAsset>
+     */
+    public function getScripts(?array $packages = null): array
+    {
+        $scripts = [];
+
+        foreach ($this->scripts as $package => $packageScripts) {
+            if ($packages !== null && ! in_array($package, $packages)) {
+                continue;
+            }
+
+            $scripts = array_merge($scripts, array_values($packageScripts));
+        }
+
+        return $scripts;
+    }
+
+    /**
+     * Register an import map entry for ES module resolution.
+     */
+    public function registerImport(string $module, string $url): void
+    {
+        $this->importMap[$module] = $url;
+    }
+
+    /**
+     * Register multiple import map entries.
+     *
+     * @param  array<string, string>  $imports  Module name => URL mappings
+     */
+    public function registerImports(array $imports): void
+    {
+        foreach ($imports as $module => $url) {
+            $this->importMap[$module] = $url;
+        }
+    }
+
+    /**
+     * Get all registered import map entries.
+     *
+     * @return array<string, string>
+     */
+    public function getImportMap(): array
+    {
+        return $this->importMap;
+    }
+
+    /**
+     * Check if any import map entries are registered.
+     */
+    public function hasImportMap(): bool
+    {
+        return ! empty($this->importMap);
+    }
+
+    /**
+     * Render the import map as a script tag.
+     * Must be placed BEFORE any module scripts in the HTML.
+     */
+    public function renderImportMap(): string
+    {
+        if (empty($this->importMap)) {
+            return '';
+        }
+
+        $json = json_encode(['imports' => $this->importMap], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        return '<script type="importmap">' . $json . '</script>';
+    }
+
+    /**
+     * Register assets from a component class.
+     * Converts #[Js] and #[Css] attributes to Asset objects.
+     */
+    public function registerFromComponent(Component $component): void
+    {
+        $class = get_class($component);
+        $assets = $this->resolveComponentAssets($class);
+
+        // Convert Js attributes to JsAsset objects
+        foreach ($assets['js'] as $js) {
+            $id = $js->getKey();
+            if (! isset($this->scripts['component'][$id])) {
+                $asset = $this->convertJsAttributeToAsset($js);
+                $this->scripts['component'][$id] = $asset;
+            }
+        }
+
+        // Convert Css attributes to CssAsset objects
+        foreach ($assets['css'] as $css) {
+            $id = $css->getKey();
+            if (! isset($this->styles['component'][$id])) {
+                $asset = $this->convertCssAttributeToAsset($css);
+                $this->styles['component'][$id] = $asset;
+            }
+        }
+
+        // Handle dynamic assets() method
+        if (method_exists($component, 'assets')) {
+            $dynamicAssets = $component->assets();
+            $this->registerDynamicAssets($dynamicAssets, 'component');
+        }
+    }
+
+    /**
+     * Convert a Js attribute to a JsAsset object.
+     */
+    protected function convertJsAttributeToAsset(Js $js): JsAsset
+    {
+        if ($js->isInline()) {
+            return JsAsset::make('inline:' . md5($js->content), '')
+                ->inline($js->content)
+                ->package('component');
+        }
+
+        $asset = JsAsset::make('src:' . md5($js->src), $js->src)
+            ->defer($js->defer)
+            ->async($js->async)
+            ->package('component');
+
+        if ($js->type) {
+            $asset->type($js->type);
+        }
+
+        return $asset;
+    }
+
+    /**
+     * Convert a Css attribute to a CssAsset object.
+     */
+    protected function convertCssAttributeToAsset(Css $css): CssAsset
+    {
+        if ($css->isInline()) {
+            return CssAsset::make('inline:' . md5($css->content), '')
+                ->inline($css->content)
+                ->package('component');
+        }
+
+        $asset = CssAsset::make('href:' . md5($css->href), $css->href)
+            ->package('component');
+
+        if ($css->media) {
+            $asset->media($css->media);
+        }
+
+        return $asset;
+    }
+
+    /**
+     * Register assets from a dynamic assets() method return or legacy format.
      *
      * Expected format:
      * [
@@ -93,29 +379,34 @@ class AssetManager
      *     'styles' => ['https://cdn.example.com/lib.css', ...],
      * ]
      */
-    protected function registerDynamicAssets(array $assets): void
+    protected function registerDynamicAssets(array $assets, string $package = 'component'): void
     {
         // Register scripts
         if (isset($assets['scripts'])) {
             foreach ($assets['scripts'] as $script) {
                 if (is_string($script)) {
-                    $js = new Js(src: $script);
-                    $key = $js->getKey();
-                    if (! isset($this->scripts[$key])) {
-                        $this->scripts[$key] = $js;
-                    }
+                    $id = 'src:' . md5($script);
+                    $asset = JsAsset::make($id, $script)->package($package);
+                    $this->scripts[$package][$id] = $asset;
                 } elseif (is_array($script)) {
-                    $js = new Js(
-                        src: $script['src'] ?? null,
-                        content: $script['content'] ?? null,
-                        defer: $script['defer'] ?? true,
-                        async: $script['async'] ?? false,
-                        type: $script['type'] ?? null,
-                    );
-                    $key = $js->getKey();
-                    if (! isset($this->scripts[$key])) {
-                        $this->scripts[$key] = $js;
+                    $src = $script['src'] ?? '';
+                    $content = $script['content'] ?? null;
+                    $id = $content ? 'inline:' . md5($content) : 'src:' . md5($src);
+
+                    $asset = JsAsset::make($id, $src)
+                        ->defer($script['defer'] ?? true)
+                        ->async($script['async'] ?? false)
+                        ->package($package);
+
+                    if (isset($script['type'])) {
+                        $asset->type($script['type']);
                     }
+
+                    if ($content) {
+                        $asset->inline($content);
+                    }
+
+                    $this->scripts[$package][$id] = $asset;
                 }
             }
         }
@@ -124,21 +415,25 @@ class AssetManager
         if (isset($assets['styles'])) {
             foreach ($assets['styles'] as $style) {
                 if (is_string($style)) {
-                    $css = new Css(href: $style);
-                    $key = $css->getKey();
-                    if (! isset($this->styles[$key])) {
-                        $this->styles[$key] = $css;
-                    }
+                    $id = 'href:' . md5($style);
+                    $asset = CssAsset::make($id, $style)->package($package);
+                    $this->styles[$package][$id] = $asset;
                 } elseif (is_array($style)) {
-                    $css = new Css(
-                        href: $style['href'] ?? null,
-                        content: $style['content'] ?? null,
-                        media: $style['media'] ?? null,
-                    );
-                    $key = $css->getKey();
-                    if (! isset($this->styles[$key])) {
-                        $this->styles[$key] = $css;
+                    $href = $style['href'] ?? '';
+                    $content = $style['content'] ?? null;
+                    $id = $content ? 'inline:' . md5($content) : 'href:' . md5($href);
+
+                    $asset = CssAsset::make($id, $href)->package($package);
+
+                    if (isset($style['media'])) {
+                        $asset->media($style['media']);
                     }
+
+                    if ($content) {
+                        $asset->inline($content);
+                    }
+
+                    $this->styles[$package][$id] = $asset;
                 }
             }
         }
@@ -174,62 +469,75 @@ class AssetManager
     }
 
     /**
-     * Render all collected scripts as HTML.
-     *
-     * @param  string|null  $nonce  CSP nonce attribute
+     * Render CSS variables as inline style block.
      */
-    public function renderScripts(?string $nonce = null): string
+    public function renderCssVariables(?string $nonce = null): string
     {
+        if (empty($this->cssVariables)) {
+            return '';
+        }
+
         $nonceAttr = $nonce ? ' nonce="' . e($nonce) . '"' : '';
         $output = '';
 
-        foreach ($this->scripts as $js) {
-            if ($js->isInline()) {
-                $output .= '<script' . $nonceAttr . '>' . $js->content . '</script>' . "\n";
-            } else {
-                $attrs = 'src="' . e($js->src) . '"';
-
-                if ($js->defer) {
-                    $attrs .= ' defer';
-                }
-
-                if ($js->async) {
-                    $attrs .= ' async';
-                }
-
-                if ($js->type) {
-                    $attrs .= ' type="' . e($js->type) . '"';
-                }
-
-                $output .= '<script ' . $attrs . $nonceAttr . '></script>' . "\n";
+        foreach ($this->cssVariables as $package => $vars) {
+            $varCss = '';
+            foreach ($vars as $name => $value) {
+                // Ensure variable name has -- prefix
+                $varName = str_starts_with($name, '--') ? $name : '--' . $name;
+                $varCss .= "    {$varName}: {$value};\n";
             }
+
+            $output .= "<style{$nonceAttr}>/* {$package} */\n:root {\n{$varCss}}</style>\n";
         }
 
         return $output;
     }
 
     /**
+     * Render script data as JavaScript object.
+     */
+    public function renderScriptData(?string $nonce = null): string
+    {
+        $data = $this->getScriptData();
+
+        if (empty($data)) {
+            return '';
+        }
+
+        $nonceAttr = $nonce ? ' nonce="' . e($nonce) . '"' : '';
+
+        return '<script' . $nonceAttr . '>window.LiVueData = ' . json_encode($data, JSON_UNESCAPED_SLASHES) . ';</script>' . "\n";
+    }
+
+    /**
      * Render all collected styles as HTML.
-     *
-     * @param  string|null  $nonce  CSP nonce attribute
      */
     public function renderStyles(?string $nonce = null): string
     {
-        $nonceAttr = $nonce ? ' nonce="' . e($nonce) . '"' : '';
         $output = '';
 
-        foreach ($this->styles as $css) {
-            if ($css->isInline()) {
-                $output .= '<style' . $nonceAttr . '>' . $css->content . '</style>' . "\n";
-            } else {
-                $attrs = 'rel="stylesheet" href="' . e($css->href) . '"';
+        // First render CSS variables
+        $output .= $this->renderCssVariables($nonce);
 
-                if ($css->media) {
-                    $attrs .= ' media="' . e($css->media) . '"';
-                }
+        // Then render stylesheets
+        foreach ($this->getStyles() as $asset) {
+            $output .= $asset->toHtml($nonce) . "\n";
+        }
 
-                $output .= '<link ' . $attrs . $nonceAttr . '>' . "\n";
-            }
+        return $output;
+    }
+
+    /**
+     * Render all collected scripts as HTML.
+     */
+    public function renderScripts(?string $nonce = null): string
+    {
+        $output = '';
+
+        // Render scripts
+        foreach ($this->getScripts() as $asset) {
+            $output .= $asset->toHtml($nonce) . "\n";
         }
 
         return $output;
@@ -267,5 +575,8 @@ class AssetManager
     {
         $this->scripts = [];
         $this->styles = [];
+        $this->cssVariables = [];
+        $this->scriptData = [];
+        $this->importMap = [];
     }
 }

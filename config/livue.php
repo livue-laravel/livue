@@ -19,6 +19,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Asset Version
+    |--------------------------------------------------------------------------
+    |
+    | When set, this version string will be appended to asset URLs for
+    | cache busting. For packages, the version is read from Composer.
+    | Set to null to disable versioning for app assets.
+    |
+    */
+    'asset_version' => env('LIVUE_ASSET_VERSION', null),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Assets Path
+    |--------------------------------------------------------------------------
+    |
+    | The public path where package assets are stored after publishing.
+    | Assets are organized as: {assets_path}/{package}/{asset-id}.{ext}
+    |
+    */
+    'assets_path' => 'vendor/livue',
+
+    /*
+    |--------------------------------------------------------------------------
     | Route Prefix
     |--------------------------------------------------------------------------
     |

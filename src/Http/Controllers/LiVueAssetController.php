@@ -28,6 +28,23 @@ class LiVueAssetController
     }
 
     /**
+     * Serve the LiVue ES Module bundle.
+     *
+     * This version is for use with import maps and bundlers.
+     * It exports LiVue as an ES module.
+     */
+    public function esm(): BinaryFileResponse|Response
+    {
+        $path = $this->getEsmPath();
+
+        if (! file_exists($path)) {
+            return response('LiVue ESM not found. Run: npm run build:livue', 404);
+        }
+
+        return $this->serveFile($path, 'application/javascript');
+    }
+
+    /**
      * Serve the source map for debugging.
      */
     public function sourceMap(): BinaryFileResponse|Response
@@ -42,11 +59,33 @@ class LiVueAssetController
     }
 
     /**
+     * Serve the ESM source map for debugging.
+     */
+    public function esmSourceMap(): BinaryFileResponse|Response
+    {
+        $path = $this->getEsmPath() . '.map';
+
+        if (! file_exists($path)) {
+            return response('ESM source map not found', 404);
+        }
+
+        return $this->serveFile($path, 'application/json');
+    }
+
+    /**
      * Get the path to the script file.
      */
     protected function getScriptPath(): string
     {
         return dirname(__DIR__, 3) . '/dist/livue.js';
+    }
+
+    /**
+     * Get the path to the ESM script file.
+     */
+    protected function getEsmPath(): string
+    {
+        return dirname(__DIR__, 3) . '/dist/livue.esm.js';
     }
 
     /**

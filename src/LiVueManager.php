@@ -178,10 +178,21 @@ class LiVueManager
 </script>
 JS;
 
-        $output = $configScript . "\n" . $loaderScript;
-
-        // Append component-declared scripts
+        // Append import map and component-declared scripts
         $assetManager = app(AssetManager::class);
+
+        // Start with script data (window.LiVueData) - must come first
+        $output = $assetManager->renderScriptData($nonce);
+
+        // Then import map - MUST come before any module scripts
+        if ($assetManager->hasImportMap()) {
+            $output .= $assetManager->renderImportMap() . "\n";
+        }
+
+        // Then config and loader
+        $output .= $configScript . "\n" . $loaderScript;
+
+        // Finally, append component-declared scripts (modules)
         $componentScripts = $assetManager->renderScripts($nonce);
 
         if ($componentScripts) {
