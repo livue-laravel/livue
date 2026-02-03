@@ -1,6 +1,8 @@
 # Dependencies
 /node_modules
 /vendor
+package-lock.json
+composer.lock
 
 # Build artifacts (keep /dist for distribution)
 *.log
