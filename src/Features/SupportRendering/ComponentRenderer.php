@@ -86,7 +86,7 @@ class ComponentRenderer
         }
 
         $componentName = $component->getName();
-        $componentId = $component->id;
+        $componentId = $component->getId();
         $checksum = StateChecksum::generate($componentName, $dehydratedState);
         $islandAttr = $component->isIsland() ? ' data-livue-island' : '';
 

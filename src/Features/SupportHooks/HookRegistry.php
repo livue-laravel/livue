@@ -49,7 +49,7 @@ class HookRegistry
      */
     public function store(Component $component): ComponentStore
     {
-        $id = $component->id;
+        $id = $component->getId();
 
         if (! isset($this->stores[$id])) {
             $this->stores[$id] = new ComponentStore();
@@ -65,7 +65,7 @@ class HookRegistry
      */
     public function features(Component $component): array
     {
-        $id = $component->id;
+        $id = $component->getId();
 
         if (! isset($this->instances[$id])) {
             $this->instances[$id] = array_map(
@@ -141,7 +141,7 @@ class HookRegistry
      */
     public function cleanup(Component $component): void
     {
-        $id = $component->id;
+        $id = $component->getId();
 
         unset($this->instances[$id], $this->stores[$id]);
     }

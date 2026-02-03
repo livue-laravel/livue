@@ -276,7 +276,7 @@ class Testable
         // Create a fresh component instance for the update (like a real request)
         $componentClass = get_class($this->component);
         $component = new $componentClass();
-        $component->id = $this->component->id;
+        $component->setId($this->component->getId());
 
         // Reset status code to success before the update
         $this->lastStatusCode = 200;

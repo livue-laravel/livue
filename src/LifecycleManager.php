@@ -11,6 +11,21 @@ use LiVue\TemporaryUploadedFile;
 
 class LifecycleManager
 {
+    /**
+     * Lifecycle hook names that cannot be called from the client,
+     * even when defined on the user's component class.
+     */
+    private const LIFECYCLE_HOOKS = [
+        'boot',
+        'mount',
+        'hydrate',
+        'dehydrate',
+        'updating',
+        'updated',
+        'rendering',
+        'rendered',
+    ];
+
     public function __construct(
         protected EventBus $eventBus,
         protected HookRegistry $hookRegistry,
@@ -524,13 +539,44 @@ class LifecycleManager
     }
 
     /**
-     * Call a method on the component with EventBus notification.
+     * Call a method on the component with security validation.
+     *
+     * Only methods declared on the user's concrete component class are callable.
+     * Methods inherited from the base Component class, protected methods,
+     * magic methods, and lifecycle hooks are automatically blocked.
      */
     protected function callMethod(Component $component, string $method, array $params): mixed
     {
+        // Block magic methods
+        if (str_starts_with($method, '__')) {
+            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+        }
+
+        // Block lifecycle hooks
+        if (in_array($method, self::LIFECYCLE_HOOKS)) {
+            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+        }
+
+        if (! method_exists($component, $method)) {
+            throw new \BadMethodCallException("Method [{$method}] does not exist on component [{$component->getName()}].");
+        }
+
+        $reflection = new \ReflectionClass($component);
+        $reflectionMethod = $reflection->getMethod($method);
+
+        if (! $reflectionMethod->isPublic()) {
+            throw new \BadMethodCallException("Method [{$method}] is not public on component [{$component->getName()}].");
+        }
+
+        // Block methods declared on the base Component class.
+        // Only methods defined directly on the user's component are callable.
+        if ($reflectionMethod->getDeclaringClass()->getName() === Component::class) {
+            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+        }
+
         $this->eventBus->dispatch('component.call', $component, $method, $params);
 
-        return $component->callMethod($method, $params);
+        return $component->{$method}(...$params);
     }
 
     /**
