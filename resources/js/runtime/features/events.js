@@ -7,7 +7,7 @@
  *   - to: deliver to all instances of a named component
  */
 
-import * as devtools from './devtools/index.js';
+import * as devtools from '../devtools/index.js';
 
 /**
  * Registry: eventName → Set of { componentName, componentId, handler }

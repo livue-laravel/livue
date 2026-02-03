@@ -22,7 +22,7 @@
  *   <button v-click="'increment'">+1</button>
  */
 
-import { getDebounced, getThrottled } from '../modifiers.js';
+import { getDebounced, getThrottled } from '../helpers/modifiers.js';
 
 /**
  * WeakMap to store event handlers for cleanup.

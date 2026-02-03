@@ -15,7 +15,7 @@
  * in the PHP $this->stream() call.
  */
 
-import { registerStreamTarget, unregisterStreamTarget } from '../stream.js';
+import { registerStreamTarget, unregisterStreamTarget } from '../features/request/stream.js';
 
 /**
  * WeakMap to store element state for cleanup.

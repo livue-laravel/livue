@@ -18,7 +18,7 @@
  * 4. Apply the modifier behavior before updating state
  */
 
-import { getDebounced, getThrottled } from '../modifiers.js';
+import { getDebounced, getThrottled } from '../helpers/modifiers.js';
 
 /**
  * WeakMap to store directive state for cleanup.

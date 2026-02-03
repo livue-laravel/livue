@@ -5,7 +5,7 @@
  * Directives are registered at boot time and applied to all Vue apps.
  */
 
-import { addDirective } from '../registry.js';
+import { addDirective } from '../core/registry.js';
 
 import initDirective from './init.js';
 import submitDirective from './submit.js';

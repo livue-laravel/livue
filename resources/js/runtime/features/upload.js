@@ -5,7 +5,7 @@
  * Uses XMLHttpRequest (not fetch) for upload progress event support.
  */
 
-import { getToken } from './csrf.js';
+import { getToken } from '../helpers/csrf.js';
 
 /**
  * Build the upload endpoint URL from the configured prefix.

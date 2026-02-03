@@ -12,8 +12,8 @@
  * - Progress bar: visual loading indicator during navigation
  */
 
-import { clearToken } from './csrf.js';
-import progress from './progress.js';
+import { clearToken } from '../helpers/csrf.js';
+import progress from '../helpers/progress.js';
 
 /**
  * Reference to the LiVue runtime, set during init.

@@ -13,9 +13,9 @@
 import {
     ref, shallowRef, onMounted, onUnmounted, h, defineComponent,
 } from 'vue';
-import { setErrors } from './errors.js';
+import { setErrors } from '../helpers/errors.js';
 import { on } from './events.js';
-import { poolLazyLoad } from './pool.js';
+import { poolLazyLoad } from './request/pool.js';
 
 let _lazyCounter = 0;
 

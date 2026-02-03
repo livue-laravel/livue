@@ -5,7 +5,7 @@
  * Processes NDJSON (newline-delimited JSON) chunks from the server.
  */
 
-import { getToken } from './csrf.js';
+import { getToken } from '../../helpers/csrf.js';
 
 /**
  * Registry of stream targets.

@@ -33,23 +33,23 @@ import {
     onMounted, onUnmounted, onBeforeMount, onBeforeUnmount,
     nextTick, provide, inject,
 } from 'vue';
-import { sendAction } from './request.js';
+import { sendAction } from '../features/request/request.js';
 import { createReactiveState, updateState, serializeState, stateToRefs } from './state.js';
-import { createErrors, setErrors, clearErrors, handleError, setComponentErrorHandler, removeComponentErrorHandler } from './errors.js';
-import { on, emit, removeByComponentId, processServerEvents } from './events.js';
-import { handleRedirect, navigateTo } from './navigation.js';
-import { updateQueryString } from './url.js';
-import { uploadFile, uploadFiles } from './upload.js';
+import { createErrors, setErrors, clearErrors, handleError, setComponentErrorHandler, removeComponentErrorHandler } from '../helpers/errors.js';
+import { on, emit, removeByComponentId, processServerEvents } from '../features/events.js';
+import { handleRedirect, navigateTo } from '../features/navigation.js';
+import { updateQueryString } from '../features/url.js';
+import { uploadFile, uploadFiles } from '../features/upload.js';
 import { createPinia } from 'pinia';
-import { createLazyComponent } from './lazy.js';
-import { getDebounced, getThrottled, clearModifiers } from './modifiers.js';
-import { register as registerTabSync, unregister as unregisterTabSync, broadcast as broadcastTabSync, filterState as filterTabSyncState } from './broadcast.js';
+import { createLazyComponent } from '../features/lazy.js';
+import { getDebounced, getThrottled, clearModifiers } from '../helpers/modifiers.js';
+import { register as registerTabSync, unregister as unregisterTabSync, broadcast as broadcastTabSync, filterState as filterTabSyncState } from '../features/broadcast.js';
 import { getBuiltInDirectives } from './registry.js';
-import { subscribe as subscribeEcho, unsubscribeComponent as unsubscribeEcho } from './echo.js';
-import { withViewTransition, isViewTransitionsSupported } from './directives/transition.js';
-import { streamRequest, isStreaming as isStreamingActive, getStreamingMethod, clearStreamTargets } from './stream.js';
-import { trigger, createCleanupCollector } from './hooks.js';
-import { createComposables, updateComposables, hasComposables } from './composables.js';
+import { subscribe as subscribeEcho, unsubscribeComponent as unsubscribeEcho } from '../features/echo.js';
+import { withViewTransition, isViewTransitionsSupported } from '../directives/transition.js';
+import { streamRequest, isStreaming as isStreamingActive, getStreamingMethod, clearStreamTargets } from '../features/request/stream.js';
+import { trigger, createCleanupCollector } from '../helpers/hooks.js';
+import { createComposables, updateComposables, hasComposables } from '../features/composables.js';
 
 /**
  * Global counter for generating unique child component tag names.

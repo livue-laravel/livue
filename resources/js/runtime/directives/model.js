@@ -26,7 +26,7 @@
  *   v-model-livue:propertyName
  */
 
-import { getDebounced, getThrottled } from '../modifiers.js';
+import { getDebounced, getThrottled } from '../helpers/modifiers.js';
 import { watch } from 'vue';
 
 /**

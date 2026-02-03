@@ -5,9 +5,9 @@
  * Stores components, requests, events, and performance metrics.
  */
 
-import { hook } from '../hooks.js';
-import { getAllRegistrations } from '../registry.js';
-import { getDetailedSubscriptions } from '../echo.js';
+import { hook } from '../helpers/hooks.js';
+import { getAllRegistrations } from '../core/registry.js';
+import { getDetailedSubscriptions } from '../features/echo.js';
 
 /**
  * Maximum number of entries to store in history.

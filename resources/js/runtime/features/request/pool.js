@@ -5,10 +5,10 @@
  * and sends them as a single batch HTTP request to /livue/update.
  */
 
-import { getToken } from './csrf.js';
-import { handleRedirect } from './navigation.js';
-import progress from './progress.js';
-import { trigger } from './hooks.js';
+import { getToken } from '../../helpers/csrf.js';
+import { handleRedirect } from '../navigation.js';
+import progress from '../../helpers/progress.js';
+import { trigger } from '../../helpers/hooks.js';
 
 /**
  * Pending update request entries.
