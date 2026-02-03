@@ -2,12 +2,14 @@
 /vendor export-ignore
 /node_modules export-ignore
 /resources export-ignore
+/tests export-ignore
 
 # Build/dev files (npm not published, only Composer)
 package.json export-ignore
 package-lock.json export-ignore
 vite.config.build.js export-ignore
 vite.config.esm.js export-ignore
+phpunit.xml export-ignore
 
 # Git files
 .gitattributes export-ignore
