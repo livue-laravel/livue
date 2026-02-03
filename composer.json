@@ -44,6 +44,9 @@
         "pestphp/pest": "^3.0",
         "pestphp/pest-plugin-laravel": "^3.0"
     },
+    "conflict": {
+        "symfony/css-selector": ">=8.0"
+    },
     "extra": {
         "laravel": {
             "providers": [
