@@ -430,4 +430,55 @@ class Testable
     {
         return $this->get($name);
     }
+
+    // -----------------------------------------------------------------
+    //  Form Object helpers
+    // -----------------------------------------------------------------
+
+    /**
+     * Set multiple properties on a Form Object.
+     *
+     * @param  string $formProperty  The component property holding the Form
+     * @param  array  $data          Key-value pairs to set
+     */
+    public function setForm(string $formProperty, array $data): static
+    {
+        $diffs = [];
+
+        foreach ($data as $key => $value) {
+            $diffs[$formProperty . '.' . $key] = $value;
+        }
+
+        return $this->set($diffs);
+    }
+
+    /**
+     * Validate a Form Object by calling its validate() method.
+     *
+     * @param  string $formProperty  The component property holding the Form
+     */
+    public function validateForm(string $formProperty): static
+    {
+        $form = $this->get($formProperty);
+
+        if ($form === null) {
+            throw new \InvalidArgumentException(
+                "Form property [{$formProperty}] does not exist on the component."
+            );
+        }
+
+        if (! $form instanceof \LiVue\Form) {
+            throw new \InvalidArgumentException(
+                "Property [{$formProperty}] is not a Form instance."
+            );
+        }
+
+        try {
+            $form->validate();
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Validation failed, errors are already set on the form
+        }
+
+        return $this;
+    }
 }

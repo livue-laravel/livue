@@ -513,4 +513,132 @@ trait MakesAssertions
 
         return $this;
     }
+
+    // -----------------------------------------------------------------
+    //  Form Object assertions
+    // -----------------------------------------------------------------
+
+    /**
+     * Assert that a Form Object has validation errors.
+     *
+     * @param  string       $formProperty  The component property holding the Form
+     * @param  string|array $keys          Specific form field keys (without form prefix)
+     */
+    public function assertFormHasErrors(string $formProperty, string|array $keys = []): static
+    {
+        $form = $this->get($formProperty);
+
+        Assert::assertNotNull(
+            $form,
+            "Form property [{$formProperty}] does not exist on the component."
+        );
+
+        Assert::assertInstanceOf(
+            \LiVue\Form::class,
+            $form,
+            "Property [{$formProperty}] is not a Form instance."
+        );
+
+        $errorBag = $form->getErrors();
+        $keys = is_string($keys) ? [$keys] : $keys;
+
+        if (empty($keys)) {
+            Assert::assertTrue(
+                $errorBag->isNotEmpty(),
+                "Failed asserting that form [{$formProperty}] has validation errors."
+            );
+        } else {
+            foreach ($keys as $key) {
+                Assert::assertTrue(
+                    $errorBag->has($key),
+                    "Failed asserting that form [{$formProperty}] has error for [{$key}]."
+                );
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Assert that a Form Object has no validation errors.
+     *
+     * @param  string       $formProperty  The component property holding the Form
+     * @param  string|array $keys          Specific form field keys (without form prefix)
+     */
+    public function assertFormHasNoErrors(string $formProperty, string|array $keys = []): static
+    {
+        $form = $this->get($formProperty);
+
+        Assert::assertNotNull(
+            $form,
+            "Form property [{$formProperty}] does not exist on the component."
+        );
+
+        Assert::assertInstanceOf(
+            \LiVue\Form::class,
+            $form,
+            "Property [{$formProperty}] is not a Form instance."
+        );
+
+        $errorBag = $form->getErrors();
+        $keys = is_string($keys) ? [$keys] : $keys;
+
+        if (empty($keys)) {
+            Assert::assertTrue(
+                $errorBag->isEmpty(),
+                'Failed asserting that form [' . $formProperty . '] has no validation errors. '
+                . 'Errors: ' . json_encode($errorBag->toArray())
+            );
+        } else {
+            foreach ($keys as $key) {
+                Assert::assertFalse(
+                    $errorBag->has($key),
+                    "Failed asserting that form [{$formProperty}] has no error for [{$key}]."
+                );
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * Assert that a Form Object contains specific data.
+     *
+     * @param  string $formProperty  The component property holding the Form
+     * @param  array  $expected      Expected key-value pairs
+     */
+    public function assertFormData(string $formProperty, array $expected): static
+    {
+        $form = $this->get($formProperty);
+
+        Assert::assertNotNull(
+            $form,
+            "Form property [{$formProperty}] does not exist on the component."
+        );
+
+        Assert::assertInstanceOf(
+            \LiVue\Form::class,
+            $form,
+            "Property [{$formProperty}] is not a Form instance."
+        );
+
+        $actual = $form->all();
+
+        foreach ($expected as $key => $value) {
+            Assert::assertArrayHasKey(
+                $key,
+                $actual,
+                "Form [{$formProperty}] does not have key [{$key}]."
+            );
+
+            Assert::assertEquals(
+                $value,
+                $actual[$key],
+                "Form [{$formProperty}] key [{$key}] expected to be [" . json_encode($value)
+                . "] but is [" . json_encode($actual[$key]) . "]."
+            );
+        }
+
+        return $this;
+    }
 }

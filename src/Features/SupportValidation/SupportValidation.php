@@ -32,13 +32,20 @@ class SupportValidation extends ComponentHook
 
     /**
      * Catch ValidationException during method calls.
-     * Sets the error bag on the component and returns a sentinel
-     * value to signal the exception was handled.
+     * If errors were already synced (e.g., from Form Objects), we don't add
+     * the raw validator errors to avoid duplicates.
+     * Returns a sentinel value to signal the exception was handled.
      */
     public function exception(Component $component, ComponentStore $store, \Throwable $e): mixed
     {
         if ($e instanceof ValidationException) {
-            $component->setErrorBag($e->validator->errors());
+            // If the component already has errors (e.g., Form synced its prefixed errors),
+            // don't add the raw validator errors to avoid duplicates.
+            $existingErrors = $component->getErrorBag();
+
+            if ($existingErrors->isEmpty()) {
+                $component->setErrorBag($e->validator->errors());
+            }
 
             return true;
         }
