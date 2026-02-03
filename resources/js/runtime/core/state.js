@@ -17,6 +17,7 @@ export function createReactiveState(initialState) {
 /**
  * Update an existing reactive state with new values.
  * Adds new keys, updates existing ones, and removes stale keys.
+ * Only updates values that have actually changed to avoid unnecessary re-renders.
  *
  * @param {object} reactiveState
  * @param {object} newState
@@ -25,7 +26,14 @@ export function updateState(reactiveState, newState) {
     let key;
 
     for (key in newState) {
-        reactiveState[key] = newState[key];
+        // Only update if the value has actually changed
+        // This prevents unnecessary Vue re-renders for identical values
+        let oldJson = JSON.stringify(reactiveState[key]);
+        let newJson = JSON.stringify(newState[key]);
+
+        if (oldJson !== newJson) {
+            reactiveState[key] = newState[key];
+        }
     }
 
     for (key in reactiveState) {

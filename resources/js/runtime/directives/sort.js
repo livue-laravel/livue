@@ -193,32 +193,7 @@ export const sortDirective = {
                     params.push(fromListId);
                 }
 
-                // CRITICAL: Revert the DOM manipulation done by SortableJS
-                // Vue will re-render based on the server state update
-                // This prevents conflicts between SortableJS DOM changes and Vue's virtual DOM
-                if (isCrossList) {
-                    // Cross-list: move element back to original list
-                    let referenceNode = fromList.children[oldIndex] || null;
-                    fromList.insertBefore(itemEl, referenceNode);
-                } else {
-                    // Same list: revert to original position
-                    let children = Array.from(fromList.children);
-                    let currentIndex = children.indexOf(itemEl);
-
-                    if (currentIndex !== oldIndex) {
-                        if (oldIndex < currentIndex) {
-                            // Item was moved down, need to insert before the element at oldIndex
-                            let referenceNode = fromList.children[oldIndex] || null;
-                            fromList.insertBefore(itemEl, referenceNode);
-                        } else {
-                            // Item was moved up, need to insert after the element at oldIndex
-                            let referenceNode = fromList.children[oldIndex + 1] || null;
-                            fromList.insertBefore(itemEl, referenceNode);
-                        }
-                    }
-                }
-
-                // Now call the server - Vue will re-render from the updated state
+                // Call the server - SortableJS has already updated the DOM optimistically
                 livue.call(method, params);
             },
         };
