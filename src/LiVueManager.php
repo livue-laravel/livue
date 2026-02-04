@@ -161,11 +161,15 @@ class LiVueManager
     }
 
     function check() {
+        // If LiVue exists and has components, it's already booted (SPA navigation)
+        if (window.LiVue && window.LiVue.components && window.LiVue.components.size > 0) {
+            return; // Already running - do nothing
+        }
         // If LiVue exists and has setup callbacks, ESM mode is active
         if (window.LiVue && window.LiVue._setupCallbacks && window.LiVue._setupCallbacks.length > 0) {
             return; // ESM mode - do nothing
         }
-        // No setup called - load standalone bundle
+        // No setup called and no components - load standalone bundle
         loadStandaloneBundle();
     }
 

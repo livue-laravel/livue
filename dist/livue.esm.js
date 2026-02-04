@@ -431,18 +431,20 @@ function vo(t) {
 function go(t) {
   var e = document.body.querySelectorAll("script");
   e.forEach(function(n) {
-    if (n.hasAttribute("data-navigate-once")) {
-      if (n.dataset.navigateRan)
-        return;
-      n.dataset.navigateRan = "true";
-    }
-    if (n.type !== "application/livue-setup") {
-      var r = n.getAttribute("src") || "";
-      if (!r.includes("livue")) {
-        var i = document.createElement("script");
-        Array.from(n.attributes).forEach(function(o) {
-          i.setAttribute(o.name, o.value);
-        }), n.src || (i.textContent = n.textContent), n.parentNode.replaceChild(i, n);
+    if (n.parentNode) {
+      if (n.hasAttribute("data-navigate-once")) {
+        if (n.dataset.navigateRan)
+          return;
+        n.dataset.navigateRan = "true";
+      }
+      if (n.type !== "application/livue-setup" && !n.hasAttribute("data-livue-loader") && n.type !== "module") {
+        var r = n.getAttribute("src") || "";
+        if (!r.includes("livue") && !(r.includes("@vite") || r.includes("/@fs/") || r.includes("node_modules")) && !(r.includes("/resources/js/") || r.includes("/build/assets/"))) {
+          var i = document.createElement("script");
+          Array.from(n.attributes).forEach(function(o) {
+            i.setAttribute(o.name, o.value);
+          }), n.src || (i.textContent = n.textContent), n.parentNode.replaceChild(i, n);
+        }
       }
     }
   });

@@ -866,6 +866,11 @@ function executeBodyScripts(doc) {
     var scripts = document.body.querySelectorAll('script');
 
     scripts.forEach(function (oldScript) {
+        // Skip if script was already removed from DOM
+        if (!oldScript.parentNode) {
+            return;
+        }
+
         // Skip scripts with data-navigate-once that already ran
         if (oldScript.hasAttribute('data-navigate-once')) {
             if (oldScript.dataset.navigateRan) {
@@ -879,9 +884,30 @@ function executeBodyScripts(doc) {
             return;
         }
 
+        // Skip LiVue loader script - it would reload the bundle
+        if (oldScript.hasAttribute('data-livue-loader')) {
+            return;
+        }
+
+        // Skip module scripts - they are already loaded and shouldn't be re-executed
+        // This includes Vite's module scripts that load LiVue
+        if (oldScript.type === 'module') {
+            return;
+        }
+
         // Skip LiVue runtime bundle - it's already loaded and we don't want to reinitialize
         var src = oldScript.getAttribute('src') || '';
         if (src.includes('livue')) {
+            return;
+        }
+
+        // Skip Vite client and HMR scripts
+        if (src.includes('@vite') || src.includes('/@fs/') || src.includes('node_modules')) {
+            return;
+        }
+
+        // Skip app.js and similar entry points (they initialize LiVue)
+        if (src.includes('/resources/js/') || src.includes('/build/assets/')) {
             return;
         }
 
