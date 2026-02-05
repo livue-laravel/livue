@@ -24,6 +24,7 @@ import clickDirective from './click.js';
 import navigateDirective from './navigate.js';
 import scrollDirective from './scroll.js';
 import dirtyDirective from './dirty.js';
+import watchDirective from './watch.js';
 import {
     debounceDirective,
     throttleDirective,
@@ -102,6 +103,9 @@ export function registerBuiltInDirectives() {
     // v-dirty: Show/modify elements based on dirty tracking state
     addDirective('dirty', dirtyDirective, null);
 
+    // v-watch: Watch property and sync to server on change
+    addDirective('watch', watchDirective, null);
+
     // v-sort: Drag & Drop sorting (Wave 6.2)
     addDirective('sort', sortDirective, null);
     addDirective('sort-item', sortItemDirective, null);
@@ -138,4 +142,5 @@ export {
     sortHandleDirective,
     sortIgnoreDirective,
     sortGroupDirective,
+    watchDirective,
 };
