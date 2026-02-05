@@ -23,6 +23,7 @@ import streamDirective from './stream.js';
 import clickDirective from './click.js';
 import navigateDirective from './navigate.js';
 import scrollDirective from './scroll.js';
+import dirtyDirective from './dirty.js';
 import {
     debounceDirective,
     throttleDirective,
@@ -98,6 +99,9 @@ export function registerBuiltInDirectives() {
     // v-scroll: Mark element for scroll position preservation during SPA navigation
     addDirective('scroll', scrollDirective, null);
 
+    // v-dirty: Show/modify elements based on dirty tracking state
+    addDirective('dirty', dirtyDirective, null);
+
     // v-sort: Drag & Drop sorting (Wave 6.2)
     addDirective('sort', sortDirective, null);
     addDirective('sort-item', sortItemDirective, null);
@@ -128,6 +132,7 @@ export {
     clickDirective,
     navigateDirective,
     scrollDirective,
+    dirtyDirective,
     sortDirective,
     sortItemDirective,
     sortHandleDirective,
