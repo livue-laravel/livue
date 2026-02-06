@@ -34,7 +34,7 @@ import {
     nextTick, provide, inject,
 } from 'vue';
 import { sendAction } from '../features/request/request.js';
-import { createReactiveState, updateState, serializeState, stateToRefs } from './state.js';
+import { createReactiveState, updateState, serializeState, stateToRefs, getByPath, setByPath } from './state.js';
 import { createErrors, setErrors, clearErrors, handleError, setComponentErrorHandler, removeComponentErrorHandler } from '../helpers/errors.js';
 import { on, emit, removeByComponentId, processServerEvents } from '../features/events.js';
 import { handleRedirect, navigateTo } from '../features/navigation.js';
@@ -961,7 +961,9 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
          * The file is sent to /livue/upload, and on success the property
          * is set to an upload reference that the server can hydrate.
          *
-         * @param {string} property - The component property name
+         * Supports nested paths like "data.avatar" or "form.profile.photo".
+         *
+         * @param {string} property - The component property name or dot-notated path
          * @param {File} file - The File object from the input
          */
         upload: async function (property, file) {
@@ -978,14 +980,14 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                     livue.uploadProgress = percent;
                 });
 
-                state[property] = {
+                setByPath(state, property, {
                     __livue_upload: true,
                     ref: result.ref,
                     originalName: result.originalName,
                     mimeType: result.mimeType,
                     size: result.size,
                     previewUrl: result.previewUrl,
-                };
+                });
             } catch (error) {
                 if (error.status === 422 && error.data && error.data.errors) {
                     setErrors(livue.errors, error.data.errors);
@@ -1003,7 +1005,9 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
          * Each file is uploaded sequentially, and the property is set
          * to an array of upload references.
          *
-         * @param {string} property - The component property name
+         * Supports nested paths like "data.documents" or "form.attachments".
+         *
+         * @param {string} property - The component property name or dot-notated path
          * @param {FileList|File[]} files - The File objects from the input
          */
         uploadMultiple: async function (property, files) {
@@ -1016,20 +1020,41 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
             livue.uploadProgress = 0;
 
             try {
-                var results = await uploadFiles(files, name, property, uploads[property].token, function (progress) {
+                var response = await uploadFiles(files, name, property, uploads[property].token, function (progress) {
                     livue.uploadProgress = progress.overall;
                 });
 
-                state[property] = results.map(function (result) {
-                    return {
-                        __livue_upload: true,
-                        ref: result.ref,
-                        originalName: result.originalName,
-                        mimeType: result.mimeType,
-                        size: result.size,
-                        previewUrl: result.previewUrl,
-                    };
-                });
+                var results = response.results || [];
+                var errors = response.errors || [];
+
+                // Get current value and append successful uploads
+                var currentValue = getByPath(state, property);
+                var existingFiles = Array.isArray(currentValue) ? currentValue : [];
+
+                if (results.length > 0) {
+                    var newFiles = results.map(function (result) {
+                        return {
+                            __livue_upload: true,
+                            ref: result.ref,
+                            originalName: result.originalName,
+                            mimeType: result.mimeType,
+                            size: result.size,
+                            previewUrl: result.previewUrl,
+                        };
+                    });
+
+                    setByPath(state, property, existingFiles.concat(newFiles));
+                }
+
+                // Show errors for failed uploads
+                if (errors.length > 0) {
+                    var errorMessages = {};
+                    errors.forEach(function (err) {
+                        var key = property + '.' + err.index;
+                        errorMessages[key] = [err.error + ' (' + err.file + ')'];
+                    });
+                    setErrors(livue.errors, errorMessages);
+                }
             } catch (error) {
                 if (error.status === 422 && error.data && error.data.errors) {
                     setErrors(livue.errors, error.data.errors);
@@ -1047,14 +1072,20 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
          * For single file properties, sets to null.
          * For array properties, removes by index.
          *
-         * @param {string} property - The property name
+         * Supports nested paths like "data.avatar" or "form.documents".
+         *
+         * @param {string} property - The property name or dot-notated path
          * @param {number} [index] - For array properties, the index to remove
          */
         removeUpload: function (property, index) {
-            if (index !== undefined && Array.isArray(state[property])) {
-                state[property].splice(index, 1);
+            var currentValue = getByPath(state, property);
+
+            if (index !== undefined && Array.isArray(currentValue)) {
+                currentValue.splice(index, 1);
+                // Trigger reactivity by setting the modified array
+                setByPath(state, property, currentValue.slice());
             } else {
-                state[property] = null;
+                setByPath(state, property, null);
             }
         },
 

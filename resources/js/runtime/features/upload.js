@@ -89,38 +89,80 @@ export function uploadFile(file, componentName, property, uploadToken, onProgres
 }
 
 /**
- * Upload multiple files sequentially for a component property.
+ * Upload multiple files in a single batch request.
  *
  * @param {FileList|File[]} files
  * @param {string} componentName
  * @param {string} property
  * @param {string} uploadToken
- * @param {Function} [onProgress] - Called with { file: index, percent: 0-100, overall: 0-100 }
- * @returns {Promise<object[]>} Array of server responses
+ * @param {Function} [onProgress] - Called with overall progress 0-100
+ * @returns {Promise<{results: object[], errors: object[]}>}
  */
 export function uploadFiles(files, componentName, property, uploadToken, onProgress) {
-    var fileArray = Array.from(files);
-    var results = [];
-    var totalFiles = fileArray.length;
-    var completedFiles = 0;
+    return new Promise(function (resolve, reject) {
+        var fileArray = Array.from(files);
+        var formData = new FormData();
 
-    return fileArray.reduce(function (chain, file, index) {
-        return chain.then(function () {
-            return uploadFile(file, componentName, property, uploadToken, function (percent) {
-                if (onProgress) {
-                    var overall = Math.round(((completedFiles * 100 + percent) / totalFiles));
-                    onProgress({
-                        file: index,
-                        percent: percent,
-                        overall: overall,
-                    });
-                }
-            }).then(function (result) {
-                completedFiles++;
-                results.push(result);
-            });
+        // Append all files as files[]
+        fileArray.forEach(function (file) {
+            formData.append('files[]', file);
         });
-    }, Promise.resolve()).then(function () {
-        return results;
+
+        formData.append('component', componentName);
+        formData.append('property', property);
+        formData.append('checksum', uploadToken);
+
+        var xhr = new XMLHttpRequest();
+        var url = buildUploadUrl();
+
+        xhr.open('POST', url, true);
+
+        // CSRF token
+        var token = getToken();
+        if (token) {
+            xhr.setRequestHeader('X-CSRF-TOKEN', token);
+        }
+
+        xhr.setRequestHeader('Accept', 'application/json');
+
+        // Progress tracking
+        if (onProgress && xhr.upload) {
+            xhr.upload.addEventListener('progress', function (e) {
+                if (e.lengthComputable) {
+                    var percent = Math.round((e.loaded / e.total) * 100);
+                    onProgress({ overall: percent });
+                }
+            });
+        }
+
+        xhr.onload = function () {
+            var data;
+
+            try {
+                data = JSON.parse(xhr.responseText);
+            } catch (e) {
+                reject(new Error('Invalid server response'));
+                return;
+            }
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                // Server returns { results: [], errors: [] }
+                resolve({
+                    results: data.results || [],
+                    errors: data.errors || [],
+                });
+            } else {
+                var error = new Error(data.error || data.message || 'Upload failed');
+                error.status = xhr.status;
+                error.data = data;
+                reject(error);
+            }
+        };
+
+        xhr.onerror = function () {
+            reject(new Error('Network error during upload'));
+        };
+
+        xhr.send(formData);
     });
 }

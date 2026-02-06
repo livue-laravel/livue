@@ -30,19 +30,35 @@ trait WithFileUploads
 
     /**
      * Generate upload authorization tokens for file properties.
-     * Each token is an HMAC over "upload:{component}:{property}" using the app key.
+     * Each token is an encrypted payload containing the component class and property,
+     * allowing the upload controller to resolve the component without name registration.
      *
-     * @return array<string, string> property => HMAC token
+     * @return array<string, string> property => encrypted token
      */
     public function getUploadTokens(): array
     {
         $tokens = [];
-        $componentName = $this->getName();
-        $key = $this->getUploadKey();
+        $componentClass = get_class($this);
+        $fileRules = $this->fileRules();
         $properties = $this->getFileUploadProperties();
 
         foreach ($properties as $property) {
-            $tokens[$property] = hash_hmac('sha256', "upload:{$componentName}:{$property}", $key);
+            // For nested validation (multiple uploads), prefer rules for individual items (property.*)
+            // over array rules (property). Array rules are validated at form submit time.
+            $nestedKey = $property . '.*';
+            $rules = $fileRules[$nestedKey] ?? $fileRules[$property] ?? [];
+
+            // Skip array-only rules (like 'array', 'min:X', 'max:X') for individual file upload
+            if (is_array($rules) && in_array('array', $rules)) {
+                $rules = [];
+            }
+
+            $tokens[$property] = encrypt([
+                'class' => $componentClass,
+                'property' => $property,
+                'rules' => $rules,
+                'expires' => now()->addHours(24)->timestamp,
+            ]);
         }
 
         return $tokens;
@@ -107,16 +123,5 @@ trait WithFileUploads
                 }
             }
         }
-    }
-
-    private function getUploadKey(): string
-    {
-        $key = config('app.key');
-
-        if (str_starts_with($key, 'base64:')) {
-            $key = base64_decode(substr($key, 7));
-        }
-
-        return $key;
     }
 }

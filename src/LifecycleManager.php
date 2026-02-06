@@ -427,30 +427,40 @@ class LifecycleManager
      *
      * Replaces { __livue_upload: true, ref: '...' } objects with
      * TemporaryUploadedFile instances by decrypting the encrypted reference.
-     * Also handles arrays of upload references (multiple file upload).
+     * Also handles arrays of upload references (multiple file upload) and
+     * recursively searches nested objects for upload references.
      */
-    protected function processUploadDiffs(array &$diffs, string $componentName): void
+    protected function processUploadDiffs(array &$diffs, string $componentName, string $prefix = ''): void
     {
         foreach ($diffs as $key => &$value) {
+            $fullPath = $prefix ? "{$prefix}.{$key}" : $key;
+
             if ($this->isUploadReference($value)) {
-                $value = $this->hydrateUploadReference($value, $componentName, $key);
+                $value = $this->hydrateUploadReference($value, $componentName, $fullPath);
             } elseif (is_array($value) && ! empty($value) && ! isset($value['__livue_upload'])) {
                 // Check for array of upload references (multiple file upload)
                 $allUploads = true;
+                $hasNumericKeys = array_keys($value) === range(0, count($value) - 1);
 
-                foreach ($value as $item) {
-                    if (! $this->isUploadReference($item)) {
-                        $allUploads = false;
-                        break;
+                if ($hasNumericKeys) {
+                    foreach ($value as $item) {
+                        if (! $this->isUploadReference($item)) {
+                            $allUploads = false;
+                            break;
+                        }
+                    }
+
+                    if ($allUploads) {
+                        foreach ($value as $i => &$item) {
+                            $item = $this->hydrateUploadReference($item, $componentName, $fullPath);
+                        }
+                        unset($item);
+                        continue;
                     }
                 }
 
-                if ($allUploads) {
-                    foreach ($value as $i => &$item) {
-                        $item = $this->hydrateUploadReference($item, $componentName, $key);
-                    }
-                    unset($item);
-                }
+                // Recursively process nested associative arrays
+                $this->processUploadDiffs($value, $componentName, $fullPath);
             }
         }
         unset($value);
@@ -528,10 +538,20 @@ class LifecycleManager
 
     /**
      * Call the hydrate lifecycle hook.
+     * Also calls hydrate{TraitName} methods from used traits (e.g., hydrateHasForms).
      */
     protected function callHydrate(Component $component): void
     {
         $this->eventBus->dispatch('component.hydrate', $component);
+
+        // Call trait hydrate methods (hydrate{TraitName})
+        foreach (class_uses_recursive($component) as $trait) {
+            $method = 'hydrate' . class_basename($trait);
+
+            if (method_exists($component, $method)) {
+                $component->{$method}();
+            }
+        }
 
         if (method_exists($component, 'hydrate')) {
             $component->hydrate();

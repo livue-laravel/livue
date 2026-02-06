@@ -14,47 +14,96 @@ class LiVueUploadController extends Controller
     /**
      * Handle file upload to temporary storage.
      *
-     * Expects multipart/form-data with:
-     * - file: the uploaded file
-     * - component: component name
+     * Supports both single file and batch uploads:
+     * - Single: file (single file) → returns single result object
+     * - Batch: files[] (array) → returns { results: [], errors: [] }
+     *
+     * Common fields:
+     * - component: component name (for logging/debugging)
      * - property: property name
-     * - checksum: HMAC upload token
+     * - checksum: encrypted upload token containing class, property, and rules
      */
     public function upload(Request $request, LiVueManager $manager): JsonResponse
     {
+        // Detect batch vs single mode
+        $isBatch = $request->hasFile('files');
+
+        // Validate common fields
         $request->validate([
-            'file' => 'required|file',
             'component' => 'required|string',
             'property' => 'required|string',
             'checksum' => 'required|string',
         ]);
 
+        // Validate file(s) presence
+        if ($isBatch) {
+            $request->validate([
+                'files' => 'required|array|min:1',
+                'files.*' => 'required|file',
+            ]);
+        } else {
+            $request->validate([
+                'file' => 'required|file',
+            ]);
+        }
+
         $componentName = $request->input('component');
         $property = $request->input('property');
         $checksum = $request->input('checksum');
 
-        // Verify the component exists
-        if (! $manager->componentExists($componentName)) {
-            return response()->json(['error' => 'Component not found.'], 404);
+        // Decrypt and verify the upload token
+        try {
+            $tokenData = decrypt($checksum);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Invalid upload token.'], 403);
         }
 
-        // Verify the upload HMAC token
-        if (! $this->verifyUploadAuth($componentName, $property, $checksum)) {
-            return response()->json(['error' => 'Unauthorized upload.'], 403);
+        // Verify token hasn't expired
+        if (($tokenData['expires'] ?? 0) < now()->timestamp) {
+            return response()->json(['error' => 'Upload token expired.'], 403);
         }
 
-        // Resolve component to check for file validation rules
-        $component = $manager->resolve($componentName);
-        $rules = $this->getFileRules($component, $property);
+        // Verify the property matches
+        if (($tokenData['property'] ?? '') !== $property) {
+            return response()->json(['error' => 'Property mismatch.'], 403);
+        }
 
+        // Verify the component class exists
+        $componentClass = $tokenData['class'] ?? null;
+        if (! $componentClass || ! class_exists($componentClass)) {
+            return response()->json(['error' => 'Component class not found.'], 404);
+        }
+
+        // Use validation rules from the token
+        $rules = $tokenData['rules'] ?? [];
+
+        // Batch upload mode
+        if ($isBatch) {
+            return $this->handleBatchUpload($request->file('files'), $rules, $componentName, $property);
+        }
+
+        // Single file mode
+        return $this->handleSingleUpload($request->file('file'), $rules, $componentName, $property);
+    }
+
+    /**
+     * Handle single file upload.
+     */
+    protected function handleSingleUpload($file, array $rules, string $componentName, string $property): JsonResponse
+    {
         if (! empty($rules)) {
-            $request->validate(['file' => $rules]);
+            $validator = validator(['file' => $file], ['file' => $rules]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'message' => 'Validation failed.',
+                    'errors' => $validator->errors()->toArray(),
+                ], 422);
+            }
         }
 
-        $file = $request->file('file');
         $tempFile = TemporaryUploadedFile::createFromUpload($file);
 
-        // Return encrypted reference (client cannot forge) + display metadata
         return response()->json([
             'ref' => encrypt([
                 'path' => $tempFile->getPath(),
@@ -70,6 +119,56 @@ class LiVueUploadController extends Controller
             'mimeType' => $tempFile->getMimeType(),
             'size' => $tempFile->getSize(),
             'previewUrl' => $tempFile->isImage() ? $tempFile->temporaryUrl() : null,
+        ]);
+    }
+
+    /**
+     * Handle batch file upload.
+     */
+    protected function handleBatchUpload(array $files, array $rules, string $componentName, string $property): JsonResponse
+    {
+        $results = [];
+        $errors = [];
+
+        foreach ($files as $index => $file) {
+            // Validate each file individually
+            if (! empty($rules)) {
+                $validator = validator(['file' => $file], ['file' => $rules]);
+
+                if ($validator->fails()) {
+                    $errors[] = [
+                        'index' => $index,
+                        'file' => $file->getClientOriginalName(),
+                        'error' => $validator->errors()->first('file'),
+                    ];
+                    continue;
+                }
+            }
+
+            $tempFile = TemporaryUploadedFile::createFromUpload($file);
+
+            $results[] = [
+                'index' => $index,
+                'ref' => encrypt([
+                    'path' => $tempFile->getPath(),
+                    'disk' => $tempFile->getDisk(),
+                    'originalName' => $tempFile->getOriginalName(),
+                    'mimeType' => $tempFile->getMimeType(),
+                    'size' => $tempFile->getSize(),
+                    'component' => $componentName,
+                    'property' => $property,
+                    'expires' => now()->addHours(1)->timestamp,
+                ]),
+                'originalName' => $tempFile->getOriginalName(),
+                'mimeType' => $tempFile->getMimeType(),
+                'size' => $tempFile->getSize(),
+                'previewUrl' => $tempFile->isImage() ? $tempFile->temporaryUrl() : null,
+            ];
+        }
+
+        return response()->json([
+            'results' => $results,
+            'errors' => $errors,
         ]);
     }
 
@@ -100,38 +199,4 @@ class LiVueUploadController extends Controller
         return Storage::disk($disk)->response($path);
     }
 
-    /**
-     * Verify the HMAC upload token.
-     */
-    protected function verifyUploadAuth(string $component, string $property, string $checksum): bool
-    {
-        $expected = hash_hmac('sha256', "upload:{$component}:{$property}", $this->getKey());
-
-        return hash_equals($expected, $checksum);
-    }
-
-    /**
-     * Get file validation rules from the component's fileRules() method.
-     */
-    protected function getFileRules(mixed $component, string $property): array
-    {
-        if (method_exists($component, 'fileRules')) {
-            $rules = $component->fileRules();
-
-            return $rules[$property] ?? [];
-        }
-
-        return [];
-    }
-
-    protected function getKey(): string
-    {
-        $key = config('app.key');
-
-        if (str_starts_with($key, 'base64:')) {
-            $key = base64_decode(substr($key, 7));
-        }
-
-        return $key;
-    }
 }
