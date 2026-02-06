@@ -1051,7 +1051,11 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                     var errorMessages = {};
                     errors.forEach(function (err) {
                         var key = property + '.' + err.index;
-                        errorMessages[key] = [err.error + ' (' + err.file + ')'];
+                        // Store as object for richer display in templates
+                        errorMessages[key] = {
+                            file: err.file,
+                            message: err.error,
+                        };
                     });
                     setErrors(livue.errors, errorMessages);
                 }

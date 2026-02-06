@@ -1857,7 +1857,10 @@ function $n(t, e, n, r, i, o, a) {
           var ne = {};
           v.forEach(function(F) {
             var ke = f + "." + F.index;
-            ne[ke] = [F.error + " (" + F.file + ")"];
+            ne[ke] = {
+              file: F.file,
+              message: F.error
+            };
           }), se(y.errors, ne);
         }
       } catch (F) {
