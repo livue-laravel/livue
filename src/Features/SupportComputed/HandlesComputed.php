@@ -22,8 +22,10 @@ trait HandlesComputed
     private array $computedCache = [];
 
     /**
-     * Magic getter: intercept access to computed properties.
-     * If a method with #[Computed] exists matching the name, call and cache it.
+     * Magic getter: intercept access to computed properties and getter methods.
+     * Priority:
+     * 1. Computed properties (methods with #[Computed] attribute)
+     * 2. Getter methods (getPropertyName() for $propertyName)
      *
      * @param string $name The property name
      * @return mixed The computed value
@@ -32,33 +34,41 @@ trait HandlesComputed
     {
         $computedMethods = $this->getComputedMethods();
 
-        if (! isset($computedMethods[$name])) {
-            trigger_error("Undefined property: " . static::class . "::\${$name}", E_USER_NOTICE);
+        // Check computed properties first
+        if (isset($computedMethods[$name])) {
+            // Return from per-request cache if available
+            if (array_key_exists($name, $this->computedCache)) {
+                return $this->computedCache[$name];
+            }
 
-            return null;
+            $attr = $computedMethods[$name];
+
+            // Persistent cache (across requests)
+            if ($attr->persist) {
+                $cacheKey = $attr->cache
+                    ? 'livue.computed.' . $name
+                    : 'livue.computed.' . static::class . '.' . $this->getId() . '.' . $name;
+
+                $value = Cache::remember($cacheKey, $attr->seconds, fn () => $this->{$name}());
+            } else {
+                $value = $this->{$name}();
+            }
+
+            $this->computedCache[$name] = $value;
+
+            return $value;
         }
 
-        // Return from per-request cache if available
-        if (array_key_exists($name, $this->computedCache)) {
-            return $this->computedCache[$name];
+        // Check for getter method (getPropertyName)
+        $getterMethod = 'get' . ucfirst($name);
+
+        if (method_exists($this, $getterMethod)) {
+            return $this->{$getterMethod}();
         }
 
-        $attr = $computedMethods[$name];
+        trigger_error("Undefined property: " . static::class . "::\${$name}", E_USER_NOTICE);
 
-        // Persistent cache (across requests)
-        if ($attr->persist) {
-            $cacheKey = $attr->cache
-                ? 'livue.computed.' . $name
-                : 'livue.computed.' . static::class . '.' . $this->getId() . '.' . $name;
-
-            $value = Cache::remember($cacheKey, $attr->seconds, fn () => $this->{$name}());
-        } else {
-            $value = $this->{$name}();
-        }
-
-        $this->computedCache[$name] = $value;
-
-        return $value;
+        return null;
     }
 
     /**
