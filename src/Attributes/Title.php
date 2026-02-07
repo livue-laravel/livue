@@ -3,11 +3,9 @@
 namespace LiVue\Attributes;
 
 use Attribute;
+use LiVue\Features\SupportRendering\BaseTitle;
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
-class Title
+class Title extends BaseTitle
 {
-    public function __construct(
-        public string $name
-    ) {}
 }

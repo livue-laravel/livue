@@ -2,7 +2,8 @@
 
 namespace LiVue\Features\SupportAttributes;
 
-use LiVue\Attributes;
+use LiVue\Attributes\On;
+use LiVue\Attributes\Reactive;
 use ReflectionClass;
 use ReflectionMethod;
 use ReflectionProperty;
@@ -106,7 +107,7 @@ trait HandlesAttributes
         $reflection = new ReflectionClass($this);
 
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            $attrs = $method->getAttributes(Attributes\On::class);
+            $attrs = $method->getAttributes(On::class);
 
             foreach ($attrs as $attr) {
                 $instance = $attr->newInstance();
@@ -136,7 +137,7 @@ trait HandlesAttributes
         $reflection = new ReflectionClass($this);
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            $attrs = $property->getAttributes(Attributes\Reactive::class);
+            $attrs = $property->getAttributes(Reactive::class);
 
             if (! empty($attrs)) {
                 $reactive[] = $property->getName();

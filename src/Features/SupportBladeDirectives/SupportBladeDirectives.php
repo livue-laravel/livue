@@ -1,16 +1,17 @@
 <?php
 
-namespace LiVue\Blade;
+namespace LiVue\Features\SupportBladeDirectives;
 
 use Illuminate\Support\Facades\Blade;
+use LiVue\Features\SupportHooks\ComponentHook;
 use LiVue\LiVueManager;
 
-class LiVueBladeDirectives
+class SupportBladeDirectives extends ComponentHook
 {
     /**
      * Register all LiVue Blade directives.
      */
-    public static function register(): void
+    public static function provide(): void
     {
         static::registerComponentTagCompiler();
         static::registerLiVueDirective();
@@ -27,7 +28,7 @@ class LiVueBladeDirectives
     protected static function registerComponentTagCompiler(): void
     {
         Blade::precompiler(function (string $value) {
-            return (new LiVueComponentTagCompiler())->compile($value);
+            return (new ComponentTagCompiler())->compile($value);
         });
     }
 

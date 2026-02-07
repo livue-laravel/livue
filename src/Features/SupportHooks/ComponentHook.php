@@ -16,6 +16,7 @@ use LiVue\Component;
  */
 abstract class ComponentHook
 {
+    public static function provide(): void {}
     /**
      * Called on every component instantiation (both mount and update).
      */
@@ -40,6 +41,12 @@ abstract class ComponentHook
      * Called after method execution, before rendering.
      */
     public function dehydrate(Component $component, ComponentStore $store): void {}
+
+    /**
+     * Called after the Blade view has been rendered.
+     * Use this to update feature state based on data created during render.
+     */
+    public function rendered(Component $component, ComponentStore $store): void {}
 
     /**
      * Called when an exception is thrown during the lifecycle.

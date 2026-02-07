@@ -7,32 +7,37 @@ use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use LiVue\Facades\LiVueAsset;
-use LiVue\Blade\LiVueBladeDirectives;
-use LiVue\Compilers\MultiFileCompiler;
-use LiVue\Compilers\SingleFileCompiler;
+use LiVue\Features\SupportBladeDirectives\LiVueBladeDirectives;
+use LiVue\Features\SupportBladeDirectives\SupportBladeDirectives;
+use LiVue\Features\SupportMultiFile\MultiFileCompiler;
+use LiVue\Features\SupportSingleFile\SingleFileCompiler;
 use LiVue\Console\MakeLiVueCommand;
 use LiVue\Console\MakeLiVueFormCommand;
 use LiVue\Console\MakeLiVueLayoutCommand;
+use LiVue\Facades\LiVueAsset;
+use LiVue\Features\SupportAssets\SupportAssets;
+use LiVue\Features\SupportBroadcast\SupportBroadcast;
 use LiVue\Features\SupportComposables\SupportComposables;
+use LiVue\Features\SupportComputed\SupportComputed;
 use LiVue\Features\SupportConfirm\SupportConfirm;
 use LiVue\Features\SupportDirtyTracking\SupportDirtyTracking;
 use LiVue\Features\SupportErrorBoundary\SupportErrorBoundary;
 use LiVue\Features\SupportFileUploads\SupportFileUploads;
-use LiVue\Features\SupportJson\SupportJson;
-use LiVue\Features\SupportModelable\SupportModelable;
-use LiVue\Features\SupportSession\SupportSession;
-use LiVue\Features\SupportTransition\SupportTransition;
-use LiVue\Features\SupportBroadcast\SupportBroadcast;
-use LiVue\Features\SupportTabSync\SupportTabSync;
 use LiVue\Features\SupportHooks\HookRegistry;
+use LiVue\Features\SupportJson\SupportJson;
 use LiVue\Features\SupportLazy\SupportLazy;
+use LiVue\Features\SupportModelable\SupportModelable;
 use LiVue\Features\SupportMultiFile\CssScopingService;
 use LiVue\Features\SupportMultiFile\SupportMultiFile;
+use LiVue\Features\SupportPagination\SupportPagination;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
-use LiVue\Features\SupportRenderless\SupportRenderless;
+use LiVue\Features\SupportReactiveProps\SupportReactiveProps;
+use LiVue\Features\SupportRendering\SupportRendering;
+use LiVue\Features\SupportSession\SupportSession;
 use LiVue\Features\SupportSingleFile\SupportSingleFile;
 use LiVue\Features\SupportStreaming\SupportStreaming;
+use LiVue\Features\SupportTabSync\SupportTabSync;
+use LiVue\Features\SupportTransition\SupportTransition;
 use LiVue\Features\SupportUrl\SupportUrl;
 use LiVue\Features\SupportValidation\SupportValidation;
 use LiVue\Http\Controllers\LiVueAssetController;
@@ -107,7 +112,6 @@ class LiVueServiceProvider extends ServiceProvider
     {
         $this->registerFeatures();
         $this->registerRoutes();
-        $this->registerBladeDirectives();
         $this->registerCommands();
         $this->registerPublishing();
         $this->registerViews();
@@ -162,13 +166,6 @@ class LiVueServiceProvider extends ServiceProvider
         });
     }
 
-    /**
-     * Register LiVue Blade directives.
-     */
-    protected function registerBladeDirectives(): void
-    {
-        LiVueBladeDirectives::register();
-    }
 
     /**
      * Register Artisan commands.
@@ -192,11 +189,15 @@ class LiVueServiceProvider extends ServiceProvider
     {
         $registry = $this->app->make(HookRegistry::class);
 
+        $registry->register(SupportAssets::class);
+        $registry->register(SupportReactiveProps::class);
+        $registry->register(SupportComputed::class);
         $registry->register(SupportComposables::class);
         $registry->register(SupportValidation::class);
-        $registry->register(SupportRenderless::class);
+        $registry->register(SupportRendering::class);
         $registry->register(SupportJson::class);
         $registry->register(SupportUrl::class);
+        $registry->register(SupportPagination::class);
         $registry->register(SupportFileUploads::class);
         $registry->register(SupportLazy::class);
         $registry->register(SupportConfirm::class);
@@ -211,6 +212,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportStreaming::class);
         $registry->register(SupportPersistentMiddleware::class);
         $registry->register(SupportErrorBoundary::class);
+        $registry->register(SupportBladeDirectives::class);
 
         // Register custom persistent middleware from config
         $customMiddleware = config('livue.persistent_middleware', []);
@@ -225,8 +227,6 @@ class LiVueServiceProvider extends ServiceProvider
      */
     protected function registerViews(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'livue');
-
         // Register SFC compiled views namespace
         $sfcCachePath = config('livue.compiled_path', storage_path('framework/livue')) . '/sfc';
         View::addNamespace('livue-sfc', $sfcCachePath);

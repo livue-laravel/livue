@@ -2,7 +2,8 @@
 
 namespace LiVue\Features\SupportRendering;
 
-use LiVue\Attributes;
+use LiVue\Attributes\Layout;
+use LiVue\Attributes\Title;
 
 /**
  * Trait HandlesRendering
@@ -77,7 +78,7 @@ trait HandlesRendering
      */
     public function getLayout(): ?string
     {
-        $attr = $this->resolveAttribute(Attributes\Layout::class);
+        $attr = $this->resolveAttribute(Layout::class);
 
         if ($attr !== null) {
             return $attr->name;
@@ -93,7 +94,7 @@ trait HandlesRendering
      */
     public function getTitle(): ?string
     {
-        $attr = $this->resolveAttribute(Attributes\Title::class);
+        $attr = $this->resolveAttribute(Title::class);
 
         if ($attr !== null) {
             return $attr->name;

@@ -40,6 +40,7 @@ class HookRegistry
     public function register(string $featureClass): void
     {
         if (! in_array($featureClass, $this->featureClasses, true)) {
+            $featureClass::provide();
             $this->featureClasses[] = $featureClass;
         }
     }

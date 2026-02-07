@@ -114,6 +114,10 @@ class Testable
         $this->lastRenderedHtml = $renderer->renderInnerHtml($this->component);
         $this->lastViewData = $renderer->getLastViewData();
 
+        // Call rendered() hook on features — allows features to update state
+        // based on data created during render (e.g., composables with paginators).
+        $this->hookRegistry->callHook('rendered', $this->component);
+
         // Build initial snapshot
         $this->buildSnapshot();
     }

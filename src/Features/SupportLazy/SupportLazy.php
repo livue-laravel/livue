@@ -2,6 +2,7 @@
 
 namespace LiVue\Features\SupportLazy;
 
+use Illuminate\Support\Facades\View;
 use LiVue\Attributes\Defer;
 use LiVue\Attributes\Lazy;
 use LiVue\Component;
@@ -22,6 +23,11 @@ use ReflectionClass;
  */
 class SupportLazy extends ComponentHook
 {
+    public static function provide(): void
+    {
+        View::addNamespace('livue', __DIR__ . '/views');
+    }
+
     /**
      * Cache for lazy/defer attribute lookup, keyed by class name.
      * Value is an array with 'type' and 'config', or null if neither attribute present.

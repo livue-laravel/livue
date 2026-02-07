@@ -1,6 +1,6 @@
 <?php
 
-namespace LiVue\Compilers;
+namespace LiVue\Features\SupportSingleFile;
 
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Str;

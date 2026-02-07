@@ -324,7 +324,20 @@ class LifecycleManager
             $newMemo['vueMethods'] = $vueMethods;
         }
 
-        // Collect memo contributions from features (e.g., validation errors)
+        // 11. Render (unless renderless or json)
+        $htmlAfter = null;
+
+        if (! $store->get('renderless', false)) {
+            $this->eventBus->dispatch('component.render', $component);
+            $htmlAfter = $renderer->renderInnerHtml($component);
+        }
+
+        // 11a. Post-render hook: allows features to update state based on
+        //      data created during render (e.g., composables with paginators).
+        $this->hookRegistry->callHook('rendered', $component);
+
+        // 11b. Collect memo contributions from features AFTER render + rendered hook.
+        //      This ensures features like composables have access to render-time data.
         $featureMemo = $this->hookRegistry->collectMemo($component);
         $newMemo = array_merge($newMemo, $featureMemo);
 
@@ -332,14 +345,8 @@ class LifecycleManager
             'snapshot' => json_encode(['state' => $dehydratedState, 'memo' => $newMemo]),
         ];
 
-        // 11. Render (unless renderless or json)
-        if (! $store->get('renderless', false)) {
-            $this->eventBus->dispatch('component.render', $component);
-            $htmlAfter = $renderer->renderInnerHtml($component);
-
-            if ($htmlAfter !== $htmlBefore) {
-                $result['html'] = $htmlAfter;
-            }
+        if ($htmlAfter !== null && $htmlAfter !== $htmlBefore) {
+            $result['html'] = $htmlAfter;
         }
 
         // 11b. Include JSON result if method was a #[Json] endpoint

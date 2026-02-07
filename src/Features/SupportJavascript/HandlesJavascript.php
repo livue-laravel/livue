@@ -2,7 +2,7 @@
 
 namespace LiVue\Features\SupportJavascript;
 
-use LiVue\Attributes;
+use LiVue\Attributes\Vue;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -60,7 +60,7 @@ trait HandlesJavascript
             $reflection = new ReflectionClass($this);
 
             foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-                $attrs = $method->getAttributes(Attributes\Vue::class);
+                $attrs = $method->getAttributes(Vue::class);
 
                 if (! empty($attrs)) {
                     $methods[] = $method->getName();

@@ -42,6 +42,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Pagination
+    |--------------------------------------------------------------------------
+    |
+    | The default pagination view used by WithPagination's links() method.
+    |
+    | Supported values:
+    |   - 'default' : Tailwind CSS styled pagination (livue::pagination.tailwind)
+    |   - 'simple'  : Simple previous/next buttons (livue::pagination.simple)
+    |   - 'vendor.view::name' : Any custom Blade view path
+    |
+    */
+    'pagination' => 'default',
+
+    /*
+    |--------------------------------------------------------------------------
     | Route Prefix
     |--------------------------------------------------------------------------
     |

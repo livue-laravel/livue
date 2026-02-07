@@ -1,12 +1,11 @@
 <?php
 
-namespace LiVue\Features\SupportRenderless;
-
-use LiVue\Features\SupportHooks\ComponentHook;
-use LiVue\Features\SupportHooks\ComponentStore;
+namespace LiVue\Features\SupportRendering;
 
 use LiVue\Attributes\Renderless;
 use LiVue\Component;
+use LiVue\Features\SupportHooks\ComponentHook;
+use LiVue\Features\SupportHooks\ComponentStore;
 use ReflectionClass;
 
 /**
@@ -17,7 +16,7 @@ use ReflectionClass;
  * to skip the HTML re-render step. The updated state is still returned
  * in the snapshot.
  */
-class SupportRenderless extends ComponentHook
+class SupportRendering extends ComponentHook
 {
     /**
      * Before method execution, check if the method has #[Renderless].

@@ -128,6 +128,15 @@ class SupportComposables extends ComponentHook
     }
 
     /**
+     * After render: re-resolve composables to pick up data created during render
+     * (e.g., paginators stored via setPaginator(), computed aggregates).
+     */
+    public function rendered(Component $component, ComponentStore $store): void
+    {
+        $this->resolveComposables($component, $store);
+    }
+
+    /**
      * Contribute composable data, actions, and persistent state to snapshot memo.
      */
     public function dehydrateMemo(Component $component, ComponentStore $store): array

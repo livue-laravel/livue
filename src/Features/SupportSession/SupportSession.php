@@ -2,7 +2,7 @@
 
 namespace LiVue\Features\SupportSession;
 
-use LiVue\Attributes\Session as SessionAttribute;
+use LiVue\Attributes\Session;
 use LiVue\Component;
 use LiVue\Features\SupportHooks\ComponentHook;
 use LiVue\Features\SupportHooks\ComponentStore;
@@ -113,13 +113,13 @@ class SupportSession extends ComponentHook
         $reflection = new ReflectionClass($component);
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            $attrs = $property->getAttributes(SessionAttribute::class);
+            $attrs = $property->getAttributes(Session::class);
 
             if (empty($attrs)) {
                 continue;
             }
 
-            /** @var SessionAttribute $instance */
+            /** @var Session $instance */
             $instance = $attrs[0]->newInstance();
 
             $props[$property->getName()] = [

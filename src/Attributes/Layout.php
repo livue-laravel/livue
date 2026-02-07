@@ -3,11 +3,9 @@
 namespace LiVue\Attributes;
 
 use Attribute;
+use LiVue\Features\SupportRendering\BaseLayout;
 
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
-class Layout
+class Layout extends BaseLayout
 {
-    public function __construct(
-        public string $name
-    ) {}
 }

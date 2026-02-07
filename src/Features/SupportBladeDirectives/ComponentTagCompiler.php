@@ -1,6 +1,6 @@
 <?php
 
-namespace LiVue\Blade;
+namespace LiVue\Features\SupportBladeDirectives;
 
 /**
  * Compiles <livue:*> tags into @livue() directive calls.
@@ -22,7 +22,7 @@ namespace LiVue\Blade;
  *       Default slot content
  *   </livue:card>
  */
-class LiVueComponentTagCompiler
+class ComponentTagCompiler
 {
     /**
      * Options that should be passed as the third argument to renderComponent.

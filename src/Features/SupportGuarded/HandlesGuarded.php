@@ -2,7 +2,7 @@
 
 namespace LiVue\Features\SupportGuarded;
 
-use LiVue\Attributes;
+use LiVue\Attributes\Guarded;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -39,7 +39,7 @@ trait HandlesGuarded
             return true;
         }
 
-        return $this->hasPropertyAttribute($property, Attributes\Guarded::class);
+        return $this->hasPropertyAttribute($property, Guarded::class);
     }
 
     /**
@@ -62,7 +62,7 @@ trait HandlesGuarded
         $reflection = new ReflectionClass($this);
 
         foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
-            $attrs = $property->getAttributes(Attributes\Guarded::class);
+            $attrs = $property->getAttributes(Guarded::class);
 
             if (! empty($attrs) && ! in_array($property->getName(), $guarded)) {
                 $guarded[] = $property->getName();

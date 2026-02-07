@@ -3,7 +3,7 @@
 namespace LiVue\Features\SupportComputed;
 
 use Illuminate\Support\Facades\Cache;
-use LiVue\Attributes;
+use LiVue\Attributes\Computed;
 use ReflectionClass;
 use ReflectionMethod;
 
@@ -112,7 +112,7 @@ trait HandlesComputed
         $reflection = new ReflectionClass($this);
 
         foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-            $attrs = $method->getAttributes(Attributes\Computed::class);
+            $attrs = $method->getAttributes(Computed::class);
 
             if (! empty($attrs)) {
                 $computed[$method->getName()] = $attrs[0]->newInstance();

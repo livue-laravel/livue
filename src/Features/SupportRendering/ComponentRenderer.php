@@ -85,6 +85,11 @@ class ComponentRenderer
             }
         }
 
+        // Call rendered() hook on features — allows features to update state
+        // based on data created during render (e.g., composables with paginators).
+        $hookRegistry = app(HookRegistry::class);
+        $hookRegistry->callHook('rendered', $component);
+
         $componentName = $component->getName();
         $componentId = $component->getId();
         $checksum = StateChecksum::generate($componentName, $dehydratedState);

@@ -2,7 +2,8 @@
 
 namespace LiVue\Features\SupportIsland;
 
-use LiVue\Attributes;
+use LiVue\Attributes\Island;
+use LiVue\Attributes\Isolate;
 
 /**
  * Trait HandlesIsland
@@ -27,7 +28,7 @@ trait HandlesIsland
      */
     public function isIsland(): bool
     {
-        if ($this->resolveAttribute(Attributes\Island::class) !== null) {
+        if ($this->resolveAttribute(Island::class) !== null) {
             return true;
         }
 
@@ -42,6 +43,6 @@ trait HandlesIsland
      */
     public function isIsolated(): bool
     {
-        return $this->resolveAttribute(Attributes\Isolate::class) !== null;
+        return $this->resolveAttribute(Isolate::class) !== null;
     }
 }

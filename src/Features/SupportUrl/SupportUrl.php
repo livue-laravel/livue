@@ -2,10 +2,10 @@
 
 namespace LiVue\Features\SupportUrl;
 
+use LiVue\Attributes\Url;
 use LiVue\Features\SupportHooks\ComponentHook;
 use LiVue\Features\SupportHooks\ComponentStore;
 
-use LiVue\Attributes\Url;
 use LiVue\Component;
 use ReflectionClass;
 use ReflectionProperty;
