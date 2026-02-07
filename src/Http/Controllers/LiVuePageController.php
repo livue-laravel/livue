@@ -38,9 +38,12 @@ class LiVuePageController extends Controller
         $title = $component->getTitle()
             ?? config('app.name', 'LiVue');
 
+        $head = $component->getHead();
+
         return view($layout, [
             'slot' => $componentHtml,
             'title' => $title,
+            'head' => $head,
         ]);
     }
 }

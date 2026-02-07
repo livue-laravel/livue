@@ -18,6 +18,7 @@ class SupportBladeDirectives extends ComponentHook
         static::registerScriptsDirective();
         static::registerStylesDirective();
         static::registerSetupScriptDirectives();
+        static::registerHeadDirective();
         static::registerTeleportDirectives();
         static::registerPersistDirectives();
     }
@@ -84,6 +85,19 @@ class SupportBladeDirectives extends ComponentHook
 
         Blade::directive('endscript', function () {
             return '</script>';
+        });
+    }
+
+    /**
+     * @livueHead - Outputs dynamic <head> elements (meta tags, canonical, JSON-LD).
+     *
+     * Renders the $head array passed from the LiVuePageController into HTML tags.
+     * Each tag includes a data-livue-head attribute for SPA navigation updates.
+     */
+    protected static function registerHeadDirective(): void
+    {
+        Blade::directive('livueHead', function () {
+            return '<?php echo \LiVue\Features\SupportHead\HeadRenderer::render($head ?? []); ?>';
         });
     }
 

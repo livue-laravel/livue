@@ -11,6 +11,7 @@ use LiVue\Features\SupportDownloads\HandlesDownloads;
 use LiVue\Features\SupportEvents\HandlesEvents;
 use LiVue\Features\SupportForms\HandlesForms;
 use LiVue\Features\SupportGuarded\HandlesGuarded;
+use LiVue\Features\SupportHead\HandlesHead;
 use LiVue\Features\SupportIsland\HandlesIsland;
 use LiVue\Features\SupportJavascript\HandlesJavascript;
 use LiVue\Features\SupportNavigation\HandlesNavigation;
@@ -30,6 +31,7 @@ abstract class Component
     use HandlesEvents;
     use HandlesForms;
     use HandlesGuarded;
+    use HandlesHead;
     use HandlesIsland;
     use HandlesJavascript;
     use HandlesNavigation;

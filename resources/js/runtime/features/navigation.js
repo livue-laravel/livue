@@ -685,6 +685,9 @@ export async function navigateTo(url, pushState, isPopstate) {
             clearToken();
         }
 
+        // 10b. Update LiVue-managed <head> elements (meta, canonical, JSON-LD)
+        updateHeadElements(doc);
+
         // 11. Handle <head> scripts with data-navigate-track
         handleTrackedScripts(doc);
 
@@ -817,6 +820,27 @@ function restorePersistedElements(persisted) {
                 });
             }
         }
+    });
+}
+
+/**
+ * Update LiVue-managed <head> elements during SPA navigation.
+ * Removes old elements marked with data-livue-head and appends
+ * new ones from the fetched page.
+ *
+ * @param {Document} doc - The new document
+ */
+function updateHeadElements(doc) {
+    // Remove all existing LiVue-managed head elements
+    var oldElements = document.querySelectorAll('[data-livue-head]');
+    oldElements.forEach(function (el) {
+        el.remove();
+    });
+
+    // Append new LiVue-managed head elements from the fetched page
+    var newElements = doc.querySelectorAll('[data-livue-head]');
+    newElements.forEach(function (el) {
+        document.head.appendChild(el.cloneNode(true));
     });
 }
 
