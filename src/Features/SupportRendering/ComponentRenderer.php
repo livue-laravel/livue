@@ -181,7 +181,7 @@ class ComponentRenderer
         }
 
         return <<<HTML
-        {$styleTag}<div data-livue-id="{$componentId}" data-livue-snapshot="{$encodedSnapshot}"{$islandAttr}{$scopeAttr}{$refAttr}{$modelAttr}>
+        {$styleTag}<div v-cloak data-livue-id="{$componentId}" data-livue-snapshot="{$encodedSnapshot}"{$islandAttr}{$scopeAttr}{$refAttr}{$modelAttr}>
         {$html}
         </div>
         HTML;
