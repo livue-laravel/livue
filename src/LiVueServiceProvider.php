@@ -14,6 +14,7 @@ use LiVue\Features\SupportSingleFile\SingleFileCompiler;
 use LiVue\Console\MakeLiVueCommand;
 use LiVue\Console\MakeLiVueFormCommand;
 use LiVue\Console\MakeLiVueLayoutCommand;
+use LiVue\Console\PurgeUploadsCommand;
 use LiVue\Facades\LiVueAsset;
 use LiVue\Features\SupportAssets\SupportAssets;
 use LiVue\Features\SupportBroadcast\SupportBroadcast;
@@ -153,6 +154,7 @@ class LiVueServiceProvider extends ServiceProvider
             ->prefix($prefix)
             ->group(function () {
                 Route::post('/upload', [LiVueUploadController::class, 'upload'])->name('livue.upload');
+                Route::post('/upload-remove', [LiVueUploadController::class, 'remove'])->name('livue.upload-remove');
                 Route::get('/upload-preview', [LiVueUploadController::class, 'preview'])->name('livue.upload-preview');
                 Route::get('/download', LiVueDownloadController::class)->name('livue.download');
                 Route::post('/stream', LiVueStreamController::class)->name('livue.stream');
@@ -177,6 +179,7 @@ class LiVueServiceProvider extends ServiceProvider
                 MakeLiVueCommand::class,
                 MakeLiVueFormCommand::class,
                 MakeLiVueLayoutCommand::class,
+                PurgeUploadsCommand::class,
             ]);
         }
     }

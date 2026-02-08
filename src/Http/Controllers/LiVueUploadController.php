@@ -173,6 +173,41 @@ class LiVueUploadController extends Controller
     }
 
     /**
+     * Remove one or more temporary uploaded files.
+     *
+     * Accepts an array of encrypted refs (same format returned by upload).
+     * Each ref is decrypted, validated, and the temp file is deleted.
+     * Invalid or expired refs are silently skipped.
+     */
+    public function remove(Request $request): JsonResponse
+    {
+        $request->validate([
+            'refs' => 'required|array|min:1',
+            'refs.*' => 'required|string',
+        ]);
+
+        $deleted = 0;
+
+        foreach ($request->input('refs') as $ref) {
+            try {
+                $data = decrypt($ref);
+            } catch (\Throwable $e) {
+                continue;
+            }
+
+            $path = $data['path'] ?? null;
+            $disk = $data['disk'] ?? 'local';
+
+            if ($path && Storage::disk($disk)->exists($path)) {
+                Storage::disk($disk)->delete($path);
+                $deleted++;
+            }
+        }
+
+        return response()->json(['deleted' => $deleted]);
+    }
+
+    /**
      * Serve a temporary file for preview via encrypted token.
      */
     public function preview(Request $request): mixed

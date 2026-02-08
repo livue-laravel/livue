@@ -39,7 +39,7 @@ import { createErrors, setErrors, clearErrors, handleError, setComponentErrorHan
 import { on, emit, removeByComponentId, processServerEvents } from '../features/events.js';
 import { handleRedirect, navigateTo } from '../features/navigation.js';
 import { updateQueryString } from '../features/url.js';
-import { uploadFile, uploadFiles } from '../features/upload.js';
+import { uploadFile, uploadFiles, removeUploadFromServer } from '../features/upload.js';
 import { createPinia } from 'pinia';
 import { createLazyComponent } from '../features/lazy.js';
 import { getDebounced, getThrottled, clearModifiers } from '../helpers/modifiers.js';
@@ -972,6 +972,12 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                 return;
             }
 
+            // Clean up previous temp file if replacing (single upload only)
+            var previousValue = getByPath(state, property);
+            if (previousValue && previousValue.__livue_upload && previousValue.ref) {
+                removeUploadFromServer([previousValue.ref]);
+            }
+
             livue.uploading = true;
             livue.uploadProgress = 0;
 
@@ -1085,10 +1091,19 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
             var currentValue = getByPath(state, property);
 
             if (index !== undefined && Array.isArray(currentValue)) {
+                // Remove specific file from array - clean up only that file
+                var removed = currentValue[index];
+                if (removed && removed.__livue_upload && removed.ref) {
+                    removeUploadFromServer([removed.ref]);
+                }
                 currentValue.splice(index, 1);
                 // Trigger reactivity by setting the modified array
                 setByPath(state, property, currentValue.slice());
             } else {
+                // Single file removal - clean up the temp file
+                if (currentValue && currentValue.__livue_upload && currentValue.ref) {
+                    removeUploadFromServer([currentValue.ref]);
+                }
                 setByPath(state, property, null);
             }
         },

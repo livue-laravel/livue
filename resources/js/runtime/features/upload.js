@@ -89,6 +89,35 @@ export function uploadFile(file, componentName, property, uploadToken, onProgres
 }
 
 /**
+ * Remove temporary uploaded files from the server.
+ *
+ * Sends encrypted refs to the remove endpoint so the server
+ * can delete the corresponding temp files. Failures are silently
+ * ignored (the scheduled purge will handle stragglers).
+ *
+ * @param {string[]} refs - Array of encrypted ref strings
+ * @returns {Promise<void>}
+ */
+export function removeUploadFromServer(refs) {
+    if (!refs || refs.length === 0) return Promise.resolve();
+
+    var url = buildUploadUrl() + '-remove';
+    var token = getToken();
+
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': token || '',
+        },
+        body: JSON.stringify({ refs: refs }),
+    }).catch(function () {
+        // Silently ignore - purge command will clean up
+    });
+}
+
+/**
  * Upload multiple files in a single batch request.
  *
  * @param {FileList|File[]} files

@@ -117,6 +117,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Temporary Upload Max Age
+    |--------------------------------------------------------------------------
+    |
+    | Maximum age (in hours) for temporary uploaded files. Files older than
+    | this will be deleted by the livue:purge-uploads command.
+    |
+    */
+    'temp_upload_max_age' => 1,
+
+    /*
+    |--------------------------------------------------------------------------
     | Page Layout
     |--------------------------------------------------------------------------
     |
