@@ -5,7 +5,7 @@ namespace LiVue\Tests\Fixtures;
 use LiVue\Attributes\Validate;
 use LiVue\Component;
 use LiVue\Features\SupportFileUploads\WithFileUploads;
-use LiVue\TemporaryUploadedFile;
+use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class FileUploader extends Component
 {

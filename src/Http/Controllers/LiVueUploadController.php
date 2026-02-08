@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Storage;
 use LiVue\LiVueManager;
-use LiVue\TemporaryUploadedFile;
+use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class LiVueUploadController extends Controller
 {

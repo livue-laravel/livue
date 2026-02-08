@@ -2,7 +2,7 @@
 
 namespace LiVue\Synthesizers;
 
-use LiVue\TemporaryUploadedFile;
+use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
  * Synthesizer for single TemporaryUploadedFile properties.

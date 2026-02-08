@@ -1,6 +1,6 @@
 <?php
 
-namespace LiVue;
+namespace LiVue\Features\SupportFileUploads;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;

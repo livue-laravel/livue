@@ -2,8 +2,6 @@
 
 namespace LiVue\Features\SupportComposables;
 
-use LiVue\ComposableState;
-
 /**
  * Trait HandlesComposables
  *

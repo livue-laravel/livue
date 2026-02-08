@@ -1,8 +1,9 @@
 <?php
 
-namespace LiVue;
+namespace LiVue\Features\SupportComposables;
 
 use ArrayAccess;
+use LiVue\Component;
 
 /**
  * Array-access wrapper for composable state.

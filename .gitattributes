@@ -10,6 +10,7 @@ package-lock.json export-ignore
 vite.config.build.js export-ignore
 vite.config.esm.js export-ignore
 phpunit.xml export-ignore
+vitest.config.js
 
 # Git files
 .gitattributes export-ignore

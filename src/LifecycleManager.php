@@ -7,7 +7,7 @@ use LiVue\Features\SupportHooks\HookRegistry;
 use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\Security\StateChecksum;
 use LiVue\Synthesizers\SynthesizerRegistry;
-use LiVue\TemporaryUploadedFile;
+use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class LifecycleManager
 {

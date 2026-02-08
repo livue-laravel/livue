@@ -2,7 +2,6 @@
 
 namespace LiVue\Features\SupportFileUploads;
 
-use LiVue\TemporaryUploadedFile;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionProperty;
