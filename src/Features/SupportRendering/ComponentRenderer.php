@@ -4,7 +4,7 @@ namespace LiVue\Features\SupportRendering;
 
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ViewErrorBag;
-use LiVue\AssetManager;
+use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Component;
 use LiVue\Features\SupportHooks\HookRegistry;
 use LiVue\Features\SupportMultiFile\MultiFileComponent;

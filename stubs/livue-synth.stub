@@ -1,0 +1,50 @@
+<?php
+
+namespace {{ namespace }};
+
+use LiVue\Synthesizers\PropertySynthesizer;
+
+class {{ class }} extends PropertySynthesizer
+{
+    /**
+     * Short key that identifies this synthesizer in inline tuples.
+     * Must be unique across all registered synthesizers.
+     */
+    public function key(): string
+    {
+        // TODO: Return a unique short key (e.g., 'mny', 'addr')
+        return '';
+    }
+
+    /**
+     * Whether this synthesizer handles the given value.
+     */
+    public function match(mixed $value): bool
+    {
+        // TODO: Return true if $value is an instance of your type
+        // Example: return $value instanceof Money;
+        return false;
+    }
+
+    /**
+     * Convert a PHP value to a JSON-safe representation.
+     *
+     * @return array{0: mixed, 1: array} [plain_value, type_metadata]
+     */
+    public function dehydrate(mixed $value, string $property): array
+    {
+        // TODO: Convert to a plain value and return with metadata
+        // Example: return [$value->getAmount(), ['s' => $this->key(), 'currency' => $value->getCurrency()]];
+        return [$value, ['s' => $this->key()]];
+    }
+
+    /**
+     * Reconstruct a PHP value from its dehydrated form.
+     */
+    public function hydrate(mixed $value, array $meta, string $property): mixed
+    {
+        // TODO: Reconstruct the original PHP object from plain value + metadata
+        // Example: return new Money($value, $meta['currency']);
+        return $value;
+    }
+}

@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use LiVue\Features\SupportMultiFile\MultiFileCompiler;
+use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Features\SupportSingleFile\SingleFileCompiler;
 use LiVue\Features\SupportLazy\SupportLazy;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;

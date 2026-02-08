@@ -11,17 +11,15 @@ use LiVue\Features\SupportBladeDirectives\LiVueBladeDirectives;
 use LiVue\Features\SupportBladeDirectives\SupportBladeDirectives;
 use LiVue\Features\SupportMultiFile\MultiFileCompiler;
 use LiVue\Features\SupportSingleFile\SingleFileCompiler;
-use LiVue\Console\MakeLiVueCommand;
-use LiVue\Console\MakeLiVueFormCommand;
-use LiVue\Console\MakeLiVueLayoutCommand;
-use LiVue\Console\PurgeUploadsCommand;
 use LiVue\Facades\LiVueAsset;
 use LiVue\Features\SupportAssets\SupportAssets;
 use LiVue\Features\SupportBroadcast\SupportBroadcast;
 use LiVue\Features\SupportComposables\SupportComposables;
 use LiVue\Features\SupportComputed\SupportComputed;
 use LiVue\Features\SupportConfirm\SupportConfirm;
+use LiVue\Features\SupportConsoleCommands\SupportConsoleCommands;
 use LiVue\Features\SupportDirtyTracking\SupportDirtyTracking;
+use LiVue\Features\SupportDownloads\SupportDownloads;
 use LiVue\Features\SupportErrorBoundary\SupportErrorBoundary;
 use LiVue\Features\SupportFileUploads\SupportFileUploads;
 use LiVue\Features\SupportHooks\HookRegistry;
@@ -41,10 +39,6 @@ use LiVue\Features\SupportTabSync\SupportTabSync;
 use LiVue\Features\SupportTransition\SupportTransition;
 use LiVue\Features\SupportUrl\SupportUrl;
 use LiVue\Features\SupportValidation\SupportValidation;
-use LiVue\Http\Controllers\LiVueAssetController;
-use LiVue\Http\Controllers\LiVueDownloadController;
-use LiVue\Http\Controllers\LiVueStreamController;
-use LiVue\Http\Controllers\LiVueUploadController;
 use LiVue\Http\Middleware\LiVueAssetInjectionMiddleware;
 use LiVue\Http\Middleware\LiVueRequestValidator;
 use LiVue\Synthesizers\CarbonSynth;
@@ -69,7 +63,7 @@ class LiVueServiceProvider extends ServiceProvider
         $this->app->singleton(HookRegistry::class);
         $this->app->singleton(LifecycleManager::class);
         $this->app->singleton(LiVueManager::class);
-        $this->app->singleton(AssetManager::class);
+        $this->app->singleton(\LiVue\Features\SupportAssets\AssetManager::class);
 
         // SFC and MFC compilers
         $this->app->singleton(SingleFileCompiler::class, function ($app) {
@@ -113,7 +107,6 @@ class LiVueServiceProvider extends ServiceProvider
     {
         $this->registerFeatures();
         $this->registerRoutes();
-        $this->registerCommands();
         $this->registerPublishing();
         $this->registerViews();
         $this->registerAssetInjection();
@@ -134,54 +127,16 @@ class LiVueServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register LiVue routes.
-     *
-     * The update route uses LiVueRequestValidator (expects JSON batched updates).
-     * Upload routes use only the base middleware (they accept multipart/form-data).
+     * Register the main update route.
      */
     protected function registerRoutes(): void
     {
         $baseMiddleware = config('livue.middleware', ['web']);
         $prefix = config('livue.route_prefix', 'livue');
 
-        // Update route (JSON + LiVueRequestValidator)
         Route::middleware(array_merge($baseMiddleware, [LiVueRequestValidator::class]))
             ->prefix($prefix)
             ->group(__DIR__ . '/../routes/livue.php');
-
-        // Upload, download, and stream routes (no LiVueRequestValidator - they have custom formats)
-        Route::middleware($baseMiddleware)
-            ->prefix($prefix)
-            ->group(function () {
-                Route::post('/upload', [LiVueUploadController::class, 'upload'])->name('livue.upload');
-                Route::post('/upload-remove', [LiVueUploadController::class, 'remove'])->name('livue.upload-remove');
-                Route::get('/upload-preview', [LiVueUploadController::class, 'preview'])->name('livue.upload-preview');
-                Route::get('/download', LiVueDownloadController::class)->name('livue.download');
-                Route::post('/stream', LiVueStreamController::class)->name('livue.stream');
-            });
-
-        // Asset routes (no middleware - public static files)
-        // Use ?module query param for ES module version: /livue/livue.js?module
-        Route::prefix($prefix)->group(function () {
-            Route::get('/livue.js', [LiVueAssetController::class, 'script'])->name('livue.script');
-            Route::get('/livue.js.map', [LiVueAssetController::class, 'sourceMap'])->name('livue.script.map');
-        });
-    }
-
-
-    /**
-     * Register Artisan commands.
-     */
-    protected function registerCommands(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                MakeLiVueCommand::class,
-                MakeLiVueFormCommand::class,
-                MakeLiVueLayoutCommand::class,
-                PurgeUploadsCommand::class,
-            ]);
-        }
     }
 
     /**
@@ -202,6 +157,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportUrl::class);
         $registry->register(SupportPagination::class);
         $registry->register(SupportFileUploads::class);
+        $registry->register(SupportDownloads::class);
         $registry->register(SupportLazy::class);
         $registry->register(SupportConfirm::class);
         $registry->register(SupportModelable::class);
@@ -215,6 +171,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportStreaming::class);
         $registry->register(SupportPersistentMiddleware::class);
         $registry->register(SupportErrorBoundary::class);
+        $registry->register(SupportConsoleCommands::class);
         $registry->register(SupportBladeDirectives::class);
 
         // Register custom persistent middleware from config

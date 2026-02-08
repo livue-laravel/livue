@@ -97,6 +97,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Form Namespace & Path
+    |--------------------------------------------------------------------------
+    |
+    | The namespace and directory for generated Form classes.
+    |
+    */
+    'form_namespace' => 'App\\LiVue\\Forms',
+    'form_path' => app_path('LiVue/Forms'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Synthesizer Namespace & Path
+    |--------------------------------------------------------------------------
+    |
+    | The namespace and directory for generated custom Synthesizer classes.
+    |
+    */
+    'synth_namespace' => 'App\\LiVue\\Synthesizers',
+    'synth_path' => app_path('LiVue/Synthesizers'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Attribute Namespace & Path
+    |--------------------------------------------------------------------------
+    |
+    | The namespace and directory for generated custom Attribute classes.
+    |
+    */
+    'attribute_namespace' => 'App\\LiVue\\Attributes',
+    'attribute_path' => app_path('LiVue/Attributes'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Temporary Upload Disk
     |--------------------------------------------------------------------------
     |

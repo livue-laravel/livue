@@ -2,9 +2,13 @@
 
 namespace LiVue\Features\SupportFileUploads;
 
+use Illuminate\Console\Application as Artisan;
+use Illuminate\Support\Facades\Route;
 use LiVue\Component;
+use LiVue\Console\PurgeUploadsCommand;
 use LiVue\Features\SupportHooks\ComponentHook;
 use LiVue\Features\SupportHooks\ComponentStore;
+use LiVue\Http\Controllers\LiVueUploadController;
 
 /**
  * Contribute upload configuration (HMAC tokens + rules) to the snapshot memo.
@@ -14,6 +18,25 @@ use LiVue\Features\SupportHooks\ComponentStore;
  */
 class SupportFileUploads extends ComponentHook
 {
+    public static function provide(): void
+    {
+        $middleware = config('livue.middleware', ['web']);
+        $prefix = config('livue.route_prefix', 'livue');
+
+        Route::middleware($middleware)
+            ->prefix($prefix)
+            ->group(function () {
+                Route::post('/upload', [LiVueUploadController::class, 'upload'])->name('livue.upload');
+                Route::get('/upload-preview', [LiVueUploadController::class, 'preview'])->name('livue.upload-preview');
+            });
+
+        if (app()->runningInConsole()) {
+            Artisan::starting(function (Artisan $artisan) {
+                $artisan->resolveCommands([PurgeUploadsCommand::class]);
+            });
+        }
+    }
+
     public function dehydrateMemo(Component $component, ComponentStore $store): array
     {
         if (! in_array(WithFileUploads::class, class_uses_recursive($component))) {

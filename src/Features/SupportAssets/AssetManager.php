@@ -1,12 +1,12 @@
 <?php
 
-namespace LiVue;
+namespace LiVue\Features\SupportAssets;
 
-use LiVue\Assets\Asset;
-use LiVue\Assets\Css as CssAsset;
-use LiVue\Assets\Js as JsAsset;
 use LiVue\Attributes\Css;
 use LiVue\Attributes\Js;
+use LiVue\Component;
+use LiVue\Features\SupportAssets\Css as CssAsset;
+use LiVue\Features\SupportAssets\Js as JsAsset;
 use ReflectionClass;
 
 /**

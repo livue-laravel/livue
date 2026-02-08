@@ -3,7 +3,7 @@
 namespace LiVue\Facades;
 
 use Illuminate\Support\Facades\Facade;
-use LiVue\AssetManager;
+use LiVue\Features\SupportAssets\AssetManager;
 
 /**
  * Facade for LiVue Asset Management.
@@ -25,7 +25,7 @@ use LiVue\AssetManager;
  * @method static string renderScriptData(?string $nonce = null)
  * @method static string renderImportMap()
  *
- * @see \LiVue\AssetManager
+ * @see \LiVue\Features\SupportAssets\AssetManager
  */
 class LiVueAsset extends Facade
 {

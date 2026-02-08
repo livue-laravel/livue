@@ -1,6 +1,6 @@
 <?php
 
-namespace LiVue\Assets;
+namespace LiVue\Features\SupportAssets;
 
 /**
  * JavaScript asset.
