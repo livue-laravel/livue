@@ -120,6 +120,18 @@ export const sortDirective = {
     mounted(el, binding, vnode) {
         let livue = getLivueFromVnode(vnode);
         let modifiers = binding.modifiers || {};
+        let value = binding.value;
+
+        // Validate: warn if no livue context found
+        if (!livue) {
+            console.warn('[LiVue] v-sort: No LiVue component context found. The directive must be used inside a LiVue component.');
+        }
+
+        // Validate: value must be a string (method name) or array ([method, params])
+        if (typeof value !== 'string' && !Array.isArray(value)) {
+            console.warn('[LiVue] v-sort: Invalid value. Expected a string (method name) or array [method, params], got ' + typeof value + '.');
+        }
+
         let animation = parseAnimation(modifiers);
         let direction = modifiers.horizontal ? 'horizontal' : 'vertical';
 
