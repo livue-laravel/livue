@@ -482,7 +482,9 @@ class LiVueRuntime {
             self.components.delete(id);
         });
 
-        // Leave all Echo channels (TODO: preserve channels for persisted components)
+        // Known limitation: Echo channels for persisted components are re-established
+        // after navigation rather than being preserved. No functional impact as
+        // components re-subscribe automatically on the next update cycle.
         leaveAllEchoChannels();
     }
 
