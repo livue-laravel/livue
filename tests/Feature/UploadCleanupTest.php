@@ -2,7 +2,7 @@
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
-use LiVue\TemporaryUploadedFile;
+use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
 use LiVue\Tests\Fixtures\FileUploader;
 
 describe('Upload Cleanup', function () {

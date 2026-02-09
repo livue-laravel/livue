@@ -27,6 +27,7 @@ class SupportFileUploads extends ComponentHook
             ->prefix($prefix)
             ->group(function () {
                 Route::post('/upload', [LiVueUploadController::class, 'upload'])->name('livue.upload');
+                Route::post('/upload-remove', [LiVueUploadController::class, 'remove'])->name('livue.upload-remove');
                 Route::get('/upload-preview', [LiVueUploadController::class, 'preview'])->name('livue.upload-preview');
             });
 
