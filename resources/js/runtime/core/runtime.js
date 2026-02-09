@@ -105,7 +105,7 @@ class LiVueRuntime {
      */
     boot() {
         // Initialize devtools only in development (lazy, doesn't open panel)
-        if (import.meta.env.DEV && !this._devtoolsInitialized) {
+        if (process.env.NODE_ENV !== 'production' && !this._devtoolsInitialized) {
             devtools.init(this);
             this._devtoolsInitialized = true;
         }
@@ -128,7 +128,7 @@ class LiVueRuntime {
         this._startObserver();
 
         // Setup keyboard shortcut for devtools (Ctrl+Shift+L) - only in development
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV !== 'production') {
             this._setupDevtoolsShortcut();
         }
 
@@ -735,7 +735,7 @@ class LiVueRuntime {
      * const components = LiVue.devtools.getComponents();
      */
     get devtools() {
-        if (!import.meta.env.DEV) {
+        if (process.env.NODE_ENV === 'production') {
             // Return no-op API in production
             return {
                 init: function() {},
