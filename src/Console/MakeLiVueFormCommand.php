@@ -18,6 +18,8 @@ class MakeLiVueFormCommand extends Command
     {
         parent::__construct();
 
+        $this->setAliases(['livue:form']);
+
         $this->files = $files;
     }
 

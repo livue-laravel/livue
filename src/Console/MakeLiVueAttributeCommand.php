@@ -19,6 +19,8 @@ class MakeLiVueAttributeCommand extends Command
     {
         parent::__construct();
 
+        $this->setAliases(['livue:attribute']);
+
         $this->files = $files;
     }
 

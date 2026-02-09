@@ -1,0 +1,34 @@
+<?php
+
+namespace {{ namespace }};
+
+use LiVue\Features\SupportComposables\HandlesComposables;
+
+/**
+ * Composable trait for LiVue components.
+ *
+ * Usage:
+ *   class MyComponent extends Component {
+ *       use {{ class }};
+ *       protected array $composables = ['{{ method }}'];
+ *   }
+ *
+ * Template access:
+ *   {{ {{ namespace_key }}.property }}
+ *   <button @click="{{ namespace_key }}.action()">Click</button>
+ */
+trait {{ class }}
+{
+    use HandlesComposables;
+
+    public function {{ method }}(): array
+    {
+        return [
+            // Data (reactive in Vue templates)
+            // 'property' => 'value',
+
+            // Actions (callable via {{ namespace_key }}.action())
+            // 'action' => fn () => $this->doSomething(),
+        ];
+    }
+}

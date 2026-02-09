@@ -5,6 +5,7 @@ namespace LiVue\Features\SupportConsoleCommands;
 use Illuminate\Console\Application as Artisan;
 use LiVue\Console\MakeLiVueAttributeCommand;
 use LiVue\Console\MakeLiVueCommand;
+use LiVue\Console\MakeLiVueComposableCommand;
 use LiVue\Console\MakeLiVueFormCommand;
 use LiVue\Console\MakeLiVueLayoutCommand;
 use LiVue\Console\MakeLiVueSynthCommand;
@@ -25,6 +26,7 @@ class SupportConsoleCommands extends ComponentHook
                 MakeLiVueLayoutCommand::class,
                 MakeLiVueSynthCommand::class,
                 MakeLiVueAttributeCommand::class,
+                MakeLiVueComposableCommand::class,
             ]);
         });
     }

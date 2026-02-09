@@ -18,6 +18,8 @@ class MakeLiVueSynthCommand extends Command
     {
         parent::__construct();
 
+        $this->setAliases(['livue:synth']);
+
         $this->files = $files;
     }
 

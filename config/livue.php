@@ -130,6 +130,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Composable Namespace & Path
+    |--------------------------------------------------------------------------
+    |
+    | The namespace and directory for generated Composable traits.
+    |
+    */
+    'composable_namespace' => 'App\\LiVue\\Composables',
+    'composable_path' => app_path('LiVue/Composables'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Temporary Upload Disk
     |--------------------------------------------------------------------------
     |

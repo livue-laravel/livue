@@ -21,6 +21,8 @@ class MakeLiVueCommand extends Command
     {
         parent::__construct();
 
+        $this->setAliases(['livue:component']);
+
         $this->files = $files;
     }
 
