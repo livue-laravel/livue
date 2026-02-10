@@ -95,6 +95,8 @@ class SynthesizerRegistry
      * Dehydrate an entire state array.
      * Synthesized values are wrapped as inline tuples [value, meta].
      * Plain values are left as-is.
+     * Recursively processes nested arrays to dehydrate synthesizable
+     * values at any depth (e.g., TemporaryUploadedFile inside form data).
      */
     public function dehydrateState(array $state): array
     {
@@ -107,7 +109,8 @@ class SynthesizerRegistry
                 // Wrap as inline tuple
                 $dehydrated[$key] = [$plain, $meta];
             } else {
-                $dehydrated[$key] = $plain;
+                // Recurse into nested arrays to find synthesizable values
+                $dehydrated[$key] = $this->dehydrateNested($plain, (string) $key);
             }
         }
 
@@ -115,9 +118,37 @@ class SynthesizerRegistry
     }
 
     /**
+     * Recursively dehydrate synthesizable values within nested arrays.
+     * Checks each nested value against registered synthesizers and wraps
+     * matches as inline tuples. Plain values and scalars pass through as-is.
+     */
+    protected function dehydrateNested(mixed $value, string $path): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $result = [];
+
+        foreach ($value as $k => $v) {
+            $childPath = $path . '.' . $k;
+            [$plain, $meta] = $this->dehydrateValue($v, $childPath);
+
+            if ($meta !== null) {
+                $result[$k] = [$plain, $meta];
+            } else {
+                $result[$k] = $this->dehydrateNested($v, $childPath);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Hydrate an entire state array by detecting inline tuples.
      * Returns [hydrated_state, types_map] where types_map tracks
-     * which properties had synthesizer metadata (for diff processing).
+     * which top-level properties had synthesizer metadata (for diff processing).
+     * Recursively hydrates nested tuples at any depth.
      *
      * @return array{0: array, 1: array} [hydrated_state, types_map]
      */
@@ -131,7 +162,7 @@ class SynthesizerRegistry
                 $types[$key] = $value[1];
                 $hydrated[$key] = $this->hydrateValue($value[0], $value[1], $key);
             } else {
-                $hydrated[$key] = $value;
+                $hydrated[$key] = $this->hydrateNested($value, (string) $key);
             }
         }
 
@@ -139,9 +170,32 @@ class SynthesizerRegistry
     }
 
     /**
+     * Recursively hydrate inline tuples within nested arrays.
+     */
+    protected function hydrateNested(mixed $value, string $path): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $result = [];
+
+        foreach ($value as $k => $v) {
+            if (static::isTuple($v)) {
+                $result[$k] = $this->hydrateValue($v[0], $v[1], $path . '.' . $k);
+            } else {
+                $result[$k] = $this->hydrateNested($v, $path . '.' . $k);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * Extract flat (unwrapped) values from a state with inline tuples.
      * Returns [flat_values, types_map].
      * Used to get the plain representation for diff processing.
+     * Recursively unwraps nested tuples at any depth.
      *
      * @return array{0: array, 1: array} [flat_values, types_map]
      */
@@ -155,11 +209,33 @@ class SynthesizerRegistry
                 $flat[$key] = $value[0];
                 $types[$key] = $value[1];
             } else {
-                $flat[$key] = $value;
+                $flat[$key] = $this->unwrapNested($value);
             }
         }
 
         return [$flat, $types];
+    }
+
+    /**
+     * Recursively unwrap inline tuples within nested arrays.
+     */
+    protected function unwrapNested(mixed $value): mixed
+    {
+        if (! is_array($value)) {
+            return $value;
+        }
+
+        $result = [];
+
+        foreach ($value as $k => $v) {
+            if (static::isTuple($v)) {
+                $result[$k] = $v[0];
+            } else {
+                $result[$k] = $this->unwrapNested($v);
+            }
+        }
+
+        return $result;
     }
 
     /**

@@ -199,9 +199,34 @@ function isTuple(val) {
 }
 
 /**
+ * Recursively unwrap inline tuples from a value.
+ * Handles tuples nested at any depth within objects and arrays.
+ *
+ * @param {*} value - Value that may contain inline tuples
+ * @returns {*} Value with all tuples unwrapped
+ */
+function unwrapDeep(value) {
+    if (isTuple(value)) {
+        return value[0];
+    }
+    if (Array.isArray(value)) {
+        return value.map(unwrapDeep);
+    }
+    if (value && typeof value === 'object') {
+        let result = {};
+        for (let key in value) {
+            result[key] = unwrapDeep(value[key]);
+        }
+        return result;
+    }
+    return value;
+}
+
+/**
  * Unwrap inline tuples from a state object.
  * Returns a plain object with the raw values extracted from tuples.
- * Non-tuple values are passed through as-is.
+ * Recursively unwraps nested tuples at any depth (e.g., form data
+ * containing synthesized values like TemporaryUploadedFile).
  *
  * @param {object} state - State that may contain inline tuples
  * @returns {object} Plain state with unwrapped values
@@ -209,12 +234,7 @@ function isTuple(val) {
 function unwrapState(state) {
     let flat = {};
     for (let key in state) {
-        let val = state[key];
-        if (isTuple(val)) {
-            flat[key] = val[0];
-        } else {
-            flat[key] = val;
-        }
+        flat[key] = unwrapDeep(state[key]);
     }
     return flat;
 }
