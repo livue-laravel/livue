@@ -50,6 +50,7 @@ import { withViewTransition, isViewTransitionsSupported } from '../directives/tr
 import { streamRequest, isStreaming as isStreamingActive, getStreamingMethod, clearStreamTargets } from '../features/request/stream.js';
 import { trigger, createCleanupCollector } from '../helpers/hooks.js';
 import { createComposables, updateComposables, hasComposables } from '../features/composables.js';
+import { captureFocusState, restoreFocusState } from '../helpers/focus.js';
 
 /**
  * Global counter for generating unique child component tag names.
@@ -1830,6 +1831,9 @@ export default class LiVueComponent {
                     html: newInnerHtml,
                 });
 
+                // Capture focus state BEFORE the swap so we can restore it after
+                var focusState = captureFocusState(self.el);
+
                 // Capture v-ignore content BEFORE the swap
                 captureIgnoredContent(self.el);
 
@@ -1850,9 +1854,12 @@ export default class LiVueComponent {
                     // shallowRef and re-creates the root component.
                     self._rootDefRef.value = buildComponentDef(rootProcessed.template, self.state, self._rootLivue, self._rootComposables || {}, self._versions, self.name);
 
-                    // Restore v-ignore content AFTER Vue updates the DOM
+                    // Restore v-ignore content and focus AFTER Vue updates the DOM
                     nextTick(function () {
                         restoreIgnoredContent(self.el);
+
+                        // Restore focus state after DOM is rebuilt
+                        restoreFocusState(self.el, focusState);
 
                         // Trigger template.updated hook after DOM is updated
                         trigger('template.updated', {
