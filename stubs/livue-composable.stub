@@ -7,10 +7,9 @@ use LiVue\Features\SupportComposables\HandlesComposables;
 /**
  * Composable trait for LiVue components.
  *
- * Usage:
+ * Usage (auto-discovered, no $composables declaration needed):
  *   class MyComponent extends Component {
  *       use {{ class }};
- *       protected array $composables = ['{{ method }}'];
  *   }
  *
  * Template access:

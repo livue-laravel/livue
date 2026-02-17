@@ -27,14 +27,17 @@ class LifecycleManager
     ];
 
     /**
-     * Macroable utility method names that must not be callable from the client,
+     * Utility method names that must not be callable from the client,
      * even if somehow registered as macros.
      */
-    private const MACROABLE_METHODS = [
+    private const UTILITY_METHODS = [
         'macro',
         'mixin',
         'hasMacro',
         'flushMacros',
+        'use',
+        'getGlobalComposables',
+        'flushGlobalComposables',
     ];
 
     public function __construct(
@@ -617,7 +620,7 @@ class LifecycleManager
 
         // Macros — dynamic methods registered via Component::macro()
         if ($component::hasMacro($method)) {
-            if (in_array($method, self::MACROABLE_METHODS)) {
+            if (in_array($method, self::UTILITY_METHODS)) {
                 throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
             }
 

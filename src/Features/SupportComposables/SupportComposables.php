@@ -23,12 +23,12 @@ use ReflectionMethod;
  *   useAuth() -> exposes data as 'auth.*' in templates
  *   useCart() -> exposes data as 'cart.*' in templates
  *
- * Registration in components:
- *   protected array $composables = ['useAuth', 'useCart'];
- *   OR
- *   #[Composable] attribute on methods
- *   OR
- *   getComposables() method returning array
+ * Registration:
+ *   Auto-discovered from use* methods on the component (no declaration needed)
+ *   OR protected array $composables = ['useAuth', 'useCart'];
+ *   OR #[Composable] attribute on methods
+ *   OR getComposables() method returning array
+ *   OR Component::use('namespace', fn() => [...]) for global composables
  */
 class SupportComposables extends ComponentHook
 {
@@ -99,12 +99,20 @@ class SupportComposables extends ComponentHook
         // Find the composable method that provides this namespace
         $composableMethod = $this->findComposableMethod($component, $namespace);
 
-        if ($composableMethod === null) {
-            return;
-        }
+        if ($composableMethod !== null) {
+            // Re-execute the local composable to get a fresh closure
+            $result = $component->{$composableMethod}();
+        } else {
+            // Try global composables
+            $globals = Component::getGlobalComposables();
 
-        // Re-execute the composable to get a fresh closure
-        $result = $component->{$composableMethod}();
+            if (! isset($globals[$namespace])) {
+                return;
+            }
+
+            $bound = \Closure::bind($globals[$namespace], $component, get_class($component));
+            $result = $bound();
+        }
 
         if (! is_array($result) || ! isset($result[$action])) {
             return;
@@ -185,16 +193,46 @@ class SupportComposables extends ComponentHook
      */
     private function resolveComposables(Component $component, ComponentStore $store): void
     {
-        $composables = $this->getComposables($component);
+        $localComposables = $this->getComposables($component);
+        $globalComposables = Component::getGlobalComposables();
 
-        if (empty($composables)) {
+        if (empty($localComposables) && empty($globalComposables)) {
             return;
         }
 
         $data = [];
         $actions = [];
 
-        foreach ($composables as $methodName) {
+        // Collect local namespaces so globals don't override them
+        $localNamespaces = [];
+        foreach ($localComposables as $methodName) {
+            $localNamespaces[] = $this->deriveNamespace($methodName, $component);
+        }
+
+        // Resolve global composables first (lower precedence)
+        foreach ($globalComposables as $namespace => $closure) {
+            if (in_array($namespace, $localNamespaces, true)) {
+                continue;
+            }
+
+            $bound = \Closure::bind($closure, $component, get_class($component));
+            $result = $bound();
+
+            if (! is_array($result)) {
+                continue;
+            }
+
+            foreach ($result as $key => $value) {
+                if ($this->isCallable($value)) {
+                    $actions[$namespace][$key] = true;
+                } else {
+                    $data[$namespace][$key] = $value;
+                }
+            }
+        }
+
+        // Resolve local composables (higher precedence)
+        foreach ($localComposables as $methodName) {
             if (! method_exists($component, $methodName)) {
                 continue;
             }
@@ -207,14 +245,22 @@ class SupportComposables extends ComponentHook
 
             $namespace = $this->deriveNamespace($methodName, $component);
 
+            // Overwrite any global data for this namespace
+            $data[$namespace] = [];
+            if (isset($actions[$namespace])) {
+                $actions[$namespace] = [];
+            }
+
             foreach ($result as $key => $value) {
                 if ($this->isCallable($value)) {
-                    // Register action (callable/closure)
                     $actions[$namespace][$key] = true;
                 } else {
-                    // Store data
                     $data[$namespace][$key] = $value;
                 }
+            }
+
+            if (isset($actions[$namespace]) && empty($actions[$namespace])) {
+                unset($actions[$namespace]);
             }
         }
 
@@ -263,6 +309,26 @@ class SupportComposables extends ComponentHook
             if (! empty($attrs)) {
                 $composables[] = $method->getName();
             }
+        }
+
+        // Method 4: Auto-discovery of use* public methods
+        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            $methodName = $method->getName();
+
+            if (! str_starts_with($methodName, 'use') || strlen($methodName) <= 3) {
+                continue;
+            }
+
+            if (in_array($methodName, $composables, true)) {
+                continue;
+            }
+
+            // Skip methods declared on the base Component class
+            if ($method->getDeclaringClass()->getName() === Component::class) {
+                continue;
+            }
+
+            $composables[] = $methodName;
         }
 
         return self::$composablesCache[$className] = array_unique($composables);
@@ -317,5 +383,13 @@ class SupportComposables extends ComponentHook
     private function isCallable(mixed $value): bool
     {
         return $value instanceof Closure || (is_object($value) && is_callable($value));
+    }
+
+    /**
+     * Flush the composables discovery cache.
+     */
+    public static function flushCache(): void
+    {
+        self::$composablesCache = [];
     }
 }
