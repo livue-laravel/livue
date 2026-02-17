@@ -26,6 +26,17 @@ class LifecycleManager
         'rendered',
     ];
 
+    /**
+     * Macroable utility method names that must not be callable from the client,
+     * even if somehow registered as macros.
+     */
+    private const MACROABLE_METHODS = [
+        'macro',
+        'mixin',
+        'hasMacro',
+        'flushMacros',
+    ];
+
     public function __construct(
         protected EventBus $eventBus,
         protected HookRegistry $hookRegistry,
@@ -584,26 +595,38 @@ class LifecycleManager
             throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
         }
 
-        if (! method_exists($component, $method)) {
-            throw new \BadMethodCallException("Method [{$method}] does not exist on component [{$component->getName()}].");
+        // Real methods take precedence — full reflection security gates
+        if (method_exists($component, $method)) {
+            $reflection = new \ReflectionClass($component);
+            $reflectionMethod = $reflection->getMethod($method);
+
+            if (! $reflectionMethod->isPublic()) {
+                throw new \BadMethodCallException("Method [{$method}] is not public on component [{$component->getName()}].");
+            }
+
+            // Block methods declared on the base Component class.
+            // Only methods defined directly on the user's component are callable.
+            if ($reflectionMethod->getDeclaringClass()->getName() === Component::class) {
+                throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+            }
+
+            $this->eventBus->dispatch('component.call', $component, $method, $params);
+
+            return $component->{$method}(...$params);
         }
 
-        $reflection = new \ReflectionClass($component);
-        $reflectionMethod = $reflection->getMethod($method);
+        // Macros — dynamic methods registered via Component::macro()
+        if ($component::hasMacro($method)) {
+            if (in_array($method, self::MACROABLE_METHODS)) {
+                throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+            }
 
-        if (! $reflectionMethod->isPublic()) {
-            throw new \BadMethodCallException("Method [{$method}] is not public on component [{$component->getName()}].");
+            $this->eventBus->dispatch('component.call', $component, $method, $params);
+
+            return $component->{$method}(...$params);
         }
 
-        // Block methods declared on the base Component class.
-        // Only methods defined directly on the user's component are callable.
-        if ($reflectionMethod->getDeclaringClass()->getName() === Component::class) {
-            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
-        }
-
-        $this->eventBus->dispatch('component.call', $component, $method, $params);
-
-        return $component->{$method}(...$params);
+        throw new \BadMethodCallException("Method [{$method}] does not exist on component [{$component->getName()}].");
     }
 
     /**

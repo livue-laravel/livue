@@ -3,6 +3,7 @@
 namespace LiVue;
 
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Traits\Macroable;
 use LiVue\Features\SupportAttributes\HandlesAttributes;
 use LiVue\Features\SupportCasting\HandlesCasting;
 use LiVue\Features\SupportComposables\HandlesComposables;
@@ -38,6 +39,7 @@ abstract class Component
     use HandlesRendering;
     use HandlesState;
     use HandlesValidation;
+    use Macroable;
 
     // ---------------------------------------------------------------
     //  Core properties
