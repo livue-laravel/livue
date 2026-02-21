@@ -37,7 +37,7 @@
                 @if (is_array($element))
                     @foreach ($element as $page => $url)
                         @if ($page == $paginator->currentPage())
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-md text-sm font-semibold text-white" style="background-color: var(--color-primary-600, var(--p-primary-color, #6366f1))" aria-current="page">{{ $page }}</span>
+                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-md bg-primary-600 text-sm font-semibold text-white" aria-current="page">{{ $page }}</span>
                         @else
                             <button v-click:setPage="{{ $page }}" class="inline-flex items-center justify-center w-9 h-9 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700 transition" aria-label="Go to page {{ $page }}">
                                 {{ $page }}
