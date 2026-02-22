@@ -56,8 +56,21 @@ class LifecycleManager
      */
     public function mount(Component $component, array $params = []): void
     {
+        // Lifecycle event: booting (halting)
+        if ($component->fireLifecycleEvent('booting', halt: true) === false) {
+            return;
+        }
+
         $this->hookRegistry->callHook('boot', $component);
         $this->callBoot($component);
+
+        // Lifecycle event: booted
+        $component->fireLifecycleEvent('booted');
+
+        // Lifecycle event: mounting (halting)
+        if ($component->fireLifecycleEvent('mounting', halt: true) === false) {
+            return;
+        }
 
         $this->hookRegistry->callHook('mount', $component, $params);
         $this->eventBus->dispatch('component.mount', $component, $params);
@@ -77,6 +90,9 @@ class LifecycleManager
 
         // Initialize Form objects with component reference
         $component->initializeForms();
+
+        // Lifecycle event: mounted
+        $component->fireLifecycleEvent('mounted');
     }
 
     // -----------------------------------------------------------------
@@ -112,8 +128,16 @@ class LifecycleManager
         $store = $this->hookRegistry->store($component);
 
         // 1. Boot
+        if ($component->fireLifecycleEvent('booting', halt: true) === false) {
+            $this->hookRegistry->cleanup($component);
+
+            return ['snapshot' => json_encode(['state' => [], 'memo' => $memo])];
+        }
+
         $this->hookRegistry->callHook('boot', $component);
         $this->callBoot($component);
+
+        $component->fireLifecycleEvent('booted');
 
         // 1b. Restore #[Guarded] (locked) properties from encrypted memo.
         //     These are decrypted and merged back into state before hydration.
@@ -171,29 +195,44 @@ class LifecycleManager
         $this->hookRegistry->distributeMemo($component, $memo);
 
         // 4. Lifecycle: hydrate
+        $component->fireLifecycleEvent('hydrating', halt: true);
+
         $this->hookRegistry->callHook('hydrate', $component);
         $this->callHydrate($component);
+
+        $component->fireLifecycleEvent('hydrated');
 
         // 5. Execute method (if any)
         $methodReturnValue = null;
 
         if ($method !== null) {
-            try {
-                $this->hookRegistry->callHook('call', $component, $method, $params);
+            // Lifecycle event: calling (halting — can skip the call)
+            $callingCancelled = $component->fireLifecycleEvent('calling', true, $method, $params) === false;
 
-                // Check if a composable action handled the call (e.g., 'auth.logout')
-                $store = $this->hookRegistry->store($component);
-                if (! $store->get('composableActionHandled', false)) {
-                    $methodReturnValue = $this->callMethod($component, $method, $params);
-                } else {
-                    // Retrieve return value from composable action (if any)
-                    $methodReturnValue = $store->get('composableActionReturnValue');
-                }
-            } catch (\Throwable $e) {
-                $handled = $this->hookRegistry->callExceptionHook($component, $e);
+            if (! $callingCancelled) {
+                try {
+                    $this->hookRegistry->callHook('call', $component, $method, $params);
 
-                if ($handled === null) {
-                    throw $e;
+                    // Check if a composable action handled the call (e.g., 'auth.logout')
+                    $store = $this->hookRegistry->store($component);
+                    if (! $store->get('composableActionHandled', false)) {
+                        $methodReturnValue = $this->callMethod($component, $method, $params);
+                    } else {
+                        // Retrieve return value from composable action (if any)
+                        $methodReturnValue = $store->get('composableActionReturnValue');
+                    }
+
+                    // Lifecycle event: called
+                    $component->fireLifecycleEvent('called', false, $method, $params);
+                } catch (\Throwable $e) {
+                    // Lifecycle event: exception
+                    $component->fireLifecycleEvent('exception', false, $e);
+
+                    $handled = $this->hookRegistry->callExceptionHook($component, $e);
+
+                    if ($handled === null) {
+                        throw $e;
+                    }
                 }
             }
 
@@ -284,8 +323,12 @@ class LifecycleManager
         }
 
         // 8. Lifecycle: dehydrate (features may dispatch events here, e.g., #[Modelable])
+        $component->fireLifecycleEvent('dehydrating', halt: true);
+
         $this->hookRegistry->callHook('dehydrate', $component);
         $this->callDehydrate($component);
+
+        $component->fireLifecycleEvent('dehydrated');
 
         // 9. Flush dispatched events (AFTER dehydrate so feature events are included)
         $events = $component->flushDispatchedEvents();
@@ -342,8 +385,12 @@ class LifecycleManager
         $htmlAfter = null;
 
         if (! $store->get('renderless', false)) {
+            $component->fireLifecycleEvent('rendering', halt: true);
+
             $this->eventBus->dispatch('component.render', $component);
             $htmlAfter = $renderer->renderInnerHtml($component);
+
+            $component->fireLifecycleEvent('rendered');
         }
 
         // 11a. Post-render hook: allows features to update state based on

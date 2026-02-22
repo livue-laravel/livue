@@ -19,6 +19,7 @@ use LiVue\Features\SupportNavigation\HandlesNavigation;
 use LiVue\Features\SupportRendering\HandlesRendering;
 use LiVue\Features\SupportState\HandlesState;
 use LiVue\Features\SupportValidation\HandlesValidation;
+use LiVue\Features\SupportLifecycleEvents\HasLifecycleEvents;
 use LiVue\Features\SupportComposables\SupportComposables;
 use ReflectionClass;
 use ReflectionMethod;
@@ -41,6 +42,7 @@ abstract class Component
     use HandlesRendering;
     use HandlesState;
     use HandlesValidation;
+    use HasLifecycleEvents;
     use Macroable;
 
     // ---------------------------------------------------------------
@@ -77,6 +79,7 @@ abstract class Component
     {
         $this->__id = uniqid('livue-', true);
         $this->initializeHandlesValidation();
+        $this->initializeHasLifecycleEvents();
     }
 
     /**
