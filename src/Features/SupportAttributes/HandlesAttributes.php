@@ -51,12 +51,16 @@ trait HandlesAttributes
             }
         }
 
-        // Fall back to class-level
-        $classAttrs = $reflection->getAttributes($attributeClass);
+        // Fall back to class-level (walk up parent classes)
+        $current = $reflection;
 
-        if (! empty($classAttrs)) {
-            return self::$attributeCache[$cacheKey] = $classAttrs[0]->newInstance();
-        }
+        do {
+            $classAttrs = $current->getAttributes($attributeClass);
+
+            if (! empty($classAttrs)) {
+                return self::$attributeCache[$cacheKey] = $classAttrs[0]->newInstance();
+            }
+        } while ($current = $current->getParentClass());
 
         return self::$attributeCache[$cacheKey] = null;
     }

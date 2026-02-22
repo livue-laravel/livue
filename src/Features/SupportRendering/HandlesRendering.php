@@ -35,8 +35,13 @@ trait HandlesRendering
      */
     public function renderView(string $viewName, array $viewData): string
     {
+        // Resolve the view factory first — this triggers loadViewsFrom() callbacks
+        // that register view namespace hints for packages.
+        // Blade also needs $__env for directives like @foreach, @include, etc.
+        $__env = app(\Illuminate\View\Factory::class);
+
         $compiler = app('blade.compiler');
-        $finder = app('view.finder');
+        $finder = $__env->getFinder();
 
         $path = $finder->find($viewName);
         $compiled = $compiler->getCompiledPath($path);
@@ -44,9 +49,6 @@ trait HandlesRendering
         if (! file_exists($compiled) || $compiler->isExpired($path)) {
             $compiler->compile($path);
         }
-
-        // Blade needs $__env for directives like @foreach, @include, etc.
-        $__env = app(\Illuminate\View\Factory::class);
 
         // Use private variable names to avoid collisions with view data
         $__path = $compiled;
