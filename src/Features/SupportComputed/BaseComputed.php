@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportComputed;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a method as a computed property.
@@ -26,11 +27,23 @@ use Attribute;
  * Clear cache: unset($this->fullName)
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseComputed
+class BaseComputed extends LiVueAttribute
 {
     public function __construct(
         public bool $persist = false,
         public int $seconds = 3600,
         public bool $cache = false,
     ) {}
+
+    /**
+     * After method execution, clear computed cache so values are recalculated.
+     */
+    public function dehydrate(): void
+    {
+        $component = $this->getComponent();
+
+        if (method_exists($component, 'clearComputedCache')) {
+            $component->clearComputedCache();
+        }
+    }
 }

@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportConfirm;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Require user confirmation before executing a method.
@@ -27,7 +28,7 @@ use Attribute;
  *   public function deleteAll(): void { }
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseConfirm
+class BaseConfirm extends LiVueAttribute
 {
     public function __construct(
         /**
@@ -50,4 +51,19 @@ class BaseConfirm
          */
         public string $cancelText = 'Cancel',
     ) {}
+
+    /**
+     * Contribute confirm configuration to snapshot memo.
+     */
+    public function dehydrateMemo(): array
+    {
+        return ['confirms' => [
+            $this->getName() => [
+                'message' => $this->message,
+                'title' => $this->title,
+                'confirmText' => $this->confirmText,
+                'cancelText' => $this->cancelText,
+            ],
+        ]];
+    }
 }

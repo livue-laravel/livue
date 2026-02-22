@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportAssets;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Declare JavaScript assets for a component.
@@ -16,7 +17,7 @@ use Attribute;
  *   #[Js(content: 'console.log("inline script");')]
  */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
-class BaseJs
+class BaseJs extends LiVueAttribute
 {
     public function __construct(
         public ?string $src = null,

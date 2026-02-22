@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportJson;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a method as a JSON endpoint.
@@ -33,6 +34,6 @@ use Attribute;
  * - Server errors reject the Promise with { status, message }
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseJson
+class BaseJson extends LiVueAttribute
 {
 }

@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportTabSync;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Enable cross-tab state synchronization for this component.
@@ -23,12 +24,25 @@ use Attribute;
  *   #[TabSync(reactive: true)]                    // Server refresh for all synced props
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class BaseTabSync
+class BaseTabSync extends LiVueAttribute
 {
     public function __construct(
         public ?array $only = null,
         public ?array $except = null,
         public array|bool $reactive = false,
     ) {
+    }
+
+    /**
+     * Contribute tab sync configuration to snapshot memo.
+     */
+    public function dehydrateMemo(): array
+    {
+        return ['tabSync' => [
+            'enabled' => true,
+            'only' => $this->only,
+            'except' => $this->except,
+            'reactive' => $this->reactive,
+        ]];
     }
 }

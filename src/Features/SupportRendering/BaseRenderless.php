@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportRendering;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a component method as renderless.
@@ -16,6 +17,6 @@ use Attribute;
  * where server-rendered HTML would be identical to what Vue produces.
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseRenderless
+class BaseRenderless extends LiVueAttribute
 {
 }

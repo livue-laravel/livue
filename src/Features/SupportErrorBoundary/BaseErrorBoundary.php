@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportErrorBoundary;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Configure error handling for a component or method.
@@ -36,7 +37,7 @@ use Attribute;
  *   public function riskyMethod(): void { }
  */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::TARGET_METHOD)]
-class BaseErrorBoundary
+class BaseErrorBoundary extends LiVueAttribute
 {
     public function __construct(
         /**

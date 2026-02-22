@@ -3,6 +3,8 @@
 namespace LiVue\Features\SupportUrl;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
+use ReflectionClass;
 
 /**
  * Bind a component property to the URL query string.
@@ -26,7 +28,7 @@ use Attribute;
  *   public string $filter = 'all';
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class BaseUrl
+class BaseUrl extends LiVueAttribute
 {
     public function __construct(
         public ?string $as = null,
@@ -34,4 +36,62 @@ class BaseUrl
         public bool $keep = false,
         public mixed $except = null,
     ) {}
+
+    /**
+     * On mount: initialize property from URL query parameter.
+     */
+    public function mount(array $params): void
+    {
+        $paramName = $this->as ?? $this->getName();
+        $query = request()->query();
+
+        if (array_key_exists($paramName, $query)) {
+            $this->setValue($this->castQueryValue($query[$paramName]));
+        }
+    }
+
+    /**
+     * Contribute URL parameter config to snapshot memo.
+     */
+    public function dehydrateMemo(): array
+    {
+        return ['urlParams' => [
+            $this->getName() => [
+                'as' => $this->as,
+                'history' => $this->history,
+                'keep' => $this->keep,
+                'except' => $this->except,
+            ],
+        ]];
+    }
+
+    /**
+     * Cast a query string value to the property's PHP type.
+     */
+    private function castQueryValue(mixed $value): mixed
+    {
+        $component = $this->getComponent();
+        $property = $this->getName();
+        $reflection = new ReflectionClass($component);
+
+        if (! $reflection->hasProperty($property)) {
+            return $value;
+        }
+
+        $type = $reflection->getProperty($property)->getType();
+
+        if ($type === null) {
+            return $value;
+        }
+
+        $typeName = $type->getName();
+
+        return match ($typeName) {
+            'int', 'integer' => (int) $value,
+            'float', 'double' => (float) $value,
+            'bool', 'boolean' => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            'array' => is_array($value) ? $value : [$value],
+            default => $value,
+        };
+    }
 }

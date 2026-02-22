@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportLazy;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a component for lazy loading.
@@ -21,7 +22,7 @@ use Attribute;
  *   class Dashboard extends Component { }
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class BaseLazy
+class BaseLazy extends LiVueAttribute
 {
     public function __construct(
         /**
@@ -34,4 +35,16 @@ class BaseLazy
          */
         public ?string $placeholder = null,
     ) {}
+
+    /**
+     * Contribute lazy loading configuration to snapshot memo.
+     */
+    public function dehydrateMemo(): array
+    {
+        return ['lazy' => [
+            'onLoad' => $this->onLoad,
+            'bundle' => false,
+            'placeholder' => $this->placeholder ?? 'livue::placeholders.default',
+        ]];
+    }
 }

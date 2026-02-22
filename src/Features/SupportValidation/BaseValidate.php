@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportValidation;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Declare validation rules on a component property.
@@ -19,7 +20,7 @@ use Attribute;
  *   public string $email = '';
  */
 #[Attribute(Attribute::IS_REPEATABLE | Attribute::TARGET_PROPERTY)]
-class BaseValidate
+class BaseValidate extends LiVueAttribute
 {
     /**
      * @param string|array $rule     Laravel validation rule(s)

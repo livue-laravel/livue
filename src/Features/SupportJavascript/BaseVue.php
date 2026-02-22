@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportJavascript;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a method as a client-side Vue/JS method.
@@ -26,6 +27,6 @@ use Attribute;
  * Template: <button @click="livue.call('resetForm')">Reset</button>
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseVue
+class BaseVue extends LiVueAttribute
 {
 }

@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportTransition;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Configure View Transitions for a method.
@@ -32,7 +33,7 @@ use Attribute;
  * - Respects prefers-reduced-motion user preference
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseTransition
+class BaseTransition extends LiVueAttribute
 {
     public function __construct(
         /**

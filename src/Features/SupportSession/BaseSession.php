@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportSession;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Persist a property value in the user's session.
@@ -29,8 +30,13 @@ use Attribute;
  * - Session data persists across page refreshes and browser sessions
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class BaseSession
+class BaseSession extends LiVueAttribute
 {
+    /**
+     * Stored initial value for change detection during hydrate/dehydrate.
+     */
+    private mixed $initialValue = null;
+
     public function __construct(
         /**
          * Custom session key. If null, uses 'livue.{component}.{property}'.
@@ -39,4 +45,79 @@ class BaseSession
          */
         public ?string $key = null,
     ) {}
+
+    /**
+     * On mount: load value from session if it exists.
+     */
+    public function mount(array $params): void
+    {
+        $sessionKey = $this->resolveSessionKey();
+
+        if (session()->has($sessionKey)) {
+            $this->setValue(session()->get($sessionKey));
+        }
+    }
+
+    /**
+     * On hydrate: store initial value for change detection.
+     */
+    public function hydrate(): void
+    {
+        $this->initialValue = $this->getValue();
+    }
+
+    /**
+     * On dehydrate: save current value to session.
+     */
+    public function dehydrate(): void
+    {
+        $sessionKey = $this->resolveSessionKey();
+        $value = $this->getValue();
+
+        session()->put($sessionKey, $value);
+    }
+
+    /**
+     * Resolve the session key for this property.
+     *
+     * Handles dynamic keys with property interpolation: 'search-{category}'
+     */
+    private function resolveSessionKey(): string
+    {
+        $key = $this->key;
+
+        if ($key === null) {
+            return 'livue.' . $this->getComponent()->getName() . '.' . $this->getName();
+        }
+
+        if (str_contains($key, '{')) {
+            $component = $this->getComponent();
+            $key = preg_replace_callback('/\{(\w+(?:\.\w+)*)\}/', function ($matches) use ($component) {
+                return $this->resolvePropertyPath($component, $matches[1]);
+            }, $key);
+        }
+
+        return $key;
+    }
+
+    /**
+     * Resolve a dot-notated property path (e.g., 'author.id').
+     */
+    private function resolvePropertyPath(object $component, string $path): string
+    {
+        $segments = explode('.', $path);
+        $value = $component;
+
+        foreach ($segments as $segment) {
+            if (is_object($value) && property_exists($value, $segment)) {
+                $value = $value->{$segment};
+            } elseif (is_array($value) && isset($value[$segment])) {
+                $value = $value[$segment];
+            } else {
+                return '';
+            }
+        }
+
+        return (string) $value;
+    }
 }

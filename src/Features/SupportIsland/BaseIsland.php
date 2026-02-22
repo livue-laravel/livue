@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportIsland;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a component as an island (separate Vue app).
@@ -19,7 +20,7 @@ use Attribute;
  *   class AnalyticsWidget extends Component { }
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class BaseIsland
+class BaseIsland extends LiVueAttribute
 {
     public function __construct(
         /**

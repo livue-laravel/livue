@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportModelable;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a property as modelable by parent components.
@@ -27,6 +28,6 @@ use Attribute;
  * - Works with any property type (string, int, array, etc.)
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class BaseModelable
+class BaseModelable extends LiVueAttribute
 {
 }

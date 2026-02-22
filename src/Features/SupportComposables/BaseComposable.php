@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportComposables;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a method as a composable.
@@ -37,7 +38,7 @@ use Attribute;
  *   <button @click="livue.call('auth.logout')">Logout</button>
  */
 #[Attribute(Attribute::TARGET_METHOD)]
-class BaseComposable
+class BaseComposable extends LiVueAttribute
 {
     public function __construct(
         public ?string $as = null,

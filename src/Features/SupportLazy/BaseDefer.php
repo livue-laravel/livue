@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportLazy;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a component for deferred loading.
@@ -25,7 +26,7 @@ use Attribute;
  *   class Dashboard extends Component { }
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class BaseDefer
+class BaseDefer extends LiVueAttribute
 {
     public function __construct(
         /**
@@ -39,4 +40,16 @@ class BaseDefer
          */
         public ?string $placeholder = null,
     ) {}
+
+    /**
+     * Contribute deferred loading configuration to snapshot memo.
+     */
+    public function dehydrateMemo(): array
+    {
+        return ['lazy' => [
+            'onLoad' => true,
+            'bundle' => $this->bundle,
+            'placeholder' => $this->placeholder ?? 'livue::placeholders.default',
+        ]];
+    }
 }

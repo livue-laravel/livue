@@ -14,9 +14,8 @@ use LiVue\Features\SupportSingleFile\SingleFileCompiler;
 use LiVue\Facades\LiVueAsset;
 use LiVue\Features\SupportAssets\SupportAssets;
 use LiVue\Features\SupportBroadcast\SupportBroadcast;
+use LiVue\Features\SupportAttributes\SupportAttributes;
 use LiVue\Features\SupportComposables\SupportComposables;
-use LiVue\Features\SupportComputed\SupportComputed;
-use LiVue\Features\SupportConfirm\SupportConfirm;
 use LiVue\Features\SupportConsoleCommands\SupportConsoleCommands;
 use LiVue\Features\SupportDirtyTracking\SupportDirtyTracking;
 use LiVue\Features\SupportDownloads\SupportDownloads;
@@ -32,12 +31,9 @@ use LiVue\Features\SupportPagination\SupportPagination;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportReactiveProps\SupportReactiveProps;
 use LiVue\Features\SupportRendering\SupportRendering;
-use LiVue\Features\SupportSession\SupportSession;
 use LiVue\Features\SupportSingleFile\SupportSingleFile;
 use LiVue\Features\SupportStreaming\SupportStreaming;
-use LiVue\Features\SupportTabSync\SupportTabSync;
 use LiVue\Features\SupportTransition\SupportTransition;
-use LiVue\Features\SupportUrl\SupportUrl;
 use LiVue\Features\SupportValidation\SupportValidation;
 use LiVue\Http\Middleware\LiVueAssetInjectionMiddleware;
 use LiVue\Http\Middleware\LiVueRequestValidator;
@@ -105,6 +101,8 @@ class LiVueServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Component::setEventDispatcher($this->app['events']);
+
         $this->registerFeatures();
         $this->registerRoutes();
         $this->registerPublishing();
@@ -149,24 +147,20 @@ class LiVueServiceProvider extends ServiceProvider
 
         $registry->register(SupportAssets::class);
         $registry->register(SupportReactiveProps::class);
-        $registry->register(SupportComputed::class);
+        $registry->register(SupportAttributes::class);
         $registry->register(SupportComposables::class);
         $registry->register(SupportValidation::class);
         $registry->register(SupportRendering::class);
         $registry->register(SupportJson::class);
-        $registry->register(SupportUrl::class);
         $registry->register(SupportPagination::class);
         $registry->register(SupportFileUploads::class);
         $registry->register(SupportDownloads::class);
         $registry->register(SupportLazy::class);
-        $registry->register(SupportConfirm::class);
         $registry->register(SupportModelable::class);
-        $registry->register(SupportSession::class);
         $registry->register(SupportTransition::class);
         $registry->register(SupportSingleFile::class);
         $registry->register(SupportMultiFile::class);
         $registry->register(SupportDirtyTracking::class);
-        $registry->register(SupportTabSync::class);
         $registry->register(SupportBroadcast::class);
         $registry->register(SupportStreaming::class);
         $registry->register(SupportPersistentMiddleware::class);

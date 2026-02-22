@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportReactiveProps;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Mark a property as reactive to parent changes.
@@ -22,6 +23,6 @@ use Attribute;
  *   @livue('child-name', ['todos' => $this->todos])
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class BaseReactive
+class BaseReactive extends LiVueAttribute
 {
 }

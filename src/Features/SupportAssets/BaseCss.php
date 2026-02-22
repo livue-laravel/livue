@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportAssets;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Declare CSS assets for a component.
@@ -16,7 +17,7 @@ use Attribute;
  *   #[Css(content: '.my-class { color: red; }')]
  */
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
-class BaseCss
+class BaseCss extends LiVueAttribute
 {
     public function __construct(
         public ?string $href = null,

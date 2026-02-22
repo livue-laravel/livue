@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportGuarded;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Lock a public property so it's completely hidden from the client.
@@ -27,6 +28,6 @@ use Attribute;
  *   public string $secret; // Completely hidden from browser
  */
 #[Attribute(Attribute::TARGET_PROPERTY)]
-class BaseGuarded
+class BaseGuarded extends LiVueAttribute
 {
 }

@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportIsland;
 
 use Attribute;
+use LiVue\Attribute as LiVueAttribute;
 
 /**
  * Isolate a component's AJAX requests from the request pool.
@@ -20,6 +21,6 @@ use Attribute;
  *   class SlowDashboard extends Component { ... }
  */
 #[Attribute(Attribute::TARGET_CLASS)]
-class BaseIsolate
+class BaseIsolate extends LiVueAttribute
 {
 }
