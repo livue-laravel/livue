@@ -1,0 +1,25 @@
+<?php
+
+namespace {{ namespace }};
+
+use Attribute;
+use LiVue\Attribute as LiVueAttribute;
+
+#[Attribute(Attribute::TARGET_CLASS)]
+class {{ class }} extends LiVueAttribute
+{
+    public function boot(): void
+    {
+        //
+    }
+
+    public function hydrate(): void
+    {
+        //
+    }
+
+    public function dehydrate(): void
+    {
+        //
+    }
+}

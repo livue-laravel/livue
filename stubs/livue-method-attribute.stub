@@ -1,0 +1,15 @@
+<?php
+
+namespace {{ namespace }};
+
+use Attribute;
+use LiVue\Attribute as LiVueAttribute;
+
+#[Attribute(Attribute::TARGET_METHOD)]
+class {{ class }} extends LiVueAttribute
+{
+    public function call(array $params): void
+    {
+        //
+    }
+}

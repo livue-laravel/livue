@@ -13,6 +13,8 @@ class MakeLiVueAttributeCommand extends Command
 
     protected $description = 'Create a new LiVue PHP Attribute';
 
+    private const VALID_TARGETS = ['property', 'method', 'class'];
+
     protected Filesystem $files;
 
     public function __construct(Filesystem $files)
@@ -28,9 +30,9 @@ class MakeLiVueAttributeCommand extends Command
     {
         $name = $this->argument('name');
         $className = Str::studly($name);
-        $target = $this->resolveTarget($this->option('target'));
+        $target = strtolower($this->option('target'));
 
-        if ($target === null) {
+        if (! in_array($target, self::VALID_TARGETS, true)) {
             $this->components->error('Invalid target. Use: property, method, or class.');
 
             return self::FAILURE;
@@ -48,34 +50,34 @@ class MakeLiVueAttributeCommand extends Command
 
         $this->files->ensureDirectoryExists($path);
 
-        $stub = $this->files->get($this->getStubPath('livue-attribute.stub'));
+        $stubName = "livue-{$target}-attribute.stub";
+        $stub = $this->files->get($this->getStubPath($stubName));
 
         $stub = str_replace(
-            ['{{ namespace }}', '{{ class }}', '{{ target }}'],
-            [$namespace, $className, $target],
+            ['{{ namespace }}', '{{ class }}'],
+            [$namespace, $className],
             $stub,
         );
 
         $this->files->put($filePath, $stub);
 
         $this->components->info("LiVue Attribute [{$className}] created successfully.");
-        $this->line("  <comment>{$path}/{$className}.php</comment>");
+        $this->line("  <comment>Target:</comment> {$target}");
+        $this->line("  <comment>Extends:</comment> LiVueAttribute");
+        $this->line("  <comment>Path:</comment> {$filePath}");
 
         return self::SUCCESS;
     }
 
-    protected function resolveTarget(string $target): ?string
-    {
-        return match (strtolower($target)) {
-            'property' => 'Attribute::TARGET_PROPERTY',
-            'method' => 'Attribute::TARGET_METHOD',
-            'class' => 'Attribute::TARGET_CLASS',
-            default => null,
-        };
-    }
-
     protected function getStubPath(string $stub): string
     {
+        // Check for published stubs first
+        $publishedPath = base_path("stubs/livue/{$stub}");
+
+        if ($this->files->exists($publishedPath)) {
+            return $publishedPath;
+        }
+
         return __DIR__ . '/../../stubs/' . $stub;
     }
 }
