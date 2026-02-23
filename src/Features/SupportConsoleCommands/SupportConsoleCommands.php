@@ -3,6 +3,7 @@
 namespace LiVue\Features\SupportConsoleCommands;
 
 use Illuminate\Console\Application as Artisan;
+use LiVue\Console\BenchmarkCommand;
 use LiVue\Console\MakeLiVueAttributeCommand;
 use LiVue\Console\MakeLiVueCommand;
 use LiVue\Console\MakeLiVueComposableCommand;
@@ -27,6 +28,7 @@ class SupportConsoleCommands extends ComponentHook
                 MakeLiVueSynthCommand::class,
                 MakeLiVueAttributeCommand::class,
                 MakeLiVueComposableCommand::class,
+                BenchmarkCommand::class,
             ]);
         });
     }

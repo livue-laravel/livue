@@ -11,7 +11,7 @@ import * as tree from './tree.js';
 import * as stateInspector from './state.js';
 import * as timeline from './timeline.js';
 import * as eventsPanel from './events.js';
-import { getRegistrations, getEchoSubscriptions, getPiniaStores } from './collector.js';
+import { getRegistrations, getEchoSubscriptions, getPiniaStores, getServerBenchmarks } from './collector.js';
 
 /**
  * LocalStorage key for persisting state.
@@ -742,6 +742,70 @@ function renderPerfPanel(container) {
     componentsSection.appendChild(createStat('Total', components.length));
 
     container.appendChild(componentsSection);
+
+    // Server Lifecycle Timing section
+    var benchmarks = getServerBenchmarks();
+
+    var serverSection = document.createElement('div');
+    serverSection.className = 'livue-devtools__perf-section';
+
+    var serverTitle = document.createElement('div');
+    serverTitle.className = 'livue-devtools__perf-title';
+    serverTitle.textContent = 'Server Lifecycle Timing';
+    serverSection.appendChild(serverTitle);
+
+    if (benchmarks.length === 0) {
+        var noBench = document.createElement('div');
+        noBench.style.cssText = 'color: #858585; font-size: 11px;';
+        noBench.textContent = 'No benchmark data. Set LIVUE_BENCHMARK=true in .env to enable.';
+        serverSection.appendChild(noBench);
+    } else {
+        // Show the most recent benchmark
+        var latest = benchmarks[0];
+
+        var latestLabel = document.createElement('div');
+        latestLabel.style.cssText = 'color: #9cdcfe; font-size: 11px; margin-bottom: 6px;';
+        latestLabel.textContent = 'Latest: ' + latest.componentName + ' (' + collector.formatTimestamp(latest.time) + ')';
+        serverSection.appendChild(latestLabel);
+
+        var userPhases = ['mount', 'method_call', 'render', 'total'];
+        for (var phase in latest.timings) {
+            var us = latest.timings[phase];
+            var ms = us / 1000;
+            var isUserPhase = userPhases.indexOf(phase) !== -1;
+            var greenMax = isUserPhase ? 50 : 5;
+            var yellowMax = isUserPhase ? 200 : 20;
+            var colorClass = ms < greenMax ? 'good' : (ms < yellowMax ? 'warn' : 'bad');
+            serverSection.appendChild(createStat(phase, formatUs(us), colorClass));
+        }
+
+        // Show historical averages per component
+        var avgByComponent = {};
+        for (var bi = 0; bi < benchmarks.length; bi++) {
+            var b = benchmarks[bi];
+            if (!avgByComponent[b.componentName]) {
+                avgByComponent[b.componentName] = { count: 0, totalUs: 0 };
+            }
+            var total = b.timings.total || 0;
+            avgByComponent[b.componentName].count++;
+            avgByComponent[b.componentName].totalUs += total;
+        }
+
+        var avgTitle = document.createElement('div');
+        avgTitle.style.cssText = 'color: #858585; font-size: 11px; margin-top: 8px; margin-bottom: 4px;';
+        avgTitle.textContent = 'Averages (total per component):';
+        serverSection.appendChild(avgTitle);
+
+        for (var compName in avgByComponent) {
+            var info = avgByComponent[compName];
+            var avgUs = Math.round(info.totalUs / info.count);
+            var avgMs = avgUs / 1000;
+            var avgColor = avgMs < 50 ? 'good' : (avgMs < 200 ? 'warn' : 'bad');
+            serverSection.appendChild(createStat(compName + ' (' + info.count + 'x)', formatUs(avgUs), avgColor));
+        }
+    }
+
+    container.appendChild(serverSection);
 }
 
 /**
@@ -900,6 +964,22 @@ function formatMs(ms) {
         return '<1ms';
     }
     return Math.round(ms) + 'ms';
+}
+
+/**
+ * Format microseconds for display.
+ * Shows as microseconds if < 1000, otherwise as milliseconds.
+ * @param {number} us
+ * @returns {string}
+ */
+function formatUs(us) {
+    if (us === 0 || isNaN(us) || !isFinite(us)) {
+        return '-';
+    }
+    if (us < 1000) {
+        return us + '\u00B5s';
+    }
+    return (us / 1000).toFixed(2) + 'ms';
 }
 
 /**

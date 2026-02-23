@@ -237,6 +237,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Benchmark Responses
+    |--------------------------------------------------------------------------
+    |
+    | When enabled (in local environment only), LiVue will include lifecycle
+    | timing data in AJAX responses. This adds a 'benchmark' key with
+    | per-phase timings in microseconds.
+    |
+    | Off by default even in development. Opt-in via .env: LIVUE_BENCHMARK=true
+    |
+    */
+    'benchmark_responses' => env('LIVUE_BENCHMARK', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Content Security Policy (CSP) Nonce
     |--------------------------------------------------------------------------
     |

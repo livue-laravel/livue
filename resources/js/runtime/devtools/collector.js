@@ -51,6 +51,9 @@ var _state = {
 
     /** @type {Map<string, number>} Pending template swaps start times */
     pendingSwaps: new Map(),
+
+    /** @type {Array<object>} Server benchmark timings */
+    serverBenchmarks: [],
 };
 
 /**
@@ -228,6 +231,25 @@ export function start() {
         }
     }));
 
+    // Hook: benchmark.received
+    _unsubscribers.push(hook('benchmark.received', function (payload) {
+        var entry = {
+            time: Date.now(),
+            componentId: payload.componentId,
+            componentName: payload.componentName,
+            timings: payload.timings,
+        };
+
+        _state.serverBenchmarks.unshift(entry);
+
+        // Limit history
+        if (_state.serverBenchmarks.length > MAX_REQUESTS) {
+            _state.serverBenchmarks.pop();
+        }
+
+        notifyListeners();
+    }));
+
     // Hook: error.occurred
     _unsubscribers.push(hook('error.occurred', function (payload) {
         var errorEntry = {
@@ -353,6 +375,14 @@ export function getPerf() {
 }
 
 /**
+ * Get server benchmark timings.
+ * @returns {Array<object>}
+ */
+export function getServerBenchmarks() {
+    return _state.serverBenchmarks;
+}
+
+/**
  * Clear request history.
  */
 export function clearRequests() {
@@ -399,6 +429,7 @@ export function clearAll() {
         avgTemplateSwapTime: 0,
     };
     _state.pendingSwaps.clear();
+    _state.serverBenchmarks = [];
     notifyListeners();
 }
 

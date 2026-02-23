@@ -621,6 +621,15 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
             }
         }
 
+        // Emit server benchmark timing data (if present)
+        if (response.benchmark) {
+            trigger('benchmark.received', {
+                componentId: componentId,
+                componentName: name,
+                timings: response.benchmark,
+            });
+        }
+
         // TabSync: broadcast state changes to other tabs
         // Skip if this response is from a sync triggered by tab sync (avoid loops)
         // Only broadcast SERVER changes, not client diffs (v-model changes)

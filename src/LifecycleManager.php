@@ -125,9 +125,16 @@ class LifecycleManager
         ?string $method,
         array $params
     ): array {
+        $bench = app()->environment('local') && config('livue.benchmark_responses', false);
+        $benchTimings = [];
+        $benchTotal = $bench ? hrtime(true) : 0;
+
         $store = $this->hookRegistry->store($component);
 
         // 1. Boot
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         if ($component->fireLifecycleEvent('booting', halt: true) === false) {
             $this->hookRegistry->cleanup($component);
 
@@ -138,9 +145,15 @@ class LifecycleManager
         $this->callBoot($component);
 
         $component->fireLifecycleEvent('booted');
+        if ($bench) {
+            $benchTimings['boot'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 1b. Restore #[Guarded] (locked) properties from encrypted memo.
         //     These are decrypted and merged back into state before hydration.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $lockedValues = $this->restoreLockedProperties($memo);
         if (! empty($lockedValues)) {
             $state = array_merge($state, $lockedValues);
@@ -165,11 +178,20 @@ class LifecycleManager
 
         // Initialize Form objects with component reference
         $component->initializeForms();
+        if ($bench) {
+            $benchTimings['hydrate_state'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 2a. Snapshot baseline HTML BEFORE applying diffs.
         //     This ensures we detect changes from diffs (tab sync) not just methods.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $renderer = new ComponentRenderer();
         $htmlBefore = $renderer->renderInnerHtml($component);
+        if ($bench) {
+            $benchTimings['baseline_render'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 2b. Apply client-side diffs (v-model changes) on top of verified state.
         //     Model properties are handled specially: changed attributes are
@@ -177,6 +199,9 @@ class LifecycleManager
         //     #[Guarded] properties are excluded from public state (locked), so they
         //     cannot be present in diffs — any attempt would fail checksum verification.
         //     Upload references (__livue_upload) are hydrated to TemporaryUploadedFile first.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         if (! empty($diffs)) {
             // Hydrate encrypted upload references into TemporaryUploadedFile instances
             $this->processUploadDiffs($diffs, $componentName);
@@ -190,19 +215,37 @@ class LifecycleManager
             // Re-initialize Form objects after diffs
             $component->initializeForms();
         }
+        if ($bench) {
+            $benchTimings['apply_diffs'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 3. Distribute memo to features (e.g., restore validation errors)
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $this->hookRegistry->distributeMemo($component, $memo);
+        if ($bench) {
+            $benchTimings['distribute_memo'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 4. Lifecycle: hydrate
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $component->fireLifecycleEvent('hydrating', halt: true);
 
         $this->hookRegistry->callHook('hydrate', $component);
         $this->callHydrate($component);
 
         $component->fireLifecycleEvent('hydrated');
+        if ($bench) {
+            $benchTimings['hydrate_hooks'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 5. Execute method (if any)
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $methodReturnValue = null;
 
         if ($method !== null) {
@@ -238,6 +281,9 @@ class LifecycleManager
 
             // Clear computed cache so values are recomputed with post-method state
             $component->clearComputedCache();
+        }
+        if ($bench) {
+            $benchTimings['method_call'] = (int) ((hrtime(true) - $benchT) / 1000);
         }
 
         // 7. Check for redirect intent — short-circuit if present
@@ -323,22 +369,37 @@ class LifecycleManager
         }
 
         // 8. Lifecycle: dehydrate (features may dispatch events here, e.g., #[Modelable])
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $component->fireLifecycleEvent('dehydrating', halt: true);
 
         $this->hookRegistry->callHook('dehydrate', $component);
         $this->callDehydrate($component);
 
         $component->fireLifecycleEvent('dehydrated');
+        if ($bench) {
+            $benchTimings['dehydrate'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 9. Flush dispatched events (AFTER dehydrate so feature events are included)
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $events = $component->flushDispatchedEvents();
         foreach ($events as &$event) {
             $event['source'] = $componentName;
         }
         unset($event);
+        if ($bench) {
+            $benchTimings['events_flush'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 10. Build new snapshot: dehydrate complex types as inline tuples, then checksum.
         //     The snapshot is returned as an opaque JSON string.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $rawState = $component->getState();
         $dehydratedState = $this->synthRegistry->dehydrateState($rawState);
 
@@ -355,6 +416,9 @@ class LifecycleManager
         }
 
         $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
+        if ($bench) {
+            $benchTimings['build_snapshot'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         $newMemo = [
             'name' => $componentName,
@@ -382,6 +446,9 @@ class LifecycleManager
         }
 
         // 11. Render (unless renderless or json)
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $htmlAfter = null;
 
         if (! $store->get('renderless', false)) {
@@ -396,11 +463,21 @@ class LifecycleManager
         // 11a. Post-render hook: allows features to update state based on
         //      data created during render (e.g., composables with paginators).
         $this->hookRegistry->callHook('rendered', $component);
+        if ($bench) {
+            $benchTimings['render'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
 
         // 11b. Collect memo contributions from features AFTER render + rendered hook.
         //      This ensures features like composables have access to render-time data.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
         $featureMemo = $this->hookRegistry->collectMemo($component);
         $newMemo = array_merge($newMemo, $featureMemo);
+        if ($bench) {
+            $benchTimings['collect_memo'] = (int) ((hrtime(true) - $benchT) / 1000);
+            $benchTimings['total'] = (int) ((hrtime(true) - $benchTotal) / 1000);
+        }
 
         $result = [
             'snapshot' => json_encode(['state' => $dehydratedState, 'memo' => $newMemo]),
@@ -425,10 +502,244 @@ class LifecycleManager
             $result['js'] = $pendingJs;
         }
 
+        if ($bench) {
+            $result['benchmark'] = $benchTimings;
+        }
+
         // 12. Cleanup per-component feature instances and store
         $this->hookRegistry->cleanup($component);
 
         return $result;
+    }
+
+    // -----------------------------------------------------------------
+    //  Benchmarking
+    // -----------------------------------------------------------------
+
+    /**
+     * Benchmark the mount lifecycle, returning per-phase timings in microseconds.
+     *
+     * @param  Component  $component
+     * @param  array      $params
+     * @return array<string, int>  Phase name => microseconds
+     */
+    public function benchmarkMount(Component $component, array $params = []): array
+    {
+        $total = hrtime(true);
+        $timings = [];
+
+        // Boot
+        $t = hrtime(true);
+        if ($component->fireLifecycleEvent('booting', halt: true) === false) {
+            return ['boot' => (int) ((hrtime(true) - $t) / 1000)];
+        }
+        $this->hookRegistry->callHook('boot', $component);
+        $this->callBoot($component);
+        $component->fireLifecycleEvent('booted');
+        $timings['boot'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Mount
+        $t = hrtime(true);
+        if ($component->fireLifecycleEvent('mounting', halt: true) !== false) {
+            $this->hookRegistry->callHook('mount', $component, $params);
+            $this->eventBus->dispatch('component.mount', $component, $params);
+
+            foreach (class_uses_recursive($component) as $trait) {
+                $method = 'mount' . class_basename($trait);
+                if (method_exists($component, $method)) {
+                    $component->{$method}(...$params);
+                }
+            }
+
+            if (method_exists($component, 'mount')) {
+                $component->mount(...$params);
+            }
+        }
+        $component->fireLifecycleEvent('mounted');
+        $timings['mount'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Forms
+        $t = hrtime(true);
+        $component->initializeForms();
+        $timings['forms'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Render
+        $t = hrtime(true);
+        $renderer = new ComponentRenderer();
+        $renderer->render($component);
+        $timings['render'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Snapshot (dehydrate + checksum)
+        $t = hrtime(true);
+        $rawState = $component->getState();
+        $dehydratedState = $this->synthRegistry->dehydrateState($rawState);
+        [$dehydratedState, $lockedMemo] = $this->extractLockedProperties($component, $dehydratedState);
+        $computed = $component->getComputedValues();
+        if (! empty($computed)) {
+            $dehydratedState = array_merge($dehydratedState, $this->synthRegistry->dehydrateState($computed));
+        }
+        StateChecksum::generate($component->getName(), $dehydratedState);
+        $timings['snapshot'] = (int) ((hrtime(true) - $t) / 1000);
+
+        $timings['total'] = (int) ((hrtime(true) - $total) / 1000);
+
+        return $timings;
+    }
+
+    /**
+     * Benchmark the update lifecycle, returning per-phase timings in microseconds.
+     *
+     * @param  Component    $component
+     * @param  string       $componentName
+     * @param  array        $state
+     * @param  array        $memo
+     * @param  array        $diffs
+     * @param  string|null  $method
+     * @param  array        $params
+     * @return array<string, int>  Phase name => microseconds
+     */
+    public function benchmarkUpdate(
+        Component $component,
+        string $componentName,
+        array $state,
+        array $memo,
+        array $diffs,
+        ?string $method,
+        array $params
+    ): array {
+        $timings = [];
+        $total = hrtime(true);
+
+        // Boot
+        $t = hrtime(true);
+        $store = $this->hookRegistry->store($component);
+        if ($component->fireLifecycleEvent('booting', halt: true) === false) {
+            $this->hookRegistry->cleanup($component);
+            return ['boot' => (int) ((hrtime(true) - $t) / 1000)];
+        }
+        $this->hookRegistry->callHook('boot', $component);
+        $this->callBoot($component);
+        $component->fireLifecycleEvent('booted');
+        $timings['boot'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Hydrate state
+        $t = hrtime(true);
+        $lockedValues = $this->restoreLockedProperties($memo);
+        if (! empty($lockedValues)) {
+            $state = array_merge($state, $lockedValues);
+        }
+        $computedKeys = $memo['computed'] ?? [];
+        foreach ($computedKeys as $computedKey) {
+            unset($state[$computedKey]);
+        }
+        [$hydratedState, $types] = $this->synthRegistry->hydrateState($state);
+        [$flatSnapshotState, $_] = $this->synthRegistry->unwrapState($state);
+        $component->setState($hydratedState);
+        $component->initializeForms();
+        $timings['hydrate_state'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Baseline render
+        $t = hrtime(true);
+        $renderer = new ComponentRenderer();
+        $htmlBefore = $renderer->renderInnerHtml($component);
+        $timings['baseline_render'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Apply diffs
+        $t = hrtime(true);
+        if (! empty($diffs)) {
+            $this->processUploadDiffs($diffs, $componentName);
+            $remainingDiffs = $this->processSynthDiffs($diffs, $types, $flatSnapshotState, $component);
+            if (! empty($remainingDiffs)) {
+                $component->setState($remainingDiffs, fromClient: true);
+            }
+            $component->initializeForms();
+        }
+        $timings['apply_diffs'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Distribute memo
+        $t = hrtime(true);
+        $this->hookRegistry->distributeMemo($component, $memo);
+        $timings['distribute_memo'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Hydrate hooks
+        $t = hrtime(true);
+        $component->fireLifecycleEvent('hydrating', halt: true);
+        $this->hookRegistry->callHook('hydrate', $component);
+        $this->callHydrate($component);
+        $component->fireLifecycleEvent('hydrated');
+        $timings['hydrate_hooks'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Method call
+        $t = hrtime(true);
+        if ($method !== null) {
+            $callingCancelled = $component->fireLifecycleEvent('calling', true, $method, $params) === false;
+            if (! $callingCancelled) {
+                try {
+                    $this->hookRegistry->callHook('call', $component, $method, $params);
+                    $store = $this->hookRegistry->store($component);
+                    if (! $store->get('composableActionHandled', false)) {
+                        $this->callMethod($component, $method, $params);
+                    }
+                    $component->fireLifecycleEvent('called', false, $method, $params);
+                } catch (\Throwable $e) {
+                    $component->fireLifecycleEvent('exception', false, $e);
+                    $handled = $this->hookRegistry->callExceptionHook($component, $e);
+                    if ($handled === null) {
+                        throw $e;
+                    }
+                }
+            }
+            $component->clearComputedCache();
+        }
+        $timings['method_call'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Dehydrate
+        $t = hrtime(true);
+        $component->fireLifecycleEvent('dehydrating', halt: true);
+        $this->hookRegistry->callHook('dehydrate', $component);
+        $this->callDehydrate($component);
+        $component->fireLifecycleEvent('dehydrated');
+        $timings['dehydrate'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Events flush
+        $t = hrtime(true);
+        $component->flushDispatchedEvents();
+        $timings['events_flush'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Build snapshot
+        $t = hrtime(true);
+        $rawState = $component->getState();
+        $dehydratedState = $this->synthRegistry->dehydrateState($rawState);
+        [$dehydratedState, $lockedMemo] = $this->extractLockedProperties($component, $dehydratedState);
+        $computed = $component->getComputedValues();
+        if (! empty($computed)) {
+            $dehydratedComputed = $this->synthRegistry->dehydrateState($computed);
+            $dehydratedState = array_merge($dehydratedState, $dehydratedComputed);
+        }
+        StateChecksum::generate($componentName, $dehydratedState);
+        $timings['build_snapshot'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Render
+        $t = hrtime(true);
+        if (! $store->get('renderless', false)) {
+            $component->fireLifecycleEvent('rendering', halt: true);
+            $this->eventBus->dispatch('component.render', $component);
+            $renderer->renderInnerHtml($component);
+            $component->fireLifecycleEvent('rendered');
+        }
+        $this->hookRegistry->callHook('rendered', $component);
+        $timings['render'] = (int) ((hrtime(true) - $t) / 1000);
+
+        // Collect memo
+        $t = hrtime(true);
+        $this->hookRegistry->collectMemo($component);
+        $timings['collect_memo'] = (int) ((hrtime(true) - $t) / 1000);
+
+        $timings['total'] = (int) ((hrtime(true) - $total) / 1000);
+
+        $this->hookRegistry->cleanup($component);
+
+        return $timings;
     }
 
     // -----------------------------------------------------------------
