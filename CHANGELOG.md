@@ -2,6 +2,74 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.3.0] - 2026-02-22
+
+### Added
+
+- **Unified attribute dispatcher** — centralized `SupportAttributes` hook discovers and dispatches lifecycle calls to all attributes (built-in and custom) via Reflection with per-class caching
+- **Custom attributes** — extend the base `Attribute` class to create property, method, or class attributes with automatic lifecycle behavior and zero-config registration
+- **Lifecycle events system** — `HasLifecycleEvents` trait enables components to fire and listen to lifecycle events (`booting`, `mounted`, `calling`, `rendered`, etc.)
+- **Observer pattern** — `Component::observe()` for registering lifecycle observers, `#[ObservedBy]` attribute for declarative observer attachment
+- **Halting events** — `booting`, `mounting`, `hydrating`, `calling`, `dehydrating`, `rendering` can cancel their operation by returning `false`
+- **Target-specific attribute stubs** — `make:livue-attribute` command now generates property, method, or class stubs via `--target` flag
+
+### Changed
+
+- All 24 built-in attributes now extend the base `Attribute` class with self-contained lifecycle logic
+- Removed 5 individual `Support*` hook classes (`SupportComputed`, `SupportConfirm`, `SupportSession`, `SupportTabSync`, `SupportUrl`) — logic moved into respective attribute Base classes
+- `SupportLazy` simplified to static helpers only
+
+### Fixed
+
+- Redesigned pagination view with unified responsive layout
+- Resolve PHP attributes from parent classes
+- Wrap page component HTML in `HtmlString`
+- Filter internal route params from component mount data
+
+## [1.0.4] - 2026-02-22
+
+### Fixed
+
+- Resolve PHP attributes declared on parent classes via recursive Reflection
+- Wrap page component HTML in `HtmlString` for proper rendering
+- Filter internal route parameters (e.g., `_livue`) from mount data
+
+## [1.0.3] - 2026-02-21
+
+### Fixed
+
+- Use CSS variable fallback for active page background color in pagination view (reverted in v1.0.4)
+
+## [1.0.2] - 2026-02-21
+
+### Changed
+
+- Redesign pagination view with unified responsive layout (Tailwind CSS)
+
+## [1.2.0] - 2026-02-17
+
+### Added
+
+- **Global composables** — `Component::use('composableName')` for registering composables globally across all components
+- **Auto-discovery** — composables are automatically discovered from the `$composables` array without manual registration
+
+## [1.1.0] - 2026-02-17
+
+### Added
+
+- **Macroable** — `Component` class now uses the `Macroable` trait, allowing runtime method extension
+- **Focus preservation** — input focus is preserved across template swaps during AJAX updates
+
+### Fixed
+
+- Production environment detection in built assets
+
+## [1.0.1] - 2026-02-10
+
+### Fixed
+
+- Recursive synthesizer dehydration/hydration for nested state (arrays/objects containing synthesizable values)
+
 ## [1.0.0] - 2026-02-09
 
 ### Highlights
