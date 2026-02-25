@@ -122,12 +122,23 @@ export function setByPath(state, path, value) {
     // Deep clone the top-level value to ensure reactivity
     let cloned = JSON.parse(JSON.stringify(topValue !== null && topValue !== undefined ? topValue : {}));
 
+    // If cloned is an array but we're setting a string-keyed property, convert to object.
+    // Arrays lose string-keyed properties during JSON serialization (JSON.stringify([])
+    // ignores non-numeric keys), so we must use a plain object instead.
+    if (Array.isArray(cloned) && isNaN(Number(parts[1]))) {
+        cloned = Object.assign({}, cloned);
+    }
+
     // Navigate to the parent of the target
     let current = cloned;
     for (let i = 1; i < parts.length - 1; i++) {
         let part = parts[i];
         if (current[part] === null || current[part] === undefined) {
             current[part] = {};
+        }
+        // Same array-to-object conversion for intermediate values
+        if (Array.isArray(current[part]) && i + 1 < parts.length && isNaN(Number(parts[i + 1]))) {
+            current[part] = Object.assign({}, current[part]);
         }
         current = current[part];
     }
