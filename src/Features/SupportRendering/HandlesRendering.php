@@ -57,10 +57,28 @@ trait HandlesRendering
         // Extract variables - $this will be available because we're inside a method!
         extract($__data, EXTR_SKIP);
 
-        ob_start();
-        include $__path;
+        // Increment the render count so that nested View::render() calls
+        // (e.g. from Form::toHtml()) don't prematurely flush the Blade
+        // component stack via flushStateIfDoneRendering().
+        $__env->incrementRender();
 
-        return ob_get_clean();
+        ob_start();
+
+        try {
+            include $__path;
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            $__env->decrementRender();
+
+            throw $e;
+        }
+
+        $result = ob_get_clean();
+
+        $__env->decrementRender();
+        $__env->flushStateIfDoneRendering();
+
+        return $result;
     }
 
     /**

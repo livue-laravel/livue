@@ -182,6 +182,17 @@ class LifecycleManager
             $benchTimings['hydrate_state'] = (int) ((hrtime(true) - $benchT) / 1000);
         }
 
+        // 3. Distribute memo to features (e.g., restore validation errors, tenancy context)
+        //    This must happen before htmlBefore so features that set up rendering context
+        //    (like URL::defaults for multi-tenancy) are active during the first render.
+        if ($bench) {
+            $benchT = hrtime(true);
+        }
+        $this->hookRegistry->distributeMemo($component, $memo);
+        if ($bench) {
+            $benchTimings['distribute_memo'] = (int) ((hrtime(true) - $benchT) / 1000);
+        }
+
         // 2a. Snapshot baseline HTML BEFORE applying diffs.
         //     This ensures we detect changes from diffs (tab sync) not just methods.
         if ($bench) {
@@ -217,15 +228,6 @@ class LifecycleManager
         }
         if ($bench) {
             $benchTimings['apply_diffs'] = (int) ((hrtime(true) - $benchT) / 1000);
-        }
-
-        // 3. Distribute memo to features (e.g., restore validation errors)
-        if ($bench) {
-            $benchT = hrtime(true);
-        }
-        $this->hookRegistry->distributeMemo($component, $memo);
-        if ($bench) {
-            $benchTimings['distribute_memo'] = (int) ((hrtime(true) - $benchT) / 1000);
         }
 
         // 4. Lifecycle: hydrate
