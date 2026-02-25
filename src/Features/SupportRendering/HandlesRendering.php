@@ -27,7 +27,6 @@ trait HandlesRendering
 
     /**
      * Render a Blade view in the context of this component.
-     * This allows $this to be available in the view template, like Livewire.
      *
      * @param string $viewName The Blade view name
      * @param array  $viewData Data to pass to the view

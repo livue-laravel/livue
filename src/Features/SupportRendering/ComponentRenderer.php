@@ -4,8 +4,9 @@ namespace LiVue\Features\SupportRendering;
 
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ViewErrorBag;
-use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Component;
+use LiVue\Exceptions\RootTagMissingFromViewException;
+use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Features\SupportHooks\HookRegistry;
 use LiVue\Features\SupportMultiFile\MultiFileComponent;
 use LiVue\Security\StateChecksum;
@@ -173,20 +174,21 @@ class ComponentRenderer
         $snapshot = ['state' => $dehydratedState, 'memo' => $memo];
         $encodedSnapshot = htmlspecialchars(json_encode($snapshot), ENT_QUOTES, 'UTF-8');
 
-        // Inject scoped CSS for MFC components BEFORE the wrapper (outside Vue template)
+        // Inject scoped CSS for MFC components BEFORE the root tag (outside Vue template)
         $styleTag = '';
         if ($component instanceof MultiFileComponent && $component->hasScopedCss()) {
             $scopedCss = $component->getScopedCss();
             $styleTag = "<style>{$scopedCss}</style>\n";
         }
 
-        $vCloak = $component->shouldCloak() ? ' v-cloak' : '';
+        // Build attributes string to inject into the root HTML tag
+        $vCloak = $component->shouldCloak() ? 'v-cloak ' : '';
+        $attributes = $vCloak . 'data-livue-id="' . $componentId . '" data-livue-snapshot="' . $encodedSnapshot . '"';
+        $attributes .= $islandAttr . $scopeAttr . $refAttr . $modelAttr;
 
-        return <<<HTML
-        {$styleTag}<div{$vCloak} data-livue-id="{$componentId}" data-livue-snapshot="{$encodedSnapshot}"{$islandAttr}{$scopeAttr}{$refAttr}{$modelAttr}>
-        {$html}
-        </div>
-        HTML;
+        $html = $this->insertAttributesIntoHtmlRoot($html, $attributes, $componentName);
+
+        return $styleTag . $html;
     }
 
     /**
@@ -308,6 +310,34 @@ class ComponentRenderer
         $snapshot = ['state' => $dehydratedState, 'memo' => $memo];
 
         return json_encode($snapshot);
+    }
+
+    /**
+     * Insert attributes into the first HTML root tag of the template.
+     *
+     * and inject the attribute string right after the tag name.
+     *
+     * @param  string  $html            The component template HTML
+     * @param  string  $attributeString  The attributes to inject (e.g., 'v-cloak data-livue-id="..."')
+     * @param  string  $componentName   The component name (for error messages)
+     * @return string  The HTML with attributes injected
+     *
+     * @throws RootTagMissingFromViewException
+     */
+    protected function insertAttributesIntoHtmlRoot(string $html, string $attributeString, string $componentName = ''): string
+    {
+        // Find the first HTML tag in the output (skipping whitespace/newlines)
+        if (! preg_match('/(?:\n\s*|^\s*)<([a-zA-Z0-9\-]+)/', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            throw new RootTagMissingFromViewException($componentName);
+        }
+
+        $tagName = $matches[1][0];
+        $tagNameStart = $matches[1][1];
+
+        // Insert the attributes right after the tag name
+        $insertPosition = $tagNameStart + strlen($tagName);
+
+        return substr($html, 0, $insertPosition) . ' ' . $attributeString . substr($html, $insertPosition);
     }
 
     /**

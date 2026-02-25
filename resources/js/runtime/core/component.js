@@ -51,6 +51,7 @@ import { streamRequest, isStreaming as isStreamingActive, getStreamingMethod, cl
 import { trigger, createCleanupCollector } from '../helpers/hooks.js';
 import { createComposables, updateComposables, hasComposables } from '../features/composables.js';
 import { captureFocusState, restoreFocusState } from '../helpers/focus.js';
+import { insertAttributesIntoHtmlRoot } from '../helpers/dom.js';
 
 /**
  * Global counter for generating unique child component tag names.
@@ -1508,6 +1509,7 @@ function processTemplate(html, rootComponent) {
         let initialState = unwrapState(childSnapshot.state || {});
         let childMemo = childSnapshot.memo || {};
         let childHtml = nestedEl.innerHTML;
+        let rootTag = nestedEl.tagName.toLowerCase();
 
         // Check if this child already exists in the registry.
         // First try exact ID match, then fallback to component name.
@@ -1526,6 +1528,8 @@ function processTemplate(html, rootComponent) {
         }
         if (existing) {
             matchedIds[existing.id] = true;
+            // Update root tag in case it changed
+            existing.rootTag = rootTag;
 
             // Sync #[Reactive] properties from the re-rendered parent snapshot
             let reactiveProps = childMemo.reactive || [];
@@ -1596,6 +1600,7 @@ function processTemplate(html, rootComponent) {
                 componentRef: childComponentRef,
                 name: name,
                 id: id,
+                rootTag: rootTag,
             };
 
             // Register event listeners declared via $listeners on the PHP component
@@ -1634,9 +1639,11 @@ function processTemplate(html, rootComponent) {
                 // Process the new HTML (might contain nested children)
                 let childProcessed = processTemplate(newInnerHtml, rootComponent);
 
-                // Build the wrapped template
-                let newTemplate = '<div data-livue-id="' + id + '">'
-                    + childProcessed.template + '</div>';
+                // Inject data-livue-id into the root tag of the child template
+                let newTemplate = insertAttributesIntoHtmlRoot(
+                    childProcessed.template,
+                    'data-livue-id="' + id + '"'
+                );
 
                 // Register any new nested children discovered in the update
                 for (let ct in childProcessed.childDefs) {
@@ -1733,8 +1740,14 @@ function processTemplate(html, rootComponent) {
 
         // Only add to childDefs if this is a new child (needs initial registration)
         if (isNew) {
+            // Use the actual root tag from the server-rendered HTML (e.g., <section>, <header>)
+            // and inject data-livue-id into it, instead of wrapping in a spurious <div>
+            let childTemplate = insertAttributesIntoHtmlRoot(
+                '<' + rootTag + '>' + childHtml + '</' + rootTag + '>',
+                'data-livue-id="' + id + '"'
+            );
             childDefs[tagName] = buildComponentDef(
-                '<div data-livue-id="' + id + '">' + childHtml + '</div>',
+                childTemplate,
                 existing.state, existing.livue, existing.composables || {}, rootComponent._versions, existing.name
             );
         }

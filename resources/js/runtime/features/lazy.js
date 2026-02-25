@@ -16,6 +16,7 @@ import {
 import { setErrors } from '../helpers/errors.js';
 import { on } from './events.js';
 import { poolLazyLoad } from './request/pool.js';
+import { insertAttributesIntoHtmlRoot } from '../helpers/dom.js';
 
 let _lazyCounter = 0;
 
@@ -120,8 +121,11 @@ export function createLazyComponent(rootComponent) {
                 // Process the HTML for nested children
                 let processed = processTemplate(data.html, rootComponent);
 
-                // Build wrapper template
-                let template = '<div data-livue-id="' + componentId + '">' + processed.template + '</div>';
+                // Inject data-livue-id into the root tag instead of wrapping in a div
+                let template = insertAttributesIntoHtmlRoot(
+                    processed.template,
+                    'data-livue-id="' + componentId + '"'
+                );
 
                 // Create component definition
                 let componentDef = buildComponentDef(template, childState, livue, rootComponent._versions, name);
@@ -140,7 +144,10 @@ export function createLazyComponent(rootComponent) {
                 // Set up template update function
                 childComponentRef._updateTemplate = function (newInnerHtml) {
                     let childProcessed = processTemplate(newInnerHtml, rootComponent);
-                    let newTemplate = '<div data-livue-id="' + componentId + '">' + childProcessed.template + '</div>';
+                    let newTemplate = insertAttributesIntoHtmlRoot(
+                        childProcessed.template,
+                        'data-livue-id="' + componentId + '"'
+                    );
 
                     // Register any nested children (only if not already registered)
                     for (let ct in childProcessed.childDefs) {
