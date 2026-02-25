@@ -180,8 +180,10 @@ class ComponentRenderer
             $styleTag = "<style>{$scopedCss}</style>\n";
         }
 
+        $vCloak = $component->shouldCloak() ? ' v-cloak' : '';
+
         return <<<HTML
-        {$styleTag}<div v-cloak data-livue-id="{$componentId}" data-livue-snapshot="{$encodedSnapshot}"{$islandAttr}{$scopeAttr}{$refAttr}{$modelAttr}>
+        {$styleTag}<div{$vCloak} data-livue-id="{$componentId}" data-livue-snapshot="{$encodedSnapshot}"{$islandAttr}{$scopeAttr}{$refAttr}{$modelAttr}>
         {$html}
         </div>
         HTML;

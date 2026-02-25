@@ -208,18 +208,27 @@ JS;
     }
 
     /**
-     * Output component-declared CSS styles.
+     * Output CSS styles for LiVue.
      *
-     * Note: The main LiVue CSS is inlined in the JS bundle.
-     * This method outputs only component-specific styles declared
+     * Includes critical CSS (v-cloak rule) inline so elements are hidden
+     * before JavaScript loads, plus any component-specific styles declared
      * via #[Css] attributes or assets() method.
      */
     public function renderStyles(): string
     {
         $nonce = $this->getNonce();
+        $nonceAttr = $this->getNonceAttribute();
         $assetManager = app(AssetManager::class);
 
-        return $assetManager->renderStyles($nonce);
+        // Marker to prevent duplicate injection by middleware
+        $output = "<!-- livue-styles -->\n";
+
+        // Critical CSS: hide v-cloak elements immediately (before JS loads)
+        $output .= '<style' . $nonceAttr . '>[v-cloak]{display:none!important}</style>' . "\n";
+
+        $output .= $assetManager->renderStyles($nonce);
+
+        return $output;
     }
 
     /**

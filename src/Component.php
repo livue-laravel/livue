@@ -72,6 +72,22 @@ abstract class Component
     abstract protected function render(): string;
 
     // ---------------------------------------------------------------
+    //  Rendering behavior
+    // ---------------------------------------------------------------
+
+    /**
+     * Whether the component wrapper should include v-cloak.
+     *
+     * When true (default), the wrapper div gets v-cloak which hides
+     * content until Vue mounts. Override to return false for components
+     * with server-rendered content that should be visible immediately.
+     */
+    public function shouldCloak(): bool
+    {
+        return true;
+    }
+
+    // ---------------------------------------------------------------
     //  Constructor
     // ---------------------------------------------------------------
 
