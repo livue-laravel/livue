@@ -14,6 +14,7 @@
  *   <a v-click:navigate.prevent.stop="'/dashboard'">Go</a>
  *   <button v-click:save.debounce.500ms>Save</button>
  *   <button v-click:track.throttle.1000ms>Track</button>
+ *   <button v-click:delete.confirm="item.id">Delete</button>
  *   <div v-click:close.outside>Modal</div>
  *   <button v-click:init.once>Initialize</button>
  *   <div v-click:handleOverlay.self>Overlay</div>
@@ -150,7 +151,11 @@ export default {
 
             // Execute call (with debounce/throttle if applicable)
             const doCall = function() {
-                livue.call(methodName, ...args);
+                if (modifiers.confirm) {
+                    livue.callWithConfirm(methodName, 'Are you sure?', ...args);
+                } else {
+                    livue.call(methodName, ...args);
+                }
             };
 
             if (debounced) {

@@ -49,6 +49,7 @@ beforeEach(async () => {
     // Create mock livue helper
     mockLivue = {
         call: vi.fn(),
+        callWithConfirm: vi.fn(),
     };
 
     // Create mock vnode with context
@@ -326,6 +327,68 @@ describe('v-click Directive', () => {
                 expect.any(Function),
                 expect.objectContaining({ capture: true })
             );
+        });
+
+        it('.confirm should call callWithConfirm instead of call', () => {
+            const el = document.createElement('button');
+
+            clickDirective.mounted(el, {
+                arg: 'delete',
+                modifiers: { confirm: true },
+                value: undefined,
+            }, mockVnode);
+
+            el.click();
+
+            expect(mockLivue.callWithConfirm).toHaveBeenCalledWith('delete', 'Are you sure?');
+            expect(mockLivue.call).not.toHaveBeenCalled();
+        });
+
+        it('.confirm should pass single argument', () => {
+            const el = document.createElement('button');
+
+            clickDirective.mounted(el, {
+                arg: 'delete',
+                modifiers: { confirm: true },
+                value: 42,
+            }, mockVnode);
+
+            el.click();
+
+            expect(mockLivue.callWithConfirm).toHaveBeenCalledWith('delete', 'Are you sure?', 42);
+        });
+
+        it('.confirm should pass array arguments', () => {
+            const el = document.createElement('button');
+
+            clickDirective.mounted(el, {
+                arg: 'remove',
+                modifiers: { confirm: true },
+                value: [1, 'item'],
+            }, mockVnode);
+
+            el.click();
+
+            expect(mockLivue.callWithConfirm).toHaveBeenCalledWith('remove', 'Are you sure?', 1, 'item');
+        });
+
+        it('.confirm combined with .prevent should preventDefault and call callWithConfirm', () => {
+            const el = document.createElement('button');
+
+            clickDirective.mounted(el, {
+                arg: 'delete',
+                modifiers: { confirm: true, prevent: true },
+                value: 5,
+            }, mockVnode);
+
+            const event = new MouseEvent('click', { cancelable: true });
+            const preventSpy = vi.spyOn(event, 'preventDefault');
+
+            el.dispatchEvent(event);
+
+            expect(preventSpy).toHaveBeenCalled();
+            expect(mockLivue.callWithConfirm).toHaveBeenCalledWith('delete', 'Are you sure?', 5);
+            expect(mockLivue.call).not.toHaveBeenCalled();
         });
 
         it('.passive should use passive listener', () => {
