@@ -20,39 +20,13 @@
  *   :N      - Custom margin in pixels (arg)
  */
 
+import { getLivueFromVnode } from '../helpers/livue-context.js';
+
 /**
  * WeakMap to store observers for cleanup.
  * @type {WeakMap<HTMLElement, IntersectionObserver>}
  */
 const observers = new WeakMap();
-
-/**
- * Get the livue helper from a vnode context.
- *
- * @param {object} vnode - Vue vnode
- * @returns {object|null} - livue helper or null
- */
-function getLivueFromVnode(vnode) {
-    let ctx = vnode.ctx;
-
-    if (ctx && ctx.setupState && ctx.setupState.livue) {
-        return ctx.setupState.livue;
-    }
-
-    if (ctx && ctx.parent && ctx.parent.setupState && ctx.parent.setupState.livue) {
-        return ctx.parent.setupState.livue;
-    }
-
-    let parent = ctx ? ctx.parent : null;
-    while (parent) {
-        if (parent.setupState && parent.setupState.livue) {
-            return parent.setupState.livue;
-        }
-        parent = parent.parent;
-    }
-
-    return null;
-}
 
 export default {
     mounted(el, binding, vnode) {

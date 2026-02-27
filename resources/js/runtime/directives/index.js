@@ -39,6 +39,41 @@ import {
     sortIgnoreDirective,
     sortGroupDirective,
 } from './sort.js';
+import {
+    dblclickDirective,
+    mousedownDirective,
+    mouseupDirective,
+    mouseenterDirective,
+    mouseleaveDirective,
+    mouseoverDirective,
+    mouseoutDirective,
+    mousemoveDirective,
+    contextmenuDirective,
+    keydownDirective,
+    keyupDirective,
+    keypressDirective,
+    focusDirective,
+    focusinDirective,
+    focusoutDirective,
+    touchstartDirective,
+    touchendDirective,
+    touchmoveDirective,
+    touchcancelDirective,
+    changeDirective,
+    inputDirective,
+    resetDirective,
+    dragstartDirective,
+    dragendDirective,
+    dragenterDirective,
+    dragleaveDirective,
+    dragoverDirective,
+    dropDirective,
+    copyDirective,
+    cutDirective,
+    pasteDirective,
+    wheelDirective,
+    resizeDirective,
+} from './events.js';
 
 /**
  * Register all built-in directives.
@@ -112,6 +147,56 @@ export function registerBuiltInDirectives() {
     addDirective('sort-handle', sortHandleDirective, null);
     addDirective('sort-ignore', sortIgnoreDirective, null);
     addDirective('sort-group', sortGroupDirective, null);
+
+    // DOM Event directives (factory-generated)
+    // Mouse events
+    addDirective('dblclick', dblclickDirective, null);
+    addDirective('mousedown', mousedownDirective, null);
+    addDirective('mouseup', mouseupDirective, null);
+    addDirective('mouseenter', mouseenterDirective, null);
+    addDirective('mouseleave', mouseleaveDirective, null);
+    addDirective('mouseover', mouseoverDirective, null);
+    addDirective('mouseout', mouseoutDirective, null);
+    addDirective('mousemove', mousemoveDirective, null);
+    addDirective('contextmenu', contextmenuDirective, null);
+
+    // Keyboard events
+    addDirective('keydown', keydownDirective, null);
+    addDirective('keyup', keyupDirective, null);
+    addDirective('keypress', keypressDirective, null);
+
+    // Focus events
+    addDirective('focus', focusDirective, null);
+    addDirective('focusin', focusinDirective, null);
+    addDirective('focusout', focusoutDirective, null);
+
+    // Touch events
+    addDirective('touchstart', touchstartDirective, null);
+    addDirective('touchend', touchendDirective, null);
+    addDirective('touchmove', touchmoveDirective, null);
+    addDirective('touchcancel', touchcancelDirective, null);
+
+    // Form events
+    addDirective('change', changeDirective, null);
+    addDirective('input', inputDirective, null);
+    addDirective('reset', resetDirective, null);
+
+    // Drag events
+    addDirective('dragstart', dragstartDirective, null);
+    addDirective('dragend', dragendDirective, null);
+    addDirective('dragenter', dragenterDirective, null);
+    addDirective('dragleave', dragleaveDirective, null);
+    addDirective('dragover', dragoverDirective, null);
+    addDirective('drop', dropDirective, null);
+
+    // Clipboard events
+    addDirective('copy', copyDirective, null);
+    addDirective('cut', cutDirective, null);
+    addDirective('paste', pasteDirective, null);
+
+    // Other events
+    addDirective('wheel', wheelDirective, null);
+    addDirective('resize', resizeDirective, null);
 }
 
 export {
@@ -143,4 +228,38 @@ export {
     sortIgnoreDirective,
     sortGroupDirective,
     watchDirective,
+    // DOM Event directives
+    dblclickDirective,
+    mousedownDirective,
+    mouseupDirective,
+    mouseenterDirective,
+    mouseleaveDirective,
+    mouseoverDirective,
+    mouseoutDirective,
+    mousemoveDirective,
+    contextmenuDirective,
+    keydownDirective,
+    keyupDirective,
+    keypressDirective,
+    focusDirective,
+    focusinDirective,
+    focusoutDirective,
+    touchstartDirective,
+    touchendDirective,
+    touchmoveDirective,
+    touchcancelDirective,
+    changeDirective,
+    inputDirective,
+    resetDirective,
+    dragstartDirective,
+    dragendDirective,
+    dragenterDirective,
+    dragleaveDirective,
+    dragoverDirective,
+    dropDirective,
+    copyDirective,
+    cutDirective,
+    pasteDirective,
+    wheelDirective,
+    resizeDirective,
 };
