@@ -186,7 +186,21 @@ export function createEventDirective(eventName, options = {}) {
                 } else {
                     // v-event="'methodName'" or v-event="methodName"
                     const currentValue = binding.value;
-                    if (typeof currentValue === 'string') {
+                    if (typeof currentValue === 'function') {
+                        // Direct function call: v-click="livue.increment" or v-click="() => livue.increment(2)"
+                        const doCall = function() {
+                            currentValue();
+                        };
+
+                        if (debounced) {
+                            debounced(doCall);
+                        } else if (throttled) {
+                            throttled(doCall);
+                        } else {
+                            doCall();
+                        }
+                        return;
+                    } else if (typeof currentValue === 'string') {
                         methodName = currentValue;
                     } else if (Array.isArray(currentValue) && currentValue.length > 0) {
                         methodName = currentValue[0];

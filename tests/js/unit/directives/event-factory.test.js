@@ -493,6 +493,85 @@ describe('createEventDirective', () => {
         });
     });
 
+    describe('function value support', () => {
+        it('should call the function directly when value is a function', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const fn = vi.fn();
+
+            directive.mounted(el, { arg: undefined, modifiers: {}, value: fn }, mockVnode);
+
+            el.click();
+
+            expect(fn).toHaveBeenCalledTimes(1);
+            expect(mockLivue.call).not.toHaveBeenCalled();
+        });
+
+        it('should apply .debounce to function value', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const fn = vi.fn();
+
+            directive.mounted(el, { arg: undefined, modifiers: { debounce: true, '300ms': true }, value: fn }, mockVnode);
+
+            el.click();
+            expect(fn).not.toHaveBeenCalled();
+
+            vi.advanceTimersByTime(300);
+
+            expect(fn).toHaveBeenCalledTimes(1);
+        });
+
+        it('should apply .throttle to function value', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const fn = vi.fn();
+
+            directive.mounted(el, { arg: undefined, modifiers: { throttle: true, '500ms': true }, value: fn }, mockVnode);
+
+            el.click();
+            expect(fn).toHaveBeenCalledTimes(1);
+
+            el.click();
+            el.click();
+            expect(fn).toHaveBeenCalledTimes(1);
+
+            vi.advanceTimersByTime(500);
+
+            el.click();
+            expect(fn).toHaveBeenCalledTimes(2);
+        });
+
+        it('should apply .prevent with function value', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const fn = vi.fn();
+
+            directive.mounted(el, { arg: undefined, modifiers: { prevent: true }, value: fn }, mockVnode);
+
+            const event = new MouseEvent('click', { cancelable: true });
+            const preventSpy = vi.spyOn(event, 'preventDefault');
+            el.dispatchEvent(event);
+
+            expect(preventSpy).toHaveBeenCalled();
+            expect(fn).toHaveBeenCalledTimes(1);
+        });
+
+        it('should apply .once with function value', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const fn = vi.fn();
+
+            directive.mounted(el, { arg: undefined, modifiers: { once: true }, value: fn }, mockVnode);
+
+            el.click();
+            el.click();
+            el.click();
+
+            expect(fn).toHaveBeenCalledTimes(1);
+        });
+    });
+
     describe('cleanup', () => {
         it('should remove event listener on unmount', () => {
             const directive = createEventDirective('mouseenter');

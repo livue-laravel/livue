@@ -408,7 +408,46 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
                 }
             }
 
-            return base;
+            // Proxy that intercepts unknown properties and returns wrapper functions
+            // calling livue.call(). This allows server methods to be called directly
+            // in templates: @click="increment(2)" instead of @click="livue.increment(2)"
+            var setupBlacklist = { then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1 };
+
+            function isServerMethod(prop) {
+                return typeof prop === 'string' && !prop.startsWith('$') && !prop.startsWith('__') && !setupBlacklist[prop];
+            }
+
+            return new Proxy(base, {
+                get: function (target, prop, receiver) {
+                    if (prop in target) return Reflect.get(target, prop, receiver);
+                    if (typeof prop === 'symbol') return Reflect.get(target, prop, receiver);
+                    if (isServerMethod(prop)) {
+                        return function () {
+                            return livue.call(prop, ...arguments);
+                        };
+                    }
+                    return undefined;
+                },
+                getOwnPropertyDescriptor: function (target, prop) {
+                    var desc = Object.getOwnPropertyDescriptor(target, prop);
+                    if (desc) return desc;
+                    if (isServerMethod(prop)) {
+                        return { configurable: true, enumerable: false };
+                    }
+                    return undefined;
+                },
+                has: function (target, prop) {
+                    if (prop in target) return true;
+                    if (isServerMethod(prop)) return true;
+                    return false;
+                },
+                set: function (target, prop, value, receiver) {
+                    return Reflect.set(target, prop, value, receiver);
+                },
+                ownKeys: function (target) {
+                    return Reflect.ownKeys(target);
+                },
+            });
         },
     };
 }
@@ -671,6 +710,9 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
     // Reactive object tracking loading state per method
     let loadingTargets = reactive({});
 
+    // Magic methods registry: extensible map of $-prefixed methods handled client-side
+    let magicMethods = {};
+
     // PHP Composables: create reactive objects for each composable namespace.
     // The callFn wrapper allows composable actions to use livue.call which is defined below.
     let composables = {};
@@ -818,6 +860,11 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                     // Old API with multiple params: livue.call('method', p1, p2, ...)
                     params = Array.prototype.slice.call(arguments, 1);
                 }
+            }
+
+            // Magic methods: handle $-prefixed methods client-side
+            if (magicMethods[method]) {
+                return magicMethods[method](livue, params);
             }
 
             // #[Vue] methods: execute client-side JS directly
@@ -1400,6 +1447,33 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
         livue[ns] = composables[ns];
     }
 
+    // $refresh magic method: re-renders the component without calling any server method.
+    // Sends the current snapshot with method=null, triggering the full lifecycle (boot, hydrate, render).
+    async function doRefresh() {
+        livue.loading = true;
+        livue.processing = '$refresh';
+        loadingTargets['$refresh'] = true;
+        try {
+            let payload = buildPayload();
+            let response = await sendAction(payload.snapshot, null, [], payload.diffs, isolate);
+            return applyResponse(response, payload.diffs);
+        } catch (error) {
+            if (error.status === 422 && error.data && error.data.errors) {
+                setErrors(livue.errors, error.data.errors);
+            } else {
+                handleError(error, name);
+            }
+        } finally {
+            livue.loading = false;
+            livue.processing = null;
+            delete loadingTargets['$refresh'];
+        }
+    }
+
+    magicMethods['$refresh'] = function () {
+        return doRefresh();
+    };
+
     // TabSync: register to receive updates from other tabs
     if (tabSync && tabSync.enabled) {
         registerTabSync(name, function (incomingState, properties, config) {
@@ -1458,7 +1532,47 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
         });
     }
 
-    return { livue: livue, composables: composables };
+    // Wrap livue in a Proxy to expose magic methods (e.g. livue.$refresh())
+    // and server methods (e.g. livue.increment(2)) directly on the object.
+    // Properties already defined on livue pass through to the reactive object,
+    // preserving Vue's dependency tracking.
+    var proxyBlacklist = { then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1 };
+
+    let livueProxy = new Proxy(livue, {
+        get: function (target, prop, receiver) {
+            if (prop in target) {
+                return Reflect.get(target, prop, receiver);
+            }
+            if (typeof prop === 'symbol') {
+                return Reflect.get(target, prop, receiver);
+            }
+            if (typeof prop === 'string' && prop.startsWith('$') && magicMethods[prop]) {
+                return function () {
+                    var args = Array.prototype.slice.call(arguments);
+                    return magicMethods[prop](livue, args);
+                };
+            }
+            // Server method proxy: livue.increment(2) → livue.call('increment', [2])
+            if (typeof prop === 'string' && !prop.startsWith('$') && !proxyBlacklist[prop]) {
+                return function () {
+                    var args = Array.prototype.slice.call(arguments);
+                    return livue.call(prop, ...args);
+                };
+            }
+            return undefined;
+        },
+        set: function (target, prop, value, receiver) {
+            return Reflect.set(target, prop, value, receiver);
+        },
+        has: function (target, prop) {
+            if (typeof prop === 'string' && prop.startsWith('$') && magicMethods[prop]) {
+                return true;
+            }
+            return Reflect.has(target, prop);
+        },
+    });
+
+    return { livue: livueProxy, composables: composables };
 }
 
 /**
