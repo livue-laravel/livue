@@ -5,6 +5,44 @@
 import { reactive, toRefs } from 'vue';
 
 /**
+ * JSON.stringify replacer that converts arrays with non-numeric keys to objects.
+ * Prevents data loss when arrays are used as objects (e.g., via v-model dot-notation).
+ */
+function arrayAwareReplacer(key, value) {
+    if (Array.isArray(value)) {
+        let keys = Object.keys(value);
+        let hasNonNumeric = false;
+
+        for (let i = 0; i < keys.length; i++) {
+            if (isNaN(Number(keys[i]))) {
+                hasNonNumeric = true;
+                break;
+            }
+        }
+
+        if (hasNonNumeric) {
+            let obj = {};
+            for (let i = 0; i < keys.length; i++) {
+                obj[keys[i]] = value[keys[i]];
+            }
+            return obj;
+        }
+    }
+
+    return value;
+}
+
+/**
+ * Stringify a value preserving non-numeric keys on arrays.
+ *
+ * @param {*} value
+ * @returns {string}
+ */
+function safeStringify(value) {
+    return JSON.stringify(value, arrayAwareReplacer);
+}
+
+/**
  * Create a Vue reactive state object from a plain object.
  *
  * @param {object} initialState
@@ -28,8 +66,8 @@ export function updateState(reactiveState, newState) {
     for (key in newState) {
         // Only update if the value has actually changed
         // This prevents unnecessary Vue re-renders for identical values
-        let oldJson = JSON.stringify(reactiveState[key]);
-        let newJson = JSON.stringify(newState[key]);
+        let oldJson = safeStringify(reactiveState[key]);
+        let newJson = safeStringify(newState[key]);
 
         if (oldJson !== newJson) {
             reactiveState[key] = newState[key];
@@ -47,11 +85,16 @@ export function updateState(reactiveState, newState) {
  * Serialize a reactive state to a plain JSON-safe object.
  * Strips Vue reactivity proxies.
  *
+ * Uses a custom replacer to handle arrays that have non-numeric keys.
+ * This happens when Vue's v-model with dot-notation paths (e.g., v-model="data.email")
+ * sets string-keyed properties on arrays. JSON.stringify normally ignores non-numeric
+ * array keys, so we convert such arrays to plain objects to preserve the values.
+ *
  * @param {object} reactiveState
  * @returns {object}
  */
 export function serializeState(reactiveState) {
-    return JSON.parse(JSON.stringify(reactiveState));
+    return JSON.parse(JSON.stringify(reactiveState, arrayAwareReplacer));
 }
 
 /**

@@ -317,6 +317,11 @@ class LifecycleManager
                 $newMemo['computed'] = array_keys($redirectComputed);
             }
 
+            // Collect memo contributions from hooks so feature data (e.g., tenant ID)
+            // is preserved in the snapshot for subsequent AJAX requests.
+            $featureMemo = $this->hookRegistry->collectMemo($component);
+            $newMemo = array_merge($newMemo, $featureMemo);
+
             $this->hookRegistry->cleanup($component);
 
             return [
@@ -325,13 +330,13 @@ class LifecycleManager
             ];
         }
 
-        // 7b. Check for download intent — short-circuit if present
+        // 7b. Check for download intent — short-circuit (like redirect).
+        //     The modal closes via Vue reactivity (mountedAction state update in snapshot).
         $download = $component->getDownload();
         if ($download !== null) {
             $rawState = $component->getState();
             $dehydratedState = $this->synthRegistry->dehydrateState($rawState);
 
-            // Extract #[Guarded] properties and encrypt them
             [$dehydratedState, $lockedMemo] = $this->extractLockedProperties($component, $dehydratedState);
 
             $downloadComputed = $component->getComputedValues();
@@ -354,19 +359,19 @@ class LifecycleManager
                 $newMemo['computed'] = array_keys($downloadComputed);
             }
 
-            // Create encrypted download token with expiry
             $downloadToken = encrypt(array_merge($download, [
                 'expires' => now()->addMinutes(5)->timestamp,
             ]));
+
+            // Collect memo from hooks (tenant ID, etc.)
+            $featureMemo = $this->hookRegistry->collectMemo($component);
+            $newMemo = array_merge($newMemo, $featureMemo);
 
             $this->hookRegistry->cleanup($component);
 
             return [
                 'snapshot' => json_encode(['state' => $dehydratedState, 'memo' => $newMemo]),
-                'download' => [
-                    'token' => $downloadToken,
-                    'name' => $download['name'],
-                ],
+                'download' => ['token' => $downloadToken, 'name' => $download['name']],
             ];
         }
 

@@ -36,6 +36,13 @@ class LiVuePageController extends Controller
         );
         $lifecycle->mount($component, $routeParams);
 
+        // If mount() triggered a redirect, issue an HTTP redirect
+        // instead of rendering the page.
+        $redirect = $component->getRedirect();
+        if ($redirect !== null) {
+            return redirect()->to($redirect['url']);
+        }
+
         $renderer = new ComponentRenderer();
         $componentHtml = $renderer->render($component);
 
@@ -47,10 +54,12 @@ class LiVuePageController extends Controller
 
         $head = $component->getHead();
 
-        return view($layout, [
+        $layoutData = $component->getLayoutData();
+
+        return view($layout, array_merge([
             'slot' => new HtmlString($componentHtml),
             'title' => $title,
             'head' => $head,
-        ]);
+        ], $layoutData));
     }
 }

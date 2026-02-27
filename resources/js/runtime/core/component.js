@@ -1645,6 +1645,9 @@ function processTemplate(html, rootComponent) {
                     'data-livue-id="' + id + '"'
                 );
 
+                // Guard: abort if the Vue app was destroyed (e.g. SPA navigation)
+                if (!rootComponent.vueApp) return;
+
                 // Register any new nested children discovered in the update
                 for (let ct in childProcessed.childDefs) {
                     if (!rootComponent.vueApp._context.components[ct]) {
@@ -1861,6 +1864,9 @@ export default class LiVueComponent {
 
                 // Process the new HTML (may discover new children)
                 let rootProcessed = processTemplate(newInnerHtml, self);
+
+                // Guard: abort if the Vue app was destroyed (e.g. SPA navigation)
+                if (!self.vueApp) return;
 
                 // Register any new child components in the app
                 // Only register if not already registered to avoid Vue warnings
@@ -2116,7 +2122,12 @@ export default class LiVueComponent {
         unsubscribeEcho(this.componentId);
 
         if (this.vueApp) {
-            this.vueApp.unmount();
+            try {
+                this.vueApp.unmount();
+            } catch (e) {
+                // Ignore errors during unmount (e.g. Vue devtools hooks
+                // accessing appContext.app after teardown during SPA navigation)
+            }
             this.vueApp = null;
         }
     }

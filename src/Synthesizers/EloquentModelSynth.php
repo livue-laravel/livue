@@ -46,6 +46,12 @@ class EloquentModelSynth extends PropertySynthesizer
             );
         }
 
-        return $class::findOrFail($key);
+        $query = $class::query();
+
+        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($class))) {
+            $query->withTrashed();
+        }
+
+        return $query->findOrFail($key);
     }
 }

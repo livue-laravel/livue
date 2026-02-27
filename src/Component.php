@@ -87,6 +87,17 @@ abstract class Component
         return true;
     }
 
+    /**
+     * Get extra data to pass to the layout view.
+     *
+     * Override this in subclasses to pass additional variables
+     * to the layout template beyond slot, title, and head.
+     */
+    public function getLayoutData(): array
+    {
+        return [];
+    }
+
     // ---------------------------------------------------------------
     //  Constructor
     // ---------------------------------------------------------------
