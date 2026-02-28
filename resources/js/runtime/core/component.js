@@ -443,25 +443,21 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
     let compiledRender = Vue.compile(extracted.html);
     let currentRenderRef = shallowRef(compiledRender);
     let renderCache = [];
-    let renderSwapped = false;
 
-    // Render wrapper: reads currentRenderRef.value inside the effect → reactive dependency
+    // Render wrapper: reads currentRenderRef.value inside the effect → reactive dependency.
+    // Always strips dynamicChildren to disable Vue's block tree optimization.
+    // This is necessary because after a render function swap, the block tree structure
+    // differs from the previous render, causing patchBlockChildren to crash when
+    // dynamicChildren arrays don't match. Stripping on every render (not just after
+    // swaps) is required because: if render N strips but render N+1 doesn't, Vue would
+    // see n1 (from N) without dynamicChildren and n2 (from N+1) WITH dynamicChildren,
+    // then call patchBlockChildren with null oldChildren → crash.
+    // The performance cost is negligible: Vue still creates optimized VNodes, only the
+    // diff step checks all nodes instead of just dynamic ones.
     function wrapperRender(_ctx, _cache) {
         let fn = currentRenderRef.value;
         let vnode = fn(_ctx, renderCache);
-        if (renderSwapped) {
-            // After a render function swap, the block tree structure may differ
-            // from the previous render. Vue's block optimization (dynamicChildren)
-            // only patches tracked dynamic nodes, so structural changes (new/removed
-            // static elements, different child components) would be missed or crash.
-            // Recursively stripping dynamicChildren forces a full vdom diff for this
-            // one render. Subsequent renders with the same compiled function use block
-            // optimization normally. The recursive walk is needed because nested
-            // fragments (v-if, v-for, <template>) have their own dynamicChildren
-            // that would also mismatch between the old and new render functions.
-            stripBlockTree(vnode);
-            renderSwapped = false;
-        }
+        stripBlockTree(vnode);
         return vnode;
     }
     wrapperRender._rc = true; // Crucial: activates installWithProxy for with(_ctx)
@@ -537,13 +533,16 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
         },
     };
 
-    // API to update the template without creating a new def
+    // API to update the template without creating a new def.
+    // Vue.compile() caches by template string, so identical strings return the
+    // same function reference — the === check skips unnecessary reactive updates.
     def._updateRender = function (newHtml) {
         let newTransformed = transformVModelModifiers(newHtml);
         let newExtracted = extractSetupScript(newTransformed);
-        renderSwapped = true;
-        renderCache.length = 0; // Reset stale cache
-        currentRenderRef.value = Vue.compile(newExtracted.html);
+        let newCompiled = Vue.compile(newExtracted.html);
+        if (newCompiled === currentRenderRef.value) return;
+        renderCache.length = 0;
+        currentRenderRef.value = newCompiled;
     };
 
     return def;
@@ -1825,6 +1824,12 @@ function processTemplate(html, rootComponent) {
             _childCounter++;
             let tagName = 'livue-child-' + _childCounter;
 
+            // Initialize version so the :key binding has a concrete value (0).
+            // Without this, livueV[tagName] is undefined → Vue treats it as no key
+            // → uses positional matching → structural changes in the parent template
+            // (e.g., modal opening) shift positions and cause child recreation.
+            rootComponent._versions[tagName] = 0;
+
             let childState = createReactiveState(initialState);
             // Plain unwrapped copy for diff tracking
             let childServerState = JSON.parse(JSON.stringify(initialState));
@@ -1907,9 +1912,13 @@ function processTemplate(html, rootComponent) {
                 // Process the new HTML (might contain nested children)
                 let childProcessed = processTemplate(newInnerHtml, rootComponent);
 
-                // Inject data-livue-id into the root tag of the child template
+                // Wrap in the same rootTag used during initial creation, so the
+                // template structure matches: <rootTag data-livue-id="...">content</rootTag>
+                // Without this, the initial template has an outer wrapper div but the
+                // update template injects data-livue-id directly into the content root,
+                // causing a structural mismatch → Vue recreates all DOM elements → flicker.
                 let newTemplate = insertAttributesIntoHtmlRoot(
-                    childProcessed.template,
+                    '<' + existing.rootTag + '>' + childProcessed.template + '</' + existing.rootTag + '>',
                     'data-livue-id="' + id + '"'
                 );
 
@@ -1923,11 +1932,10 @@ function processTemplate(html, rootComponent) {
                     }
                 }
 
-                // Update this child's template (direct assignment avoids Vue warning)
-                rootComponent.vueApp._context.components[existing.tagName] = buildComponentDef(newTemplate, existing.state, existing.livue, existing.composables || {}, rootComponent._versions, existing.name);
-
-                // Bump version to force Vue to re-create the component
-                rootComponent._versions[existing.tagName] = (rootComponent._versions[existing.tagName] || 0) + 1;
+                // Update child's render function in place — preserves Vue component
+                // instance (and any third-party widgets like charts mounted inside).
+                let existingDef = rootComponent.vueApp._context.components[existing.tagName];
+                existingDef._updateRender(newTemplate);
 
                 // Restore v-ignore content AFTER Vue updates the DOM
                 nextTick(function () {
