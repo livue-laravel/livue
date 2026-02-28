@@ -13,9 +13,10 @@ use Symfony\Component\HttpFoundation\Response as BaseResponse;
  *
  * This middleware:
  * 1. Detects if any LiVue component was rendered in the response
- * 2. Injects component CSS (#[Css]) before </head>
- * 3. Injects JS (LiVue bundle + component #[Js]) before </body>
- * 4. Prevents duplicate injection if @livueScripts/@livueStyles are already present
+ * 2. Injects CSRF meta tag if not already present (for AJAX requests)
+ * 3. Injects component CSS (#[Css]) before </head>
+ * 4. Injects JS (LiVue bundle + component #[Js]) before </body>
+ * 5. Prevents duplicate injection if @livueScripts/@livueStyles are already present
  *
  * Assets are served via route (e.g., /livue/livue.js) - no vendor:publish required.
  */
@@ -42,6 +43,11 @@ class LiVueAssetInjectionMiddleware
         // Check if LiVue components are present in the response
         if (! $this->hasLiVueComponents($html)) {
             return $response;
+        }
+
+        // Inject CSRF meta tag if not present
+        if (! $this->hasCsrfMetaTag($html)) {
+            $html = $this->injectCsrfToken($html);
         }
 
         // Inject styles (component CSS) before </head>
@@ -80,6 +86,31 @@ class LiVueAssetInjectionMiddleware
         }
 
         return true;
+    }
+
+    /**
+     * Check if a CSRF meta tag is already present in the HTML.
+     */
+    protected function hasCsrfMetaTag(string $html): bool
+    {
+        return (bool) preg_match('/<meta\s[^>]*name=["\']csrf-token["\']/i', $html);
+    }
+
+    /**
+     * Inject CSRF meta tag before </head>.
+     */
+    protected function injectCsrfToken(string $html): string
+    {
+        $token = csrf_token();
+        $meta = '<meta name="csrf-token" content="' . e($token) . '">';
+
+        $pos = stripos($html, '</head>');
+
+        if ($pos !== false) {
+            $html = substr_replace($html, $meta . "\n    ", $pos, 0);
+        }
+
+        return $html;
     }
 
     /**
