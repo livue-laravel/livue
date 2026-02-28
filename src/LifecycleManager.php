@@ -494,8 +494,8 @@ class LifecycleManager
             $result['html'] = $htmlAfter;
         }
 
-        // 11b. Include JSON result if method was a #[Json] endpoint
-        if ($store->get('json', false) && $methodReturnValue !== null) {
+        // 11b. Include return value if method returned something
+        if ($methodReturnValue !== null) {
             $result['jsonResult'] = $methodReturnValue;
         }
 

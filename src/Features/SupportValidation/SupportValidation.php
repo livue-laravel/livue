@@ -39,6 +39,13 @@ class SupportValidation extends ComponentHook
     public function exception(Component $component, ComponentStore $store, \Throwable $e): mixed
     {
         if ($e instanceof ValidationException) {
+            // For #[Json] methods: don't capture errors in the error bag.
+            // Let the exception propagate to the controller, which returns 422.
+            // The client rejects the Promise with the errors (isolated validation).
+            if ($store->get('jsonMethod', false)) {
+                return null;
+            }
+
             // If the component already has errors (e.g., Form synced its prefixed errors),
             // don't add the raw validator errors to avoid duplicates.
             $existingErrors = $component->getErrorBag();

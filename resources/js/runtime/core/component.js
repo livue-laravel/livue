@@ -475,6 +475,9 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
     // #[Vue] methods: JS code that runs client-side without server round-trip
     let vueMethods = memo.vueMethods || {};
 
+    // #[Json] methods: send isolated requests, reject Promise on validation errors
+    let jsonMethods = memo.jsonMethods || [];
+
     // #[Confirm] methods: require user confirmation before execution
     let confirms = memo.confirms || {};
 
@@ -602,6 +605,11 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                 // Update #[Vue] methods from new memo
                 if (parsed.memo.vueMethods) {
                     vueMethods = parsed.memo.vueMethods;
+                }
+
+                // Update #[Json] methods from new memo
+                if (parsed.memo.jsonMethods) {
+                    jsonMethods = parsed.memo.jsonMethods;
                 }
 
                 // Update URL params config from new memo
@@ -880,6 +888,9 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                 return;
             }
 
+            // #[Json] methods: isolated request + validation errors reject the Promise
+            let isJsonMethod = jsonMethods.includes(method);
+
             // The actual AJAX call logic
             let doCall = async function () {
                 // #[Confirm] methods: require user confirmation before execution
@@ -897,9 +908,13 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                 let result;
                 try {
                     let payload = buildPayload();
-                    let response = await sendAction(payload.snapshot, method, params, payload.diffs, isolate);
+                    let response = await sendAction(payload.snapshot, method, params, payload.diffs, isolate || isJsonMethod);
                     result = applyResponse(response, payload.diffs);
                 } catch (error) {
+                    if (isJsonMethod) {
+                        // #[Json]: don't pollute the error bag, reject with structured errors
+                        throw { status: error.status, errors: error.data && error.data.errors, message: error.message };
+                    }
                     if (error.status === 422 && error.data && error.data.errors) {
                         setErrors(livue.errors, error.data.errors);
                     } else {
