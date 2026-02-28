@@ -397,6 +397,9 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
         name: name || 'LiVueComponent',
         template: extracted.html,
         setup: function () {
+            // Provide livue helper so child Vue components can inject('livue')
+            Vue.provide('livue', livue);
+
             let refs = stateToRefs(state);
             // Spread composables (auth, cart, etc.) at top level for template access
             let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions });

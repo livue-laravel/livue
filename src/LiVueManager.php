@@ -390,6 +390,11 @@ JS;
      */
     public function resolve(string $name): Component
     {
+        // 0. Handle FQCN — allows @livue(MyComponent::class)
+        if (class_exists($name) && is_subclass_of($name, Component::class)) {
+            return $this->resolveByClass($name);
+        }
+
         // 1. Check manually registered components
         if (isset($this->components[$name])) {
             return new ($this->components[$name])();

@@ -292,6 +292,15 @@ class LiVueRuntime {
             return true;
         }
 
+        // If the element is no longer in the DOM (e.g., removed during a
+        // parent's mount phase), it must not be treated as a root component.
+        // This happens when boot() collects all elements upfront but a
+        // parent's _mount() clears its innerHTML before the loop reaches
+        // the child — the child is already managed via _childRegistry.
+        if (!el.isConnected) {
+            return false;
+        }
+
         // Walk up the DOM to see if there's a parent livue component
         let parent = el.parentElement;
 
