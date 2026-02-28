@@ -8,6 +8,7 @@ use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\Security\StateChecksum;
 use LiVue\Synthesizers\SynthesizerRegistry;
 use LiVue\Features\SupportFileUploads\TemporaryUploadedFile;
+use LiVue\Features\SupportFragments\SupportFragments;
 
 class LifecycleManager
 {
@@ -491,7 +492,19 @@ class LifecycleManager
         ];
 
         if ($htmlAfter !== null && $htmlAfter !== $htmlBefore) {
-            $result['html'] = $htmlAfter;
+            $fragmentNames = $store->get('fragmentNames');
+
+            if ($fragmentNames) {
+                $fragments = SupportFragments::extractFragments($htmlAfter, $fragmentNames);
+
+                if (! empty($fragments)) {
+                    $result['fragments'] = $fragments;
+                } else {
+                    $result['html'] = $htmlAfter; // fallback: markers not found
+                }
+            } else {
+                $result['html'] = $htmlAfter;
+            }
         }
 
         // 11b. Include return value if method returned something

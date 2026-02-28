@@ -450,8 +450,9 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
                 RegExp: 1, Map: 1, Set: 1, JSON: 1, Intl: 1, BigInt: 1, console: 1, Error: 1,
             };
 
+            var serverMethodPattern = /^[a-zA-Z][a-zA-Z0-9_]*$/;
             function isServerMethod(prop) {
-                return typeof prop === 'string' && !prop.startsWith('$') && !prop.startsWith('_') && !setupBlacklist[prop];
+                return typeof prop === 'string' && !setupBlacklist[prop] && serverMethodPattern.test(prop);
             }
 
             return new Proxy(base, {
@@ -478,8 +479,9 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
                     if (isServerMethod(prop)) return true;
                     return false;
                 },
-                set: function (target, prop, value, receiver) {
-                    return Reflect.set(target, prop, value, receiver);
+                set: function (target, prop, value) {
+                    target[prop] = value;
+                    return true;
                 },
                 ownKeys: function (target) {
                     return Reflect.ownKeys(target);
@@ -498,9 +500,33 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
  * @param {object} componentRef - Reference with a _updateTemplate method
  * @param {object} initialServerState - Plain unwrapped copy of the initial state (for diff tracking)
  * @param {string} initialServerSnapshot - Opaque JSON string of the full snapshot (sent back to server as-is)
- * @param {object} [context] - Additional context { el, rootComponent, isChild, parentLivue }
+ * @param {object} [context] - Additional context { el, rootComponent, isChild, parentLivue, initialHtml }
  * @returns {object} Reactive livue helper
  */
+
+/**
+ * Patch a cached HTML string by replacing fragment sections with new content.
+ * Fragments are delimited by <!--livue-fragment:name--> / <!--/livue-fragment:name--> markers.
+ *
+ * @param {string} html - The base HTML to patch
+ * @param {object} fragments - Map of fragment name to new content (including markers)
+ * @returns {string} The patched HTML
+ */
+function patchFragments(html, fragments) {
+    for (var name in fragments) {
+        var startMarker = '<!--livue-fragment:' + name + '-->';
+        var endMarker = '<!--/livue-fragment:' + name + '-->';
+        var startIdx = html.indexOf(startMarker);
+        var endIdx = html.indexOf(endMarker);
+
+        if (startIdx !== -1 && endIdx !== -1) {
+            html = html.substring(0, startIdx) + fragments[name] + html.substring(endIdx + endMarker.length);
+        }
+    }
+
+    return html;
+}
+
 function createLivueHelper(componentId, state, memo, componentRef, initialServerState, initialServerSnapshot, context) {
     context = context || {};
     let errors = createErrors();
@@ -537,6 +563,11 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
     // The full snapshot as an opaque JSON string. Sent back to the server as-is
     // for checksum verification. Updated after each server response.
     let serverSnapshot = initialServerSnapshot;
+
+    // Last raw HTML from the server, used as base for fragment patching.
+    // When the server sends only fragments, we patch this cached copy
+    // and pass the result to _updateTemplate.
+    let lastRawHtml = context.initialHtml || null;
 
     /**
      * Handle a download response by creating a temporary link and clicking it.
@@ -672,7 +703,7 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
         if (urlParams) {
             updateQueryString(urlParams, state);
         }
-        if (response.html && componentRef && componentRef._updateTemplate) {
+        if ((response.html || response.fragments) && componentRef && componentRef._updateTemplate) {
             // Extract transition options from memo (#[Transition])
             let transitionOpts = {};
             if (response.snapshot) {
@@ -686,7 +717,20 @@ function createLivueHelper(componentId, state, memo, componentRef, initialServer
                     }
                 }
             }
-            componentRef._updateTemplate(response.html, transitionOpts);
+
+            if (response.fragments) {
+                // Partial update: patch only the changed fragments
+                let baseHtml = lastRawHtml || (context.el ? context.el.innerHTML : null);
+                if (baseHtml) {
+                    let patchedHtml = patchFragments(baseHtml, response.fragments);
+                    lastRawHtml = patchedHtml;
+                    componentRef._updateTemplate(patchedHtml, transitionOpts);
+                }
+            } else {
+                // Full update: replace entire template
+                lastRawHtml = response.html;
+                componentRef._updateTemplate(response.html, transitionOpts);
+            }
         }
         if (response.events && response.events.length > 0) {
             for (var i = 0; i < response.events.length; i++) {
@@ -2092,6 +2136,7 @@ export default class LiVueComponent {
             isChild: false,
             parentLivue: null,
             cleanups: this._cleanups,
+            initialHtml: this.el.innerHTML,
         });
         let livue = helperResult.livue;
         let rootComposables = helperResult.composables;

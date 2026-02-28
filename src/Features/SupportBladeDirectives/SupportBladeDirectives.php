@@ -21,6 +21,7 @@ class SupportBladeDirectives extends ComponentHook
         static::registerHeadDirective();
         static::registerTeleportDirectives();
         static::registerPersistDirectives();
+        static::registerFragmentDirectives();
     }
 
     /**
@@ -155,6 +156,32 @@ class SupportBladeDirectives extends ComponentHook
 
         Blade::directive('endpersist', function () {
             return '</div>';
+        });
+    }
+
+    /**
+     * @fragment('name') / @endfragment - Mark template sections as fragments.
+     *
+     * Wraps content with HTML comment markers that allow the server to
+     * extract and send only the changed sections instead of the full template.
+     *
+     * Usage:
+     *   @fragment('modal')
+     *       <div class="modal">...</div>
+     *   @endfragment
+     *
+     * Combined with #[Fragment('modal')] on PHP methods, only the fragment
+     * content is sent in the response, reducing payload size significantly.
+     * Supports nesting via an internal stack.
+     */
+    protected static function registerFragmentDirectives(): void
+    {
+        Blade::directive('fragment', function (string $expression) {
+            return '<?php ($__livue_fragment_stack ??= []); $__livue_fragment_stack[] = ' . $expression . '; ?><!--livue-fragment:<?php echo e(end($__livue_fragment_stack)); ?>-->';
+        });
+
+        Blade::directive('endfragment', function () {
+            return '<!--/livue-fragment:<?php echo e(array_pop($__livue_fragment_stack)); ?>-->';
         });
     }
 

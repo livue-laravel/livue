@@ -21,6 +21,7 @@ use LiVue\Features\SupportDirtyTracking\SupportDirtyTracking;
 use LiVue\Features\SupportDownloads\SupportDownloads;
 use LiVue\Features\SupportErrorBoundary\SupportErrorBoundary;
 use LiVue\Features\SupportFileUploads\SupportFileUploads;
+use LiVue\Features\SupportFragments\SupportFragments;
 use LiVue\Features\SupportHooks\HookRegistry;
 use LiVue\Features\SupportJson\SupportJson;
 use LiVue\Features\SupportLazy\SupportLazy;
@@ -151,6 +152,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportComposables::class);
         $registry->register(SupportValidation::class);
         $registry->register(SupportRendering::class);
+        $registry->register(SupportFragments::class);
         $registry->register(SupportJson::class);
         $registry->register(SupportPagination::class);
         $registry->register(SupportFileUploads::class);
