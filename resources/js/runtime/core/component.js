@@ -280,21 +280,47 @@ let _vueApiValues = _vueApiNames.map(function (k) { return _vueApis[k]; });
  * @returns {{ html: string, setupCode: string|null }}
  */
 function extractSetupScript(html) {
-    let match = html.match(/<script\s+type="application\/livue-setup"[^>]*>([\s\S]*?)<\/script>/);
-    if (match) {
-        let code = match[1].trim();
+    let regex = /<script\s+type="application\/livue-setup"[^>]*>([\s\S]*?)<\/script>/g;
+    let matches = Array.from(html.matchAll(regex));
 
-        // Strip optional inner <script> tags (for IDE support)
-        // Matches <script>, <script lang="js">, <script type="text/javascript">, etc.
+    if (matches.length === 0) {
+        return { html: html, setupCode: null };
+    }
+
+    function stripInnerTags(code) {
         code = code.replace(/^<script[^>]*>\s*/i, '');
         code = code.replace(/\s*<\/script>$/i, '');
+        return code.trim();
+    }
 
+    let cleanedHtml = html;
+    for (var i = matches.length - 1; i >= 0; i--) {
+        cleanedHtml = cleanedHtml.replace(matches[i][0], '');
+    }
+
+    if (matches.length === 1) {
         return {
-            html: html.replace(match[0], ''),
-            setupCode: code.trim(),
+            html: cleanedHtml,
+            setupCode: stripInnerTags(matches[0][1].trim()),
         };
     }
-    return { html: html, setupCode: null };
+
+    // Multiple setup blocks: wrap each in an IIFE and merge their return values.
+    // Each block can define its own refs, computed, watchers, etc. and return bindings.
+    var parts = matches.map(function (m) {
+        return stripInnerTags(m[1].trim());
+    });
+
+    var mergedCode = 'var __setupResult = {};\n' +
+        parts.map(function (block) {
+            return 'Object.assign(__setupResult, (function() {\n' + block + '\n})() || {});';
+        }).join('\n') +
+        '\nreturn __setupResult;';
+
+    return {
+        html: cleanedHtml,
+        setupCode: mergedCode,
+    };
 }
 
 /**
@@ -414,10 +440,18 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
             // Proxy that intercepts unknown properties and returns wrapper functions
             // calling livue.call(). This allows server methods to be called directly
             // in templates: @click="increment(2)" instead of @click="livue.increment(2)"
-            var setupBlacklist = { then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1 };
+            var setupBlacklist = {
+                // JS internals
+                then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1,
+                // Vue-allowed JS globals (avoids "should not start with _" warning in runtime-compiled templates)
+                Infinity: 1, undefined: 1, NaN: 1, isFinite: 1, isNaN: 1, parseFloat: 1, parseInt: 1,
+                decodeURI: 1, decodeURIComponent: 1, encodeURI: 1, encodeURIComponent: 1,
+                Math: 1, Number: 1, Date: 1, Array: 1, Object: 1, Boolean: 1, String: 1,
+                RegExp: 1, Map: 1, Set: 1, JSON: 1, Intl: 1, BigInt: 1, console: 1, Error: 1,
+            };
 
             function isServerMethod(prop) {
-                return typeof prop === 'string' && !prop.startsWith('$') && !prop.startsWith('__') && !setupBlacklist[prop];
+                return typeof prop === 'string' && !prop.startsWith('$') && !prop.startsWith('_') && !setupBlacklist[prop];
             }
 
             return new Proxy(base, {
