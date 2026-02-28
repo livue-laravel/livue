@@ -412,16 +412,40 @@ function transformVModelModifiers(html) {
  * @param {object} composables - Composable objects to expose at top level (auth, cart, etc.)
  * @param {object} versions - Reactive version counters for child key-swapping
  * @param {string} [name] - Component name for Vue DevTools
- * @returns {{ name: string, template: string, setup: function }}
+ * @returns {{ name: string, render: function, setup: function, _updateRender: function }}
  */
 function buildComponentDef(templateHtml, state, livue, composables, versions, name) {
     // Transform v-model.debounce etc. into v-model + v-debounce directive
     let transformedHtml = transformVModelModifiers(templateHtml);
     let extracted = extractSetupScript(transformedHtml);
 
-    return {
+    // Compile template with Vue.compile() (has internal cache for template strings)
+    let compiledRender = Vue.compile(extracted.html);
+    let currentRenderRef = shallowRef(compiledRender);
+    let renderCache = [];
+    let renderSwapped = false;
+
+    // Render wrapper: reads currentRenderRef.value inside the effect → reactive dependency
+    function wrapperRender(_ctx, _cache) {
+        let fn = currentRenderRef.value;
+        let vnode = fn(_ctx, renderCache);
+        if (renderSwapped) {
+            // After a render function swap, the block tree structure may differ
+            // from the previous render. Vue's block optimization (dynamicChildren)
+            // only patches tracked dynamic nodes, so structural changes (new/removed
+            // static elements, different child components) would be missed or crash.
+            // Stripping dynamicChildren forces a full vdom diff for this one render.
+            // Subsequent renders with the same compiled function use block optimization.
+            vnode.dynamicChildren = null;
+            renderSwapped = false;
+        }
+        return vnode;
+    }
+    wrapperRender._rc = true; // Crucial: activates installWithProxy for with(_ctx)
+
+    let def = {
         name: name || 'LiVueComponent',
-        template: extracted.html,
+        render: wrapperRender,
         setup: function () {
             // Provide livue helper so child Vue components can inject('livue')
             Vue.provide('livue', livue);
@@ -489,6 +513,17 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
             });
         },
     };
+
+    // API to update the template without creating a new def
+    def._updateRender = function (newHtml) {
+        let newTransformed = transformVModelModifiers(newHtml);
+        let newExtracted = extractSetupScript(newTransformed);
+        renderSwapped = true;
+        renderCache.length = 0; // Reset stale cache
+        currentRenderRef.value = Vue.compile(newExtracted.html);
+    };
+
+    return def;
 }
 
 /**
@@ -2020,6 +2055,9 @@ export default class LiVueComponent {
         /** @type {import('vue').ShallowRef|null} */
         this._rootDefRef = null;
 
+        /** @type {object|null} Stable root component definition (reused across template swaps) */
+        this._currentRootDef = null;
+
         /** @type {object|null} */
         this._rootLivue = null;
         this._rootState = null; // For #[Modelable] two-way binding
@@ -2088,9 +2126,10 @@ export default class LiVueComponent {
 
                 // The actual DOM swap function
                 function doSwap() {
-                    // Swap root definition — Vue detects the new object via
-                    // shallowRef and re-creates the root component.
-                    self._rootDefRef.value = buildComponentDef(rootProcessed.template, self.state, self._rootLivue, self._rootComposables || {}, self._versions, self.name);
+                    // Update the compiled render function in place — Vue detects
+                    // the shallowRef change inside the wrapper and re-renders
+                    // without unmounting, preserving child component instances.
+                    self._currentRootDef._updateRender(rootProcessed.template);
 
                     // Restore v-ignore content and focus AFTER Vue updates the DOM
                     nextTick(function () {
@@ -2185,6 +2224,7 @@ export default class LiVueComponent {
         // Create root component definition
         let rootDef = buildComponentDef(processed.template, self.state, livue, rootComposables, self._versions, self.name);
 
+        this._currentRootDef = rootDef;
         this._rootDefRef = shallowRef(rootDef);
 
         // Create the Vue app — a thin shell that delegates to the root
