@@ -401,6 +401,26 @@ function transformVModelModifiers(html) {
 }
 
 /**
+ * Recursively strip dynamicChildren from a VNode tree.
+ * Called after a render function swap to disable Vue's block tree optimization
+ * for one render cycle. Without this, Vue's patchBlockChildren would try to
+ * diff the old block tree (from the previous render function) against the new
+ * one (from the swapped render function), causing crashes when the dynamic
+ * node counts or types don't match.
+ *
+ * @param {object} vnode - A Vue VNode
+ */
+function stripBlockTree(vnode) {
+    if (!vnode || typeof vnode !== 'object') return;
+    vnode.dynamicChildren = null;
+    if (Array.isArray(vnode.children)) {
+        for (let i = 0; i < vnode.children.length; i++) {
+            stripBlockTree(vnode.children[i]);
+        }
+    }
+}
+
+/**
  * Build a Vue component definition with optional @script setup code.
  * Extracts the setup script from the template HTML, strips it, and
  * creates a definition whose setup() merges server state, livue helper,
@@ -434,9 +454,12 @@ function buildComponentDef(templateHtml, state, livue, composables, versions, na
             // from the previous render. Vue's block optimization (dynamicChildren)
             // only patches tracked dynamic nodes, so structural changes (new/removed
             // static elements, different child components) would be missed or crash.
-            // Stripping dynamicChildren forces a full vdom diff for this one render.
-            // Subsequent renders with the same compiled function use block optimization.
-            vnode.dynamicChildren = null;
+            // Recursively stripping dynamicChildren forces a full vdom diff for this
+            // one render. Subsequent renders with the same compiled function use block
+            // optimization normally. The recursive walk is needed because nested
+            // fragments (v-if, v-for, <template>) have their own dynamicChildren
+            // that would also mismatch between the old and new render functions.
+            stripBlockTree(vnode);
             renderSwapped = false;
         }
         return vnode;
