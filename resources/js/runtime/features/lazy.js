@@ -17,24 +17,9 @@ import { setErrors } from '../helpers/errors.js';
 import { on } from './events.js';
 import { poolLazyLoad } from './request/pool.js';
 import { insertAttributesIntoHtmlRoot } from '../helpers/dom.js';
+import { unwrapState } from '../core/tuples.js';
 
 let _lazyCounter = 0;
-
-/**
- * Unwrap inline tuples from a state object.
- */
-function unwrapState(state) {
-    let flat = {};
-    for (let key in state) {
-        let val = state[key];
-        if (Array.isArray(val) && val.length === 2 && val[1] && typeof val[1] === 'object' && val[1].s) {
-            flat[key] = val[0];
-        } else {
-            flat[key] = val;
-        }
-    }
-    return flat;
-}
 
 /**
  * Create the livue-lazy component definition.
