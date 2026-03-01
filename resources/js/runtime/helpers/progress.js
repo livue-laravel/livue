@@ -6,7 +6,7 @@
 let _config = {
     color: '#29d',
     height: '2px',
-    showSpinner: true,
+    showOnRequest: false,
     minimum: 0.08,
     easing: 'ease',
     speed: 200,
@@ -18,7 +18,6 @@ let _config = {
 let _status = null;      // null = hidden, number = progress (0-1)
 let _trickleTimer = null;
 let _barEl = null;
-let _spinnerEl = null;
 let _stylesInjected = false;
 let _pendingCount = 0;   // Track concurrent requests
 
@@ -69,31 +68,9 @@ function injectStyles() {
             opacity: 1;
             transform: rotate(3deg) translate(0px, -4px);
         }
-        .livue-progress-spinner {
-            display: block;
-            position: fixed;
-            z-index: 99999;
-            top: 15px;
-            right: 15px;
-            pointer-events: none;
-        }
-        .livue-progress-spinner-icon {
-            width: 18px;
-            height: 18px;
-            border: solid 2px transparent;
-            border-top-color: ${_config.color};
-            border-left-color: ${_config.color};
-            border-radius: 50%;
-            animation: livue-spinner 400ms linear infinite;
-        }
-        .livue-progress-bar.livue-progress-hidden,
-        .livue-progress-spinner.livue-progress-hidden {
+        .livue-progress-bar.livue-progress-hidden {
             opacity: 0;
             transition: opacity ${_config.speed}ms ${_config.easing};
-        }
-        @keyframes livue-spinner {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     `;
     document.head.appendChild(style);
@@ -112,16 +89,8 @@ function createElements() {
     _barEl.className = 'livue-progress-bar livue-progress-hidden';
     _barEl.innerHTML = '<div class="livue-progress-peg"></div>';
 
-    // Create spinner
-    if (_config.showSpinner) {
-        _spinnerEl = document.createElement('div');
-        _spinnerEl.className = 'livue-progress-spinner livue-progress-hidden';
-        _spinnerEl.innerHTML = '<div class="livue-progress-spinner-icon"></div>';
-    }
-
     let parent = document.querySelector(_config.parent) || document.body;
     parent.appendChild(_barEl);
-    if (_spinnerEl) parent.appendChild(_spinnerEl);
 }
 
 /**
@@ -144,7 +113,7 @@ function updateStyles() {
  * @param {object} options
  * @param {string} [options.color] - Bar color (default: '#29d')
  * @param {string} [options.height] - Bar height (default: '2px')
- * @param {boolean} [options.showSpinner] - Show spinner icon (default: true)
+ * @param {boolean} [options.showOnRequest] - Show during AJAX requests (default: false)
  * @param {number} [options.minimum] - Minimum starting value (default: 0.08)
  * @param {string} [options.easing] - CSS easing function (default: 'ease')
  * @param {number} [options.speed] - Animation speed ms (default: 200)
@@ -155,6 +124,15 @@ function updateStyles() {
 export function configure(options) {
     Object.assign(_config, options);
     updateStyles();
+}
+
+/**
+ * Check if progress bar should be shown during AJAX requests.
+ *
+ * @returns {boolean}
+ */
+export function isRequestProgressEnabled() {
+    return _config.showOnRequest;
 }
 
 /**
@@ -176,9 +154,6 @@ export function start() {
     // Show elements
     if (_barEl) {
         _barEl.classList.remove('livue-progress-hidden');
-    }
-    if (_spinnerEl) {
-        _spinnerEl.classList.remove('livue-progress-hidden');
     }
 
     set(_config.minimum);
@@ -247,9 +222,6 @@ export function done() {
         if (_barEl) {
             _barEl.classList.add('livue-progress-hidden');
         }
-        if (_spinnerEl) {
-            _spinnerEl.classList.add('livue-progress-hidden');
-        }
 
         // Reset position after fade
         setTimeout(function () {
@@ -296,4 +268,5 @@ export default {
     forceDone,
     isStarted,
     getStatus,
+    isRequestProgressEnabled,
 };

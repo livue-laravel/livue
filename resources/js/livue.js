@@ -40,6 +40,11 @@ if (config.showProgressBar !== undefined ||
     LiVueRuntime.configureNavigation(config);
 }
 
+// Apply progress config if present
+if (config.showProgressOnRequest !== undefined) {
+    LiVueRuntime.progress.configure({ showOnRequest: config.showProgressOnRequest });
+}
+
 // Boot when DOM is ready (handle case where DOMContentLoaded already fired)
 // Use queueMicrotask to ensure setup() can be called before boot
 function bootLiVue() {

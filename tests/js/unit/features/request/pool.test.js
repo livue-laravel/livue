@@ -29,6 +29,7 @@ beforeEach(async () => {
             start: vi.fn(),
             done: vi.fn(),
         },
+        isRequestProgressEnabled: vi.fn(() => true),
     }));
 
     // Mock hooks module

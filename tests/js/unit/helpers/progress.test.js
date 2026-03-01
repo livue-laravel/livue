@@ -21,7 +21,7 @@ afterEach(() => {
     vi.useRealTimers();
 
     // Clean up any progress bar elements
-    document.querySelectorAll('.livue-progress-bar, .livue-progress-spinner, #livue-progress-styles')
+    document.querySelectorAll('.livue-progress-bar, #livue-progress-styles')
         .forEach(el => el.remove());
 });
 
@@ -31,7 +31,6 @@ describe('Progress Bar', () => {
             progress.start();
 
             expect(document.querySelector('.livue-progress-bar')).not.toBeNull();
-            expect(document.querySelector('.livue-progress-spinner')).not.toBeNull();
         });
 
         it('should inject styles', () => {
@@ -210,7 +209,6 @@ describe('Progress Bar', () => {
             progress.configure({
                 color: '#ff0000',
                 height: '5px',
-                showSpinner: false,
             });
 
             progress.start();
@@ -220,12 +218,24 @@ describe('Progress Bar', () => {
             expect(style.textContent).toContain('#ff0000');
             expect(style.textContent).toContain('5px');
         });
+    });
 
-        it('should allow hiding spinner', () => {
-            progress.configure({ showSpinner: false });
-            progress.start();
+    describe('isRequestProgressEnabled()', () => {
+        it('should return false by default', () => {
+            expect(progress.isRequestProgressEnabled()).toBe(false);
+        });
 
-            expect(document.querySelector('.livue-progress-spinner')).toBeNull();
+        it('should return true when configured', () => {
+            progress.configure({ showOnRequest: true });
+
+            expect(progress.isRequestProgressEnabled()).toBe(true);
+        });
+
+        it('should return false when explicitly disabled', () => {
+            progress.configure({ showOnRequest: true });
+            progress.configure({ showOnRequest: false });
+
+            expect(progress.isRequestProgressEnabled()).toBe(false);
         });
     });
 
@@ -271,6 +281,7 @@ describe('Progress Bar', () => {
             expect(progress.default.forceDone).toBe(progress.forceDone);
             expect(progress.default.isStarted).toBe(progress.isStarted);
             expect(progress.default.getStatus).toBe(progress.getStatus);
+            expect(progress.default.isRequestProgressEnabled).toBe(progress.isRequestProgressEnabled);
         });
     });
 });

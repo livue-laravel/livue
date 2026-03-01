@@ -289,6 +289,19 @@ return [
     | Configure SPA navigation behavior for v-navigate links.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Progress Bar
+    |--------------------------------------------------------------------------
+    |
+    | Configure progress bar behavior during AJAX requests.
+    |
+    */
+    'progress' => [
+        // Show progress bar during AJAX requests (component updates)
+        'show_on_request' => false,
+    ],
+
     'navigate' => [
         // Show progress bar during SPA navigation
         'show_progress_bar' => true,

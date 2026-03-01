@@ -148,6 +148,10 @@ class LiVueManager
             'restoreScroll' => $navigateConfig['restore_scroll'] ?? true,
         ];
 
+        // Progress bar config
+        $progressConfig = config('livue.progress', []);
+        $jsConfig['showProgressOnRequest'] = $progressConfig['show_on_request'] ?? false;
+
         $configScript = '<script' . $nonceAttr . '>window.LiVueConfig = ' . json_encode($jsConfig) . ';</script>';
 
         // Smart loader: checks if LiVue.setup() was called (ESM mode)

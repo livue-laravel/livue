@@ -7,7 +7,7 @@
 
 import { getToken } from '../../helpers/csrf.js';
 import { handleRedirect } from '../navigation.js';
-import progress from '../../helpers/progress.js';
+import progress, { isRequestProgressEnabled } from '../../helpers/progress.js';
 import { trigger } from '../../helpers/hooks.js';
 
 /**
@@ -98,8 +98,10 @@ async function flush() {
         return;
     }
 
-    // Start progress bar
-    progress.start();
+    // Start progress bar (if enabled for requests)
+    if (isRequestProgressEnabled()) {
+        progress.start();
+    }
 
     var url = buildUrl();
     var token = getToken();
@@ -248,8 +250,10 @@ async function flush() {
             lazyCount: lazyBatch.length,
         });
     } finally {
-        // Complete progress bar
-        progress.done();
+        // Complete progress bar (if enabled for requests)
+        if (isRequestProgressEnabled()) {
+            progress.done();
+        }
     }
 }
 
@@ -261,8 +265,10 @@ async function flush() {
  * @returns {Promise<object>}
  */
 async function sendIsolated(payload) {
-    // Start progress bar
-    progress.start();
+    // Start progress bar (if enabled for requests)
+    if (isRequestProgressEnabled()) {
+        progress.start();
+    }
 
     var url = buildUrl();
     var token = getToken();
@@ -329,8 +335,10 @@ async function sendIsolated(payload) {
 
         return result;
     } finally {
-        // Complete progress bar
-        progress.done();
+        // Complete progress bar (if enabled for requests)
+        if (isRequestProgressEnabled()) {
+            progress.done();
+        }
     }
 }
 
