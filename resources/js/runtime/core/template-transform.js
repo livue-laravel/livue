@@ -59,6 +59,22 @@ export function transformVModelModifiers(html) {
 }
 
 /**
+ * Transform $errors magic variable into livue.errors for template access.
+ *
+ * Vue's PublicInstanceProxyHandlers.get skips setupState for $-prefixed keys,
+ * so $errors can never be resolved through our setup Proxy. By rewriting
+ * $errors to livue.errors before Vue.compile(), the compiled render function
+ * accesses livue (a normal setupState key) and then .errors on it — no $ prefix,
+ * no Vue bypass.
+ *
+ * @param {string} html - Template HTML
+ * @returns {string} - Transformed HTML
+ */
+export function transformMagicVariables(html) {
+    return html.replace(/\$errors\b/g, 'livue.errors');
+}
+
+/**
  * Recursively strip dynamicChildren from a VNode tree.
  * Called after a render function swap to disable Vue's block tree optimization
  * for one render cycle. Without this, Vue's patchBlockChildren would try to
@@ -95,6 +111,7 @@ function stripBlockTree(vnode) {
 export function buildComponentDef(templateHtml, state, livue, composables, versions, name) {
     // Transform v-model.debounce etc. into v-model + v-debounce directive
     let transformedHtml = transformVModelModifiers(templateHtml);
+    transformedHtml = transformMagicVariables(transformedHtml);
     let extracted = extractSetupScript(transformedHtml);
 
     // Compile template with Vue.compile() (has internal cache for template strings)
@@ -196,6 +213,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     // same function reference — the === check skips unnecessary reactive updates.
     def._updateRender = function (newHtml) {
         let newTransformed = transformVModelModifiers(newHtml);
+        newTransformed = transformMagicVariables(newTransformed);
         let newExtracted = extractSetupScript(newTransformed);
         let newCompiled = Vue.compile(newExtracted.html);
         if (newCompiled === currentRenderRef.value) return;
