@@ -131,7 +131,9 @@ class LiVueManager
     public function renderScripts(): string
     {
         $prefix = config('livue.route_prefix', 'livue');
-        $bundleUrl = url($prefix . '/livue.js');
+        $bundlePath = dirname(__DIR__) . '/dist/livue.js';
+        $bundleHash = file_exists($bundlePath) ? substr(md5_file($bundlePath), 0, 8) : '';
+        $bundleUrl = url($prefix . '/livue.js') . ($bundleHash ? '?v=' . $bundleHash : '');
         $nonce = $this->getNonce();
         $nonceAttr = $this->getNonceAttribute();
 
