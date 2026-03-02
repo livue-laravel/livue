@@ -71,7 +71,7 @@ export function transformVModelModifiers(html) {
  * @returns {string} - Transformed HTML
  */
 export function transformMagicVariables(html) {
-    return html.replace(/\$errors\b/g, 'livue.errors');
+    return html.replace(/\$errors\b/g, '_lv_errors');
 }
 
 /**
@@ -146,7 +146,19 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
 
             let refs = stateToRefs(state);
             // Spread composables (auth, cart, etc.) at top level for template access
-            let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions });
+            // Proxy over livue.errors that auto-unwraps arrays to their first element.
+            // Allows templates to use $errors.field instead of livue.errors.field[0].
+            // Reactivity is preserved: accessing errorsProxy.field triggers Vue's
+            // reactive tracking on the underlying livue.errors object.
+            var errorsProxy = new Proxy(livue.errors, {
+                get: function (target, prop, receiver) {
+                    var value = Reflect.get(target, prop, receiver);
+                    if (Array.isArray(value)) return value[0];
+                    return value;
+                },
+            });
+
+            let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions, _lv_errors: errorsProxy });
 
             if (extracted.setupCode) {
                 let extra = executeSetupCode(extracted.setupCode, refs, livue);
