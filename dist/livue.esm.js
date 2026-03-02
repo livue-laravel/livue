@@ -217,7 +217,7 @@ function Dr(t) {
   }), t;
 }
 function Tr(t) {
-  return t.replace(/\$errors\b/g, "_lv_errors");
+  return t.replace(/\$errors\b/g, "lvErrors");
 }
 function Ti(t) {
   if (!(!t || typeof t != "object") && (t.dynamicChildren = null, Array.isArray(t.children)))
@@ -245,7 +245,7 @@ function Un(t, e, n, r, i, o) {
           return Array.isArray(k) ? k[0] : k;
         }
       });
-      let g = Object.assign({}, m, r, { livue: n, livueV: i, _lv_errors: h });
+      let g = Object.assign({}, m, r, { livue: n, livueV: i, lvErrors: h });
       if (s.setupCode) {
         let D = Do(s.setupCode, m, n);
         D && Object.assign(g, D);
