@@ -1,11 +1,11 @@
 /**
  * Tests for template transformations applied before Vue.compile().
  *
- * transformMagicVariables rewrites $errors to _lv_errors so that
+ * transformMagicVariables rewrites $errors to lvErrors so that
  * Vue's template compiler resolves them through the setup proxy
  * (Vue's PublicInstanceProxyHandlers.get skips setupState for $-prefixed keys).
  *
- * _lv_errors is a Proxy over livue.errors that auto-unwraps arrays
+ * lvErrors is a Proxy over livue.errors that auto-unwraps arrays
  * to their first element, so $errors.field returns the message string
  * directly instead of an array.
  */
@@ -18,25 +18,25 @@ describe('transformMagicVariables', () => {
     describe('$errors rewriting', () => {
         it('should transform $errors in v-if directives', () => {
             let html = '<span v-if="$errors.name">error</span>';
-            expect(transformMagicVariables(html)).toBe('<span v-if="_lv_errors.name">error</span>');
+            expect(transformMagicVariables(html)).toBe('<span v-if="lvErrors.name">error</span>');
         });
 
         it('should transform $errors in :class bindings', () => {
             let html = ':class="$errors.name ? \'red\' : \'gray\'"';
-            expect(transformMagicVariables(html)).toBe(':class="_lv_errors.name ? \'red\' : \'gray\'"');
+            expect(transformMagicVariables(html)).toBe(':class="lvErrors.name ? \'red\' : \'gray\'"');
         });
 
         it('should transform $errors in mustache interpolation', () => {
             let html = '{{ $errors.name }}';
-            expect(transformMagicVariables(html)).toBe('{{ _lv_errors.name }}');
+            expect(transformMagicVariables(html)).toBe('{{ lvErrors.name }}');
         });
 
         it('should transform multiple $errors in the same template', () => {
             let html = '<span v-if="$errors.name">{{ $errors.name }}</span><span v-if="$errors.email">{{ $errors.email }}</span>';
             let result = transformMagicVariables(html);
             expect(result).not.toContain('$errors');
-            expect(result).toContain('_lv_errors.name');
-            expect(result).toContain('_lv_errors.email');
+            expect(result).toContain('lvErrors.name');
+            expect(result).toContain('lvErrors.email');
         });
 
         it('should not transform $errorsSomething (word boundary)', () => {

@@ -59,19 +59,18 @@ export function transformVModelModifiers(html) {
 }
 
 /**
- * Transform $errors magic variable into livue.errors for template access.
+ * Transform $errors magic variable into an internal setupState key.
  *
- * Vue's PublicInstanceProxyHandlers.get skips setupState for $-prefixed keys,
- * so $errors can never be resolved through our setup Proxy. By rewriting
- * $errors to livue.errors before Vue.compile(), the compiled render function
- * accesses livue (a normal setupState key) and then .errors on it — no $ prefix,
- * no Vue bypass.
+ * Vue's RuntimeCompiledPublicInstanceProxyHandlers blocks both $ and _
+ * prefixed keys from template resolution ($ skips setupState in get,
+ * _ is filtered by the has trap). The replacement key must start with
+ * a letter to pass both guards.
  *
  * @param {string} html - Template HTML
  * @returns {string} - Transformed HTML
  */
 export function transformMagicVariables(html) {
-    return html.replace(/\$errors\b/g, '_lv_errors');
+    return html.replace(/\$errors\b/g, 'lvErrors');
 }
 
 /**
@@ -158,7 +157,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
                 },
             });
 
-            let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions, _lv_errors: errorsProxy });
+            let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions, lvErrors: errorsProxy });
 
             if (extracted.setupCode) {
                 let extra = executeSetupCode(extracted.setupCode, refs, livue);
