@@ -6,6 +6,7 @@ use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
+use LiVue\Exceptions\ComponentNotFoundException;
 use LiVue\Features\SupportMultiFile\MultiFileCompiler;
 use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Features\SupportSingleFile\SingleFileCompiler;
@@ -424,7 +425,7 @@ JS;
             return new $class();
         }
 
-        throw new \InvalidArgumentException("LiVue component [{$name}] not found.");
+        throw new ComponentNotFoundException($name);
     }
 
     /**
@@ -434,7 +435,7 @@ JS;
     public function resolveByClass(string $class): Component
     {
         if (! class_exists($class)) {
-            throw new \InvalidArgumentException("LiVue component class [{$class}] not found.");
+            throw new ComponentNotFoundException($class);
         }
 
         $normalizedClass = ltrim($class, '\\');

@@ -4,6 +4,8 @@ namespace LiVue\Features\SupportRendering;
 
 use LiVue\Attributes\Layout;
 use LiVue\Attributes\Title;
+use LiVue\Exceptions\ComponentRenderException;
+use LiVue\Exceptions\LiVueException;
 
 /**
  * Trait HandlesRendering
@@ -69,7 +71,11 @@ trait HandlesRendering
             ob_end_clean();
             $__env->decrementRender();
 
-            throw $e;
+            if ($e instanceof LiVueException) {
+                throw $e;
+            }
+
+            throw new ComponentRenderException($this->getName(), $viewName, $e);
         }
 
         $result = ob_get_clean();

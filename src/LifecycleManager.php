@@ -3,6 +3,10 @@
 namespace LiVue;
 
 use Illuminate\Database\Eloquent\Model;
+use LiVue\Exceptions\ComponentHydrationException;
+use LiVue\Exceptions\ComponentMountException;
+use LiVue\Exceptions\ComponentNotFoundException;
+use LiVue\Exceptions\LiVueException;
 use LiVue\Features\SupportHooks\HookRegistry;
 use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\Security\StateChecksum;
@@ -57,43 +61,49 @@ class LifecycleManager
      */
     public function mount(Component $component, array $params = []): void
     {
-        // Lifecycle event: booting (halting)
-        if ($component->fireLifecycleEvent('booting', halt: true) === false) {
-            return;
-        }
-
-        $this->hookRegistry->callHook('boot', $component);
-        $this->callBoot($component);
-
-        // Lifecycle event: booted
-        $component->fireLifecycleEvent('booted');
-
-        // Lifecycle event: mounting (halting)
-        if ($component->fireLifecycleEvent('mounting', halt: true) === false) {
-            return;
-        }
-
-        $this->hookRegistry->callHook('mount', $component, $params);
-        $this->eventBus->dispatch('component.mount', $component, $params);
-
-        // Call trait mount methods (mount{TraitName})
-        foreach (class_uses_recursive($component) as $trait) {
-            $method = 'mount' . class_basename($trait);
-
-            if (method_exists($component, $method)) {
-                $component->{$method}(...$params);
+        try {
+            // Lifecycle event: booting (halting)
+            if ($component->fireLifecycleEvent('booting', halt: true) === false) {
+                return;
             }
+
+            $this->hookRegistry->callHook('boot', $component);
+            $this->callBoot($component);
+
+            // Lifecycle event: booted
+            $component->fireLifecycleEvent('booted');
+
+            // Lifecycle event: mounting (halting)
+            if ($component->fireLifecycleEvent('mounting', halt: true) === false) {
+                return;
+            }
+
+            $this->hookRegistry->callHook('mount', $component, $params);
+            $this->eventBus->dispatch('component.mount', $component, $params);
+
+            // Call trait mount methods (mount{TraitName})
+            foreach (class_uses_recursive($component) as $trait) {
+                $method = 'mount' . class_basename($trait);
+
+                if (method_exists($component, $method)) {
+                    $component->{$method}(...$params);
+                }
+            }
+
+            if (method_exists($component, 'mount')) {
+                $component->mount(...$params);
+            }
+
+            // Initialize Form objects with component reference
+            $component->initializeForms();
+
+            // Lifecycle event: mounted
+            $component->fireLifecycleEvent('mounted');
+        } catch (LiVueException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new ComponentMountException($component->getName(), $e);
         }
-
-        if (method_exists($component, 'mount')) {
-            $component->mount(...$params);
-        }
-
-        // Initialize Form objects with component reference
-        $component->initializeForms();
-
-        // Lifecycle event: mounted
-        $component->fireLifecycleEvent('mounted');
     }
 
     // -----------------------------------------------------------------
@@ -170,15 +180,21 @@ class LifecycleManager
         // Hydrate state from inline tuples [value, {s: '...', ...}].
         //    hydrateState detects tuples, reconstructs PHP objects, and returns
         //    the types map for later diff processing.
-        [$hydratedState, $types] = $this->synthRegistry->hydrateState($state);
+        try {
+            [$hydratedState, $types] = $this->synthRegistry->hydrateState($state);
 
-        // Also extract flat (unwrapped) values for model diff comparison
-        [$flatSnapshotState, $_] = $this->synthRegistry->unwrapState($state);
+            // Also extract flat (unwrapped) values for model diff comparison
+            [$flatSnapshotState, $_] = $this->synthRegistry->unwrapState($state);
 
-        $component->setState($hydratedState);
+            $component->setState($hydratedState);
 
-        // Initialize Form objects with component reference
-        $component->initializeForms();
+            // Initialize Form objects with component reference
+            $component->initializeForms();
+        } catch (LiVueException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new ComponentHydrationException($componentName, $e);
+        }
         if ($bench) {
             $benchTimings['hydrate_state'] = (int) ((hrtime(true) - $benchT) / 1000);
         }

@@ -1,5 +1,6 @@
 <?php
 
+use LiVue\Exceptions\ComponentNotFoundException;
 use LiVue\LiVueManager;
 use LiVue\Tests\Fixtures\Counter;
 
@@ -48,13 +49,13 @@ describe('Component Resolution', function () {
         $manager = app(LiVueManager::class);
 
         $manager->resolve('non-existent-component-xyz');
-    })->throws(InvalidArgumentException::class, 'not found');
+    })->throws(ComponentNotFoundException::class, 'not found');
 
     it('throws for non-existent component class', function () {
         $manager = app(LiVueManager::class);
 
         $manager->resolveByClass('App\\NonExistent\\FakeComponent');
-    })->throws(InvalidArgumentException::class, 'not found');
+    })->throws(ComponentNotFoundException::class, 'not found');
 
     it('generates deterministic hash names', function () {
         $manager = app(LiVueManager::class);

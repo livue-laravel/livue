@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Validation\ValidationException;
+use LiVue\Exceptions\ComponentNotFoundException;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\LifecycleManager;
@@ -118,7 +119,7 @@ class LiVueUpdateController extends Controller
             // New system: resolve by decrypted class
             try {
                 $component = $manager->resolveByClass($componentClass);
-            } catch (\InvalidArgumentException $e) {
+            } catch (ComponentNotFoundException $e) {
                 return ['error' => 'Component not found.', 'status' => 404];
             }
         } elseif ($manager->componentExists($componentName)) {
