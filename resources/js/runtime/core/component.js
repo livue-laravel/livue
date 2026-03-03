@@ -104,6 +104,12 @@ export default class LiVueComponent {
     _mount(snapshot, snapshotJson) {
         let self = this;
 
+        // Absorb sibling <script type="application/livue-setup"> elements into the
+        // component element. @script blocks in Blade render AFTER the root element,
+        // making them siblings. Moving them inside ensures el.innerHTML includes them
+        // so extractSetupScript() can find and execute the user's setup code.
+        this._absorbSetupScripts();
+
         // Create root component ref with _updateTemplate
         let rootComponentRef = {
             /**
@@ -399,6 +405,26 @@ export default class LiVueComponent {
                 // accessing appContext.app after teardown during SPA navigation)
             }
             this.vueApp = null;
+        }
+    }
+
+    /**
+     * Move sibling <script type="application/livue-setup"> elements inside the
+     * component element. In Blade templates, @script blocks render after the root
+     * element's closing tag, placing them as DOM siblings rather than children.
+     * Since the runtime reads el.innerHTML for template processing, these siblings
+     * would be missed. Moving them inside ensures they are captured.
+     */
+    _absorbSetupScripts() {
+        let sibling = this.el.nextElementSibling;
+        while (sibling) {
+            let next = sibling.nextElementSibling;
+            if (sibling.tagName === 'SCRIPT' && sibling.getAttribute('type') === 'application/livue-setup') {
+                this.el.appendChild(sibling);
+            } else {
+                break;
+            }
+            sibling = next;
         }
     }
 }

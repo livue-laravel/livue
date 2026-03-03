@@ -68,6 +68,22 @@ export function processTemplate(html, rootComponent) {
         let childHtml = nestedEl.innerHTML;
         let rootTag = nestedEl.tagName.toLowerCase();
 
+        // Absorb sibling <script type="application/livue-setup"> elements into
+        // the child's HTML. @script blocks render after the child's root element,
+        // placing them as siblings. We capture them for the child and remove them
+        // from the parent's DOM so they don't leak into the parent's template.
+        let siblingScript = nestedEl.nextElementSibling;
+        while (siblingScript) {
+            let next = siblingScript.nextElementSibling;
+            if (siblingScript.tagName === 'SCRIPT' && siblingScript.getAttribute('type') === 'application/livue-setup') {
+                childHtml += siblingScript.outerHTML;
+                siblingScript.parentNode.removeChild(siblingScript);
+            } else {
+                break;
+            }
+            siblingScript = next;
+        }
+
         // Check if this child already exists in the registry.
         // First try exact ID match, then fallback to component name.
         // The name fallback is needed because when the server re-renders
