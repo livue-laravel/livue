@@ -5,6 +5,9 @@ namespace LiVue\Console;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use LiVue\Component;
+use LiVue\Console\Contracts\BenchmarkSetup;
+use LiVue\Events\BenchmarkFinished;
+use LiVue\Events\BenchmarkStarting;
 use LiVue\Facades\LiVue;
 use LiVue\LifecycleManager;
 use LiVue\Security\StateChecksum;
@@ -19,7 +22,9 @@ class BenchmarkCommand extends Command
         {--method= : Method to call during update}
         {--params= : JSON-encoded method parameters}
         {--mount-params= : JSON-encoded mount parameters}
-        {--format=table : Output format (table or json)}';
+        {--format=table : Output format (table or json)}
+        {--context= : JSON-encoded context variables for benchmark environment setup}
+        {--setup= : Fully qualified class implementing BenchmarkSetup for custom setUp/tearDown}';
 
     protected $description = 'Benchmark lifecycle performance of a LiVue component';
 
@@ -47,54 +52,78 @@ class BenchmarkCommand extends Command
             return self::FAILURE;
         }
 
+        // Parse context
+        $context = $this->parseContext();
+        if ($context === null) {
+            return self::FAILURE;
+        }
+
+        // Resolve setup
+        $setup = $this->resolveSetup();
+        if ($setup === false) {
+            return self::FAILURE;
+        }
+
         $this->components->info("Benchmarking [{$componentClass}] ({$iterations} iterations)");
         $this->newLine();
 
-        $lifecycle = app(LifecycleManager::class);
+        // Dispatch starting event
+        BenchmarkStarting::dispatch($componentClass, $context, $method, $iterations);
 
-        // Benchmark mount
+        // Call setUp if setup exists
+        $setup?->setUp($context);
+
         $mountResults = [];
-        for ($i = 0; $i < $iterations; $i++) {
-            $component = new $componentClass();
-            if (! empty($mountParams)) {
-                $component->setState($mountParams);
-            }
-            $mountResults[] = $lifecycle->benchmarkMount($component, $mountParams);
-        }
-
-        // Benchmark update (requires a mounted component first)
         $updateResults = [];
-        for ($i = 0; $i < $iterations; $i++) {
-            $component = new $componentClass();
-            if (! empty($mountParams)) {
-                $component->setState($mountParams);
+
+        try {
+            $lifecycle = app(LifecycleManager::class);
+
+            // Benchmark mount
+            for ($i = 0; $i < $iterations; $i++) {
+                $component = new $componentClass();
+                if (! empty($mountParams)) {
+                    $component->setState($mountParams);
+                }
+                $mountResults[] = $lifecycle->benchmarkMount($component, $mountParams);
             }
-            $lifecycle->mount($component, $mountParams);
 
-            $componentName = $component->getName();
-            $rawState = $component->getState();
-            $synthRegistry = app(SynthesizerRegistry::class);
-            $dehydratedState = $synthRegistry->dehydrateState($rawState);
-            $checksum = StateChecksum::generate($componentName, $dehydratedState);
+            // Benchmark update (requires a mounted component first)
+            for ($i = 0; $i < $iterations; $i++) {
+                $component = new $componentClass();
+                if (! empty($mountParams)) {
+                    $component->setState($mountParams);
+                }
+                $lifecycle->mount($component, $mountParams);
 
-            $memo = [
-                'name' => $componentName,
-                'class' => encrypt(get_class($component)),
-                'checksum' => $checksum,
-            ];
+                $componentName = $component->getName();
+                $rawState = $component->getState();
+                $synthRegistry = app(SynthesizerRegistry::class);
+                $dehydratedState = $synthRegistry->dehydrateState($rawState);
+                $checksum = StateChecksum::generate($componentName, $dehydratedState);
 
-            // Create a fresh component for the update
-            $updateComponent = new $componentClass();
+                $memo = [
+                    'name' => $componentName,
+                    'class' => encrypt(get_class($component)),
+                    'checksum' => $checksum,
+                ];
 
-            $updateResults[] = $lifecycle->benchmarkUpdate(
-                $updateComponent,
-                $componentName,
-                $dehydratedState,
-                $memo,
-                [],
-                $method,
-                $params
-            );
+                // Create a fresh component for the update
+                $updateComponent = new $componentClass();
+
+                $updateResults[] = $lifecycle->benchmarkUpdate(
+                    $updateComponent,
+                    $componentName,
+                    $dehydratedState,
+                    $memo,
+                    [],
+                    $method,
+                    $params
+                );
+            }
+        } finally {
+            $setup?->tearDown();
+            BenchmarkFinished::dispatch($componentClass, $context, $mountResults, $updateResults);
         }
 
         $peakMemory = memory_get_peak_usage(true);
@@ -134,6 +163,54 @@ class BenchmarkCommand extends Command
         }
 
         return null;
+    }
+
+    /**
+     * Parse context from JSON option.
+     */
+    protected function parseContext(): ?array
+    {
+        $raw = $this->option('context');
+
+        if ($raw === null) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $this->components->error('Invalid JSON for --context: ' . json_last_error_msg());
+
+            return null;
+        }
+
+        return $decoded;
+    }
+
+    /**
+     * Resolve setup class.
+     */
+    protected function resolveSetup(): BenchmarkSetup|false|null
+    {
+        $class = $this->option('setup');
+
+        if ($class === null) {
+            return null;
+        }
+
+        if (! class_exists($class)) {
+            $this->components->error("Setup class [{$class}] not found.");
+
+            return false;
+        }
+
+        if (! is_subclass_of($class, BenchmarkSetup::class)) {
+            $this->components->error("Setup class [{$class}] must implement " . BenchmarkSetup::class);
+
+            return false;
+        }
+
+        return new $class();
     }
 
     /**

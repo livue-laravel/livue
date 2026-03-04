@@ -1,9 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Event;
+use LiVue\Events\BenchmarkFinished;
+use LiVue\Events\BenchmarkStarting;
 use LiVue\LifecycleManager;
 use LiVue\Security\StateChecksum;
 use LiVue\Synthesizers\SynthesizerRegistry;
 use LiVue\Tests\Fixtures\Counter;
+use LiVue\Tests\Fixtures\TestBenchmarkSetup;
 
 describe('Benchmark', function () {
     describe('benchmarkMount()', function () {
@@ -170,6 +174,73 @@ describe('Benchmark', function () {
             $this->artisan('livue:benchmark', [
                 'component' => 'App\\LiVue\\NonExistentComponent',
             ])->assertFailed();
+        });
+
+        it('runs with valid --context JSON', function () {
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--iterations' => 2,
+                '--context' => '{"tenant_id": 1, "locale": "en"}',
+            ])->assertSuccessful();
+        });
+
+        it('fails with invalid --context JSON', function () {
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--context' => '{invalid json}',
+            ])->assertFailed();
+        });
+
+        it('fails with non-existent --setup class', function () {
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--setup' => 'App\\NonExistent\\SetupClass',
+            ])->assertFailed();
+        });
+
+        it('fails when --setup class does not implement BenchmarkSetup', function () {
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--setup' => Counter::class,
+            ])->assertFailed();
+        });
+
+        it('calls setUp and tearDown on --setup class', function () {
+            TestBenchmarkSetup::reset();
+
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--iterations' => 2,
+                '--setup' => TestBenchmarkSetup::class,
+                '--context' => '{"tenant_id": 5}',
+            ])->assertSuccessful();
+
+            expect(TestBenchmarkSetup::$setUpCalled)->toBeTrue();
+            expect(TestBenchmarkSetup::$tearDownCalled)->toBeTrue();
+            expect(TestBenchmarkSetup::$receivedContext)->toBe(['tenant_id' => 5]);
+        });
+
+        it('dispatches BenchmarkStarting and BenchmarkFinished events', function () {
+            Event::fake([BenchmarkStarting::class, BenchmarkFinished::class]);
+
+            $this->artisan('livue:benchmark', [
+                'component' => Counter::class,
+                '--iterations' => 2,
+                '--context' => '{"test": true}',
+            ])->assertSuccessful();
+
+            Event::assertDispatched(BenchmarkStarting::class, function ($event) {
+                return $event->componentClass === Counter::class
+                    && $event->context === ['test' => true]
+                    && $event->iterations === 2;
+            });
+
+            Event::assertDispatched(BenchmarkFinished::class, function ($event) {
+                return $event->componentClass === Counter::class
+                    && $event->context === ['test' => true]
+                    && count($event->mountResults) === 2
+                    && count($event->updateResults) === 2;
+            });
         });
     });
 });
