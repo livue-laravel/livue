@@ -12,6 +12,7 @@ import {
     nextTick, provide, inject,
 } from 'vue';
 import { stateToRefs } from './state.js';
+import { createOrUseStore, useRegisteredStore } from './store-helper.js';
 
 /**
  * Vue Composition APIs available inside @script blocks.
@@ -97,20 +98,48 @@ export function extractSetupScript(html) {
 
 /**
  * Execute user-provided @script setup code within the Vue setup context.
- * The code receives Vue Composition APIs, server state refs, and the livue helper
- * as named variables. It must return an object with additional template bindings.
+ * The code receives Vue Composition APIs, server state refs, the livue helper,
+ * and quick Pinia helpers `store(name, definition, options?)` and `useStore(name)`.
+ * It must return an object with additional template bindings.
  *
  * @param {string} code - The JS code from the @script block
  * @param {object} stateRefs - Result of stateToRefs(state)
  * @param {object} livue - The livue helper
+ * @param {Function} store - Quick helper for creating/using Pinia stores in @script
+ * @param {Function} useStore - Get a pre-registered PHP-defined Pinia store
  * @returns {object|null} Additional bindings to merge into setup return
  */
 export function executeSetupCode(code, stateRefs, livue) {
     let stateKeys = Object.keys(stateRefs);
     let stateValues = stateKeys.map(function (k) { return stateRefs[k]; });
 
-    let paramNames = _vueApiNames.concat(stateKeys).concat(['livue']);
-    let paramValues = _vueApiValues.concat(stateValues).concat([livue]);
+    function store(name, definition, options) {
+        let componentId = livue && livue.$id ? livue.$id : '';
+
+        if (definition === undefined) {
+            let existing = useRegisteredStore(componentId, name, options || {});
+            if (existing) {
+                return existing;
+            }
+            throw new Error('[LiVue] store(name): store not found. Provide a definition or register it in PHP.');
+        }
+
+        return createOrUseStore(componentId, name, definition, options);
+    }
+
+    function useStore(name) {
+        let componentId = livue && livue.$id ? livue.$id : '';
+        let existing = useRegisteredStore(componentId, name, { scope: 'auto' });
+
+        if (!existing) {
+            throw new Error('[LiVue] useStore("' + name + '"): store not found.');
+        }
+
+        return existing;
+    }
+
+    let paramNames = _vueApiNames.concat(stateKeys).concat(['livue', 'store', 'useStore']);
+    let paramValues = _vueApiValues.concat(stateValues).concat([livue, store, useStore]);
 
     try {
         let fn = new (Function.prototype.bind.apply(

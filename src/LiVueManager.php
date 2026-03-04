@@ -13,6 +13,7 @@ use LiVue\Features\SupportSingleFile\SingleFileCompiler;
 use LiVue\Features\SupportLazy\SupportLazy;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportRendering\ComponentRenderer;
+use LiVue\Features\SupportStores\StoreDefinition;
 use LiVue\Features\SupportTesting\Testable;
 use LiVue\Http\Controllers\LiVuePageController;
 use LiVue\Http\Middleware\LiVueCspMiddleware;
@@ -31,6 +32,13 @@ class LiVueManager
      * Used to look up the name for a component resolved by class.
      */
     protected array $classToName = [];
+
+    /**
+     * Global store definitions available to all components.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    protected array $globalStores = [];
 
     /**
      * Render a component by name, returning the full HTML with wrapper div.
@@ -272,6 +280,47 @@ JS;
     public function addPersistentMiddleware(array $middleware): void
     {
         SupportPersistentMiddleware::addPersistentMiddleware($middleware);
+    }
+
+    /**
+     * Register a global store definition.
+     *
+     * Scope is implicit and always global.
+     *
+     * @param array|callable $definition
+     */
+    public function createStore(string $name, array|callable $definition): void
+    {
+        $normalized = StoreDefinition::normalize($name, $definition, 'global');
+        $this->globalStores[$name] = $normalized;
+    }
+
+    /**
+     * Get all globally registered stores.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function getGlobalStores(): array
+    {
+        return array_values($this->globalStores);
+    }
+
+    /**
+     * Get a single globally registered store by name.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getGlobalStore(string $name): ?array
+    {
+        return $this->globalStores[$name] ?? null;
+    }
+
+    /**
+     * Remove all globally registered stores.
+     */
+    public function flushGlobalStores(): void
+    {
+        $this->globalStores = [];
     }
 
     /**

@@ -15,6 +15,9 @@ use LiVue\LiVueManager;
  * @method static \LiVue\Features\SupportTesting\Testable test(string $componentClass, array $params = [])
  * @method static string|null getNonce()
  * @method static void addPersistentMiddleware(array $middleware)
+ * @method static void createStore(string $name, array|callable $definition)
+ * @method static array<string, mixed>|null getGlobalStore(string $name)
+ * @method static void flushGlobalStores()
  *
  * @see \LiVue\LiVueManager
  */

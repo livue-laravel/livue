@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 let LiVueComponent;
 let mockSendAction;
+let mockDefineStore;
 
 // Shared response stub
 function makeResponse(overrides) {
@@ -123,6 +124,11 @@ beforeEach(async () => {
 
     vi.doMock('pinia', () => ({
         createPinia: vi.fn(() => ({ install: vi.fn() })),
+        defineStore: (mockDefineStore = vi.fn((id, definition) => {
+            let instance = { $id: id, definition: definition };
+            let useStore = vi.fn(() => instance);
+            return useStore;
+        })),
     }));
 
     const mod = await import('@/core/component.js');
@@ -380,6 +386,48 @@ describe('Magic Methods', () => {
 
             expect('loading' in livue).toBe(true);
             expect('call' in livue).toBe(true);
+        });
+    });
+
+    describe('store helper', () => {
+        it('should expose livue.store() and create a component-scoped store by default', () => {
+            let livue = createComponent();
+
+            let cart = livue.store('cart', {
+                state: function () {
+                    return { count: 0 };
+                },
+            });
+
+            expect(typeof livue.store).toBe('function');
+            expect(mockDefineStore).toHaveBeenCalledTimes(1);
+            expect(mockDefineStore.mock.calls[0][0]).toBe(livue.$id + ':cart');
+            expect(cart.$id).toBe(livue.$id + ':cart');
+        });
+
+        it('should expose livue.useStore() for stores declared in memo.stores', () => {
+            let livue = createComponent({}, {
+                stores: [
+                    { name: 'shared', scope: 'component', state: { count: 1 } },
+                ],
+            });
+
+            let shared = livue.useStore('shared');
+
+            expect(mockDefineStore).toHaveBeenCalled();
+            expect(shared.$id).toBe(livue.$id + ':shared');
+            expect(livue.stores.shared).toBeDefined();
+        });
+
+        it('should allow livue.store(name) lookup without definition when pre-registered', () => {
+            let livue = createComponent({}, {
+                stores: [
+                    { name: 'shared', scope: 'component', state: { count: 1 } },
+                ],
+            });
+
+            let shared = livue.store('shared');
+            expect(shared.$id).toBe(livue.$id + ':shared');
         });
     });
 });

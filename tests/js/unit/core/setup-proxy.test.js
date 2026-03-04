@@ -125,6 +125,7 @@ beforeEach(async () => {
 
     vi.doMock('pinia', () => ({
         createPinia: vi.fn(() => ({ install: vi.fn() })),
+        defineStore: vi.fn(() => vi.fn(() => ({}))),
     }));
 
     const mod = await import('@/core/component.js');
@@ -240,6 +241,18 @@ describe('Setup Proxy', () => {
             let proxy = getSetupProxy(component);
 
             expect(proxy.livueV).toBeDefined();
+        });
+
+        it('should expose stores alias from livue helper', () => {
+            let component = createComponent({}, {
+                stores: [
+                    { name: 'shared', scope: 'component', state: { count: 1 } },
+                ],
+            });
+            let proxy = getSetupProxy(component);
+
+            expect(proxy.stores).toBeDefined();
+            expect(proxy.stores.shared).toBeDefined();
         });
     });
 

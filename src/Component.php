@@ -17,6 +17,7 @@ use LiVue\Features\SupportIsland\HandlesIsland;
 use LiVue\Features\SupportJavascript\HandlesJavascript;
 use LiVue\Features\SupportNavigation\HandlesNavigation;
 use LiVue\Features\SupportRendering\HandlesRendering;
+use LiVue\Features\SupportStores\HandlesStores;
 use LiVue\Features\SupportState\HandlesState;
 use LiVue\Features\SupportValidation\HandlesValidation;
 use LiVue\Features\SupportLifecycleEvents\HasLifecycleEvents;
@@ -40,6 +41,7 @@ abstract class Component
     use HandlesJavascript;
     use HandlesNavigation;
     use HandlesRendering;
+    use HandlesStores;
     use HandlesState;
     use HandlesValidation;
     use HasLifecycleEvents;

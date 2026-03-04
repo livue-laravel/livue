@@ -33,6 +33,7 @@ use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportReactiveProps\SupportReactiveProps;
 use LiVue\Features\SupportRendering\SupportRendering;
 use LiVue\Features\SupportSingleFile\SupportSingleFile;
+use LiVue\Features\SupportStores\SupportStores;
 use LiVue\Features\SupportStreaming\SupportStreaming;
 use LiVue\Features\SupportTransition\SupportTransition;
 use LiVue\Features\SupportValidation\SupportValidation;
@@ -150,6 +151,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportReactiveProps::class);
         $registry->register(SupportAttributes::class);
         $registry->register(SupportComposables::class);
+        $registry->register(SupportStores::class);
         $registry->register(SupportValidation::class);
         $registry->register(SupportRendering::class);
         $registry->register(SupportFragments::class);

@@ -20,6 +20,7 @@ import { register as registerTabSync, broadcast as broadcastTabSync, filterState
 import { streamRequest } from '../features/request/stream.js';
 import { trigger } from '../helpers/hooks.js';
 import { createComposables, updateComposables, hasComposables } from '../features/composables.js';
+import { createOrUseStore, useRegisteredStore, registerStoresFromMemo, cleanupComponentStores } from './store-helper.js';
 
 /**
  * Patch a cached HTML string by replacing fragment sections with new content.
@@ -97,6 +98,85 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     // When the server sends only fragments, we patch this cached copy
     // and pass the result to _updateTemplate.
     let lastRawHtml = context.initialHtml || null;
+
+    // Stores declared server-side (memo.stores), exposed as livue.stores.
+    let stores = reactive({});
+    let storeBridgeStops = [];
+
+    function clearStoreBridges() {
+        for (let i = 0; i < storeBridgeStops.length; i++) {
+            try {
+                storeBridgeStops[i]();
+            } catch (e) {
+                // Ignore stale/unmounted watcher cleanup errors
+            }
+        }
+        storeBridgeStops = [];
+    }
+
+    function applyStoreBridges(storesMemo) {
+        clearStoreBridges();
+
+        if (!Array.isArray(storesMemo)) return;
+
+        for (let i = 0; i < storesMemo.length; i++) {
+            let entry = storesMemo[i];
+            if (!entry || typeof entry !== 'object') continue;
+            if (!entry.bridge || typeof entry.bridge !== 'object') continue;
+
+            let instance = useRegisteredStore(componentId, entry.name, { scope: entry.scope || 'auto' });
+            if (!instance) continue;
+
+            let bridge = entry.bridge;
+            for (let storeKey in bridge) {
+                let rule = bridge[storeKey];
+                if (!rule || typeof rule !== 'object') continue;
+
+                let prop = rule.prop;
+                let mode = rule.mode || 'two-way';
+                if (!prop || !(prop in state)) continue;
+
+                if (mode === 'two-way' || mode === 'store-to-state') {
+                    let stop = watch(function () {
+                        return instance[storeKey];
+                    }, function (value) {
+                        if (state[prop] !== value) {
+                            state[prop] = value;
+                        }
+                    });
+                    storeBridgeStops.push(stop);
+                }
+
+                if (mode === 'two-way' || mode === 'state-to-store') {
+                    let stop = watch(function () {
+                        return state[prop];
+                    }, function (value) {
+                        if (instance[storeKey] !== value) {
+                            instance[storeKey] = value;
+                        }
+                    });
+                    storeBridgeStops.push(stop);
+                }
+            }
+        }
+    }
+
+    function syncStoresFromMemo(storesMemo) {
+        let registered = registerStoresFromMemo(componentId, storesMemo);
+        for (let key in registered) {
+            stores[key] = registered[key];
+        }
+        applyStoreBridges(storesMemo);
+    }
+
+    syncStoresFromMemo(memo.stores || []);
+
+    if (context.cleanups && typeof context.cleanups.cleanup === 'function') {
+        context.cleanups.cleanup(function () {
+            clearStoreBridges();
+            cleanupComponentStores(componentId);
+        });
+    }
 
     /**
      * Handle a download response by creating a temporary link and clicking it.
@@ -225,6 +305,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 if (parsed.memo.composables || parsed.memo.composableActions) {
                     updateComposables(composables, parsed.memo);
                 }
+
+                // Register/update PHP-defined stores from memo
+                if (parsed.memo.stores) {
+                    syncStoresFromMemo(parsed.memo.stores);
+                }
             }
         }
 
@@ -352,6 +437,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         streamingMethod: null,
         loadingTargets: loadingTargets,
         refs: {},
+        stores: stores,
 
         /**
          * Check if any property (or a specific property) has changed since last sync.
@@ -590,6 +676,59 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          */
         set: function (key, value) {
             state[key] = value;
+        },
+
+        /**
+         * Quick Pinia store helper.
+         *
+         * Defaults to component-scoped IDs (`<componentId>:<name>`) so stores
+         * created while iterating inside templates don't collide globally.
+         *
+         * @param {string} name
+         * @param {object|Function} [definition]
+         * @param {object} [options] - { scope?: 'component'|'global' }
+         * @returns {object}
+         */
+        store: function (name, definition, options) {
+            if (definition === undefined) {
+                let existing = useRegisteredStore(componentId, name, options || { scope: 'auto' });
+                if (existing) {
+                    return existing;
+                }
+                throw new Error('[LiVue] store("' + name + '"): store not found. Provide a definition or register it in PHP.');
+            }
+            return createOrUseStore(componentId, name, definition, options);
+        },
+
+        /**
+         * Resolve a previously registered store by name.
+         * Looks in component scope first, then global scope.
+         *
+         * @param {string} name
+         * @returns {object}
+         */
+        useStore: function (name) {
+            let existing = useRegisteredStore(componentId, name, { scope: 'auto' });
+            if (existing) {
+                stores[name] = existing;
+                return existing;
+            }
+            throw new Error('[LiVue] useStore("' + name + '"): store not found.');
+        },
+
+        /**
+         * Resolve a previously registered global store by name.
+         *
+         * @param {string} name
+         * @returns {object}
+         */
+        useGlobalStore: function (name) {
+            let existing = useRegisteredStore(componentId, name, { scope: 'global' });
+            if (existing) {
+                stores[name] = existing;
+                return existing;
+            }
+            throw new Error('[LiVue] useGlobalStore("' + name + '"): global store not found.');
         },
 
         /**

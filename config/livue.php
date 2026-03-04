@@ -355,4 +355,6 @@ return [
         // 'app/LiVue' - PHP component classes
     ],
 
+    'devtools' => true
+
 ];

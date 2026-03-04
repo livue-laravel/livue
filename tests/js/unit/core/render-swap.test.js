@@ -124,6 +124,7 @@ beforeEach(async () => {
 
     vi.doMock('pinia', () => ({
         createPinia: vi.fn(() => ({ install: vi.fn() })),
+        defineStore: vi.fn(() => vi.fn(() => ({}))),
     }));
 
     const mod = await import('@/core/component.js');
