@@ -31,6 +31,7 @@ use LiVue\Features\SupportMultiFile\SupportMultiFile;
 use LiVue\Features\SupportPagination\SupportPagination;
 use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportReactiveProps\SupportReactiveProps;
+use LiVue\Features\SupportRendering\LiVueCompilerEngine;
 use LiVue\Features\SupportRendering\SupportRendering;
 use LiVue\Features\SupportSingleFile\SupportSingleFile;
 use LiVue\Features\SupportStores\SupportStores;
@@ -105,11 +106,32 @@ class LiVueServiceProvider extends ServiceProvider
     {
         Component::setEventDispatcher($this->app['events']);
 
+        $this->registerCompilerEngine();
         $this->registerFeatures();
         $this->registerRoutes();
         $this->registerPublishing();
         $this->registerViews();
         $this->registerAssetInjection();
+    }
+
+    /**
+     * Replace the default Blade compiler engine with LiVueCompilerEngine.
+     *
+     * This enables $this to refer to the current LiVue component in ALL Blade
+     * templates rendered during the component's render cycle — including
+     * anonymous components like <x-primix-actions::modals />.
+     *
+     * @see LiVueCompilerEngine
+     * @see \LiVue\Features\SupportRendering\RenderingStack
+     */
+    protected function registerCompilerEngine(): void
+    {
+        $this->app->make('view.engine.resolver')->register('blade', function () {
+            return new LiVueCompilerEngine(
+                $this->app['blade.compiler'],
+                $this->app['files'],
+            );
+        });
     }
 
     /**

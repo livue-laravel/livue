@@ -5,6 +5,7 @@ namespace LiVue\Features\SupportUrl;
 use Attribute;
 use LiVue\Attribute as LiVueAttribute;
 use ReflectionClass;
+use ReflectionNamedType;
 
 /**
  * Bind a component property to the URL query string.
@@ -80,7 +81,7 @@ class BaseUrl extends LiVueAttribute
 
         $type = $reflection->getProperty($property)->getType();
 
-        if ($type === null) {
+        if (! $type instanceof ReflectionNamedType) {
             return $value;
         }
 

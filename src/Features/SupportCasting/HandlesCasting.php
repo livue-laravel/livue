@@ -2,6 +2,7 @@
 
 namespace LiVue\Features\SupportCasting;
 
+use ReflectionNamedType;
 use ReflectionProperty;
 
 /**
@@ -39,7 +40,11 @@ trait HandlesCasting
         // but the property is not nullable, cast to the type's default.
         if ($value === null) {
             if ($type !== null && ! $type->allowsNull()) {
-                $typeName = $this->casts[$name] ?? $type->getName();
+                $typeName = $this->casts[$name] ?? $this->getTypeName($type);
+
+                if ($typeName === null) {
+                    return $value;
+                }
 
                 return $this->applyCast($typeName, $value);
             }
@@ -53,11 +58,13 @@ trait HandlesCasting
         }
 
         // Fallback to reflection-based casting
-        if ($type === null) {
+        $typeName = $this->getTypeName($type);
+
+        if ($typeName === null) {
             return $value;
         }
 
-        return $this->applyCast($type->getName(), $value);
+        return $this->applyCast($typeName, $value);
     }
 
     /**
@@ -78,5 +85,18 @@ trait HandlesCasting
             'json' => is_string($value) ? json_decode($value, true) : (array) $value,
             default => $value,
         };
+    }
+
+    /**
+     * Extract the type name from a ReflectionType.
+     * Returns null for union/intersection types (which don't have getName()).
+     */
+    private function getTypeName(?\ReflectionType $type): ?string
+    {
+        if ($type instanceof ReflectionNamedType) {
+            return $type->getName();
+        }
+
+        return null;
     }
 }

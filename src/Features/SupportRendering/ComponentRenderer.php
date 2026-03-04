@@ -51,8 +51,9 @@ class ComponentRenderer
         // These are removed from public state and stored encrypted in memo
         [$dehydratedState, $lockedMemo] = $this->extractLockedProperties($component, $dehydratedState);
 
-        // Share $errors with Blade views so @error directives work
-        $this->shareErrorsWithView($component);
+        // Share $errors with Blade views so @error directives work.
+        // Save a revert callback so nested @livue components don't overwrite our errors.
+        $revertErrors = $this->shareErrorsWithView($component);
 
         // Blade receives raw state (with PHP objects) + computed values for template rendering
         $viewData = array_merge($state, $computed);
@@ -76,7 +77,18 @@ class ComponentRenderer
         // Store view data for testing
         $this->lastViewData = $viewData;
 
-        $html = $component->renderView($viewName, $viewData);
+        // Push to rendering stack so LiVueCompilerEngine can bind $this to this
+        // component in ALL Blade templates (including anonymous components).
+        RenderingStack::push($component);
+
+        try {
+            $html = $component->renderView($viewName, $viewData);
+        } finally {
+            RenderingStack::pop();
+        }
+
+        // Restore previous $errors so parent components keep their error bag
+        $revertErrors();
 
         // Call rendered() hook - allows post-processing HTML
         if (method_exists($component, 'rendered')) {
@@ -200,8 +212,9 @@ class ComponentRenderer
         $state = $component->getState();
         $computed = $component->getComputedValues();
 
-        // Share $errors with Blade views so @error directives work
-        $this->shareErrorsWithView($component);
+        // Share $errors with Blade views so @error directives work.
+        // Save a revert callback so nested @livue components don't overwrite our errors.
+        $revertErrors = $this->shareErrorsWithView($component);
 
         $viewData = array_merge($state, $computed);
         $viewName = $component->getView();
@@ -217,7 +230,18 @@ class ComponentRenderer
         // Store view data for testing
         $this->lastViewData = $viewData;
 
-        $html = $component->renderView($viewName, $viewData);
+        // Push to rendering stack so LiVueCompilerEngine can bind $this to this
+        // component in ALL Blade templates (including anonymous components).
+        RenderingStack::push($component);
+
+        try {
+            $html = $component->renderView($viewName, $viewData);
+        } finally {
+            RenderingStack::pop();
+        }
+
+        // Restore previous $errors so parent components keep their error bag
+        $revertErrors();
 
         // Call rendered() hook - allows post-processing HTML
         if (method_exists($component, 'rendered')) {
@@ -232,13 +256,29 @@ class ComponentRenderer
 
     /**
      * Share the component's error bag with Blade views as $errors.
+     *
+     * Returns a revert callback that restores the previous $errors value.
+     * This prevents nested component renders (e.g., @livue directives inside
+     * the parent template) from overwriting the parent's errors with empty bags.
+     *
+     * @see https://github.com/livewire/livewire — same share-and-revert pattern
      */
-    protected function shareErrorsWithView(Component $component): void
+    protected function shareErrorsWithView(Component $component): \Closure
     {
         $viewErrorBag = new ViewErrorBag();
         $viewErrorBag->put('default', $component->getErrorBag());
 
+        $previous = View::shared('errors');
+
         View::share('errors', $viewErrorBag);
+
+        return function () use ($previous) {
+            if ($previous === null) {
+                View::share('errors', new ViewErrorBag());
+            } else {
+                View::share('errors', $previous);
+            }
+        };
     }
 
     /**
