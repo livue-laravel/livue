@@ -157,7 +157,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
                 },
             });
 
-            let base = Object.assign({}, refs, composables, { livue: livue, livueV: versions, lvErrors: errorsProxy });
+            let base = Object.assign({}, refs, composables, { livue: livue, stores: livue.stores, livueV: versions, lvErrors: errorsProxy });
 
             if (extracted.setupCode) {
                 let extra = executeSetupCode(extracted.setupCode, refs, livue);
@@ -189,9 +189,18 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
                     if (prop in target) return Reflect.get(target, prop, receiver);
                     if (typeof prop === 'symbol') return Reflect.get(target, prop, receiver);
                     if (isServerMethod(prop)) {
-                        return function () {
+                        var serverMethod = function () {
                             return livue.call(prop, ...arguments);
                         };
+                        // Allow directives to recover the original PHP method name
+                        // when the template value is an identifier (e.g. v-click="resetItems").
+                        Object.defineProperty(serverMethod, '__livueMethodName', {
+                            value: prop,
+                            configurable: false,
+                            enumerable: false,
+                            writable: false,
+                        });
+                        return serverMethod;
                     }
                     return undefined;
                 },

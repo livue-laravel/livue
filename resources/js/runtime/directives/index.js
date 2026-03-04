@@ -126,7 +126,7 @@ export function registerBuiltInDirectives() {
     // v-stream: Mark element as streaming target for $this->stream()
     addDirective('stream', streamDirective, null);
 
-    // v-click: Cleaner syntax for calling server methods
+    // v-click: Cleaner syntax for calling server methods (v-click="method")
     addDirective('click', clickDirective, null);
 
     // v-navigate: SPA navigation for links with prefetching

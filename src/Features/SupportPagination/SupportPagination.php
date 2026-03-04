@@ -13,7 +13,7 @@ use LiVue\Features\SupportHooks\ComponentStore;
  *
  * When a component uses the UsePagination trait, this hook automatically
  * overrides Laravel's default pagination views with LiVue-compatible ones
- * that use v-click: directives instead of page reload links.
+ * that use v-click directives instead of page reload links.
  *
  * The view is resolved from the component's paginationView() and
  * paginationSimpleView() methods (provided by UsePagination trait,

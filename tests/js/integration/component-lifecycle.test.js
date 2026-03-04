@@ -99,7 +99,7 @@ describe('Component Mount', () => {
         document.body.innerHTML = `
             <div data-livue-component data-livue-snapshot='{"state":{},"memo":{"name":"clicker"}}'>
                 <div data-livue-id="click-1">
-                    <button v-click:increment>Click</button>
+                    <button v-click="increment">Click</button>
                 </div>
             </div>
         `;
@@ -107,7 +107,8 @@ describe('Component Mount', () => {
         // Verify button exists and has the directive attribute
         const button = document.querySelector('button');
         expect(button).toBeTruthy();
-        expect(button.hasAttribute('v-click:increment')).toBe(true);
+        expect(button.hasAttribute('v-click')).toBe(true);
+        expect(button.getAttribute('v-click')).toBe('increment');
     });
 
     it('should handle nested components', async () => {
@@ -139,7 +140,7 @@ describe('Component Update', () => {
             <div data-livue-component data-livue-snapshot='{"state":{"count":0},"memo":{"name":"counter"}}'>
                 <div data-livue-id="counter-1">
                     <span data-count>{{ count }}</span>
-                    <button v-click:increment>+</button>
+                    <button v-click="increment">+</button>
                 </div>
             </div>
         `;
@@ -152,7 +153,7 @@ describe('Component Update', () => {
                         state: { count: 1 },
                         memo: { name: 'counter' },
                     }),
-                    html: '<div data-livue-id="counter-1"><span data-count>1</span><button v-click:increment>+</button></div>',
+                    html: '<div data-livue-id="counter-1"><span data-count>1</span><button v-click="increment">+</button></div>',
                 },
             ],
         };
@@ -219,7 +220,7 @@ describe('Component Destroy', () => {
         document.body.innerHTML = `
             <div data-livue-component data-livue-snapshot='{"state":{},"memo":{"name":"clicker"}}'>
                 <div data-livue-id="click-1">
-                    <button v-click:action>Click me</button>
+                    <button v-click="action">Click me</button>
                 </div>
             </div>
         `;

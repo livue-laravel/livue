@@ -74,21 +74,21 @@ describe('v-click Directive', () => {
             const addEventListenerSpy = vi.spyOn(el, 'addEventListener');
 
             clickDirective.mounted(el, {
-                arg: 'increment',
+                arg: undefined,
                 modifiers: {},
-                value: undefined,
+                value: 'increment',
             }, mockVnode);
 
             expect(addEventListenerSpy).toHaveBeenCalledWith('click', expect.any(Function), expect.any(Object));
         });
 
-        it('should call livue.call with method name from arg', () => {
+        it('should call livue.call with method name from value', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'increment',
+                arg: undefined,
                 modifiers: {},
-                value: undefined,
+                value: 'increment',
             }, mockVnode);
 
             el.click();
@@ -100,9 +100,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'save',
+                arg: undefined,
                 modifiers: {},
-                value: 123,
+                value: ['save', 123],
             }, mockVnode);
 
             el.click();
@@ -114,9 +114,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'update',
+                arg: undefined,
                 modifiers: {},
-                value: [1, 'active', true],
+                value: ['update', 1, 'active', true],
             }, mockVnode);
 
             el.click();
@@ -157,8 +157,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: {},
+                value: 'test',
             }, { ctx: {} });
 
             expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('livue helper not found'));
@@ -189,8 +190,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { prevent: true },
+                value: 'test',
             }, mockVnode);
 
             const event = new MouseEvent('click', { cancelable: true });
@@ -205,8 +207,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { stop: true },
+                value: 'test',
             }, mockVnode);
 
             const event = new MouseEvent('click', { bubbles: true });
@@ -224,8 +227,9 @@ describe('v-click Directive', () => {
             document.body.appendChild(el);
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { self: true },
+                value: 'test',
             }, mockVnode);
 
             // Click on child - should NOT trigger
@@ -243,8 +247,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { once: true },
+                value: 'test',
             }, mockVnode);
 
             el.click();
@@ -258,8 +263,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'search',
+                arg: undefined,
                 modifiers: { debounce: true, '300ms': true },
+                value: 'search',
             }, mockVnode);
 
             el.click();
@@ -274,8 +280,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'track',
+                arg: undefined,
                 modifiers: { throttle: true, '500ms': true },
+                value: 'track',
             }, mockVnode);
 
             el.click();
@@ -296,8 +303,9 @@ describe('v-click Directive', () => {
             document.body.appendChild(el);
 
             clickDirective.mounted(el, {
-                arg: 'close',
+                arg: undefined,
                 modifiers: { outside: true },
+                value: 'close',
             }, mockVnode);
 
             // Click on element - should NOT trigger
@@ -318,8 +326,9 @@ describe('v-click Directive', () => {
             const addEventListenerSpy = vi.spyOn(el, 'addEventListener');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { capture: true },
+                value: 'test',
             }, mockVnode);
 
             expect(addEventListenerSpy).toHaveBeenCalledWith(
@@ -333,9 +342,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'delete',
+                arg: undefined,
                 modifiers: { confirm: true },
-                value: undefined,
+                value: 'delete',
             }, mockVnode);
 
             el.click();
@@ -348,9 +357,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'delete',
+                arg: undefined,
                 modifiers: { confirm: true },
-                value: 42,
+                value: ['delete', 42],
             }, mockVnode);
 
             el.click();
@@ -362,9 +371,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'remove',
+                arg: undefined,
                 modifiers: { confirm: true },
-                value: [1, 'item'],
+                value: ['remove', 1, 'item'],
             }, mockVnode);
 
             el.click();
@@ -376,9 +385,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'delete',
+                arg: undefined,
                 modifiers: { confirm: true, prevent: true },
-                value: 5,
+                value: ['delete', 5],
             }, mockVnode);
 
             const event = new MouseEvent('click', { cancelable: true });
@@ -396,8 +405,9 @@ describe('v-click Directive', () => {
             const addEventListenerSpy = vi.spyOn(el, 'addEventListener');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: { passive: true },
+                value: 'test',
             }, mockVnode);
 
             expect(addEventListenerSpy).toHaveBeenCalledWith(
@@ -413,8 +423,9 @@ describe('v-click Directive', () => {
             const el = document.createElement('button');
 
             clickDirective.mounted(el, {
-                arg: 'test',
+                arg: undefined,
                 modifiers: {},
+                value: 'test',
             }, mockVnode);
 
             const removeEventListenerSpy = vi.spyOn(el, 'removeEventListener');
@@ -429,8 +440,9 @@ describe('v-click Directive', () => {
             document.body.appendChild(el);
 
             clickDirective.mounted(el, {
-                arg: 'close',
+                arg: undefined,
                 modifiers: { outside: true },
+                value: 'close',
             }, mockVnode);
 
             const removeEventListenerSpy = vi.spyOn(document, 'removeEventListener');

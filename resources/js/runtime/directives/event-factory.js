@@ -62,6 +62,11 @@ const KNOWN_MODIFIERS = [
 let _counter = 0;
 
 /**
+ * One-time warnings keyed by directive name.
+ */
+const _warnedArgDeprecation = new Set();
+
+/**
  * Parse timing value from modifiers (e.g., { '500ms': true } -> 500).
  *
  * @param {object} modifiers
@@ -127,6 +132,7 @@ function matchesKeyModifiers(event, modifiers) {
 export function createEventDirective(eventName, options = {}) {
     let supportsOutside = options.supportsOutside === true;
     let isKeyboardEvent = options.isKeyboardEvent === true;
+    let allowArg = options.allowArg !== false;
 
     // Each directive gets its own WeakMap (supports multiple event directives on same element)
     const handlers = new WeakMap();
@@ -140,6 +146,17 @@ export function createEventDirective(eventName, options = {}) {
             if (!livue) {
                 console.warn('[LiVue] v-' + eventName + ': livue helper not found in component context');
                 return;
+            }
+
+            if (arg && !allowArg) {
+                const warnKey = 'v-' + eventName;
+                if (!_warnedArgDeprecation.has(warnKey)) {
+                    console.warn(
+                        '[LiVue] ' + warnKey + ': argument syntax (v-' + eventName + ':method) is not supported. ' +
+                        'Use v-' + eventName + '="method" or v-' + eventName + '="[\'method\', ...args]".'
+                    );
+                    _warnedArgDeprecation.add(warnKey);
+                }
             }
 
             // Generate unique ID for debounce/throttle caching
@@ -165,7 +182,7 @@ export function createEventDirective(eventName, options = {}) {
 
             // Determine method name at mount time (for static values)
             let staticMethod = null;
-            if (arg) {
+            if (allowArg && arg) {
                 staticMethod = arg;
             }
 
@@ -176,7 +193,7 @@ export function createEventDirective(eventName, options = {}) {
                 let methodName = staticMethod;
                 let args = [];
 
-                if (arg) {
+                if (allowArg && arg) {
                     // v-event:methodName="args"
                     methodName = arg;
                     const currentValue = binding.value;
@@ -187,19 +204,24 @@ export function createEventDirective(eventName, options = {}) {
                     // v-event="'methodName'" or v-event="methodName"
                     const currentValue = binding.value;
                     if (typeof currentValue === 'function') {
-                        // Direct function call: v-click="livue.increment" or v-click="() => livue.increment(2)"
-                        const doCall = function() {
-                            currentValue();
-                        };
-
-                        if (debounced) {
-                            debounced(doCall);
-                        } else if (throttled) {
-                            throttled(doCall);
+                        // Server method proxy from template-transform (v-click="resetItems")
+                        if (typeof currentValue.__livueMethodName === 'string') {
+                            methodName = currentValue.__livueMethodName;
                         } else {
-                            doCall();
+                            // Direct function call: v-click="livue.increment" or v-click="() => livue.increment(2)"
+                            const doCall = function() {
+                                currentValue();
+                            };
+
+                            if (debounced) {
+                                debounced(doCall);
+                            } else if (throttled) {
+                                throttled(doCall);
+                            } else {
+                                doCall();
+                            }
+                            return;
                         }
-                        return;
                     } else if (typeof currentValue === 'string') {
                         methodName = currentValue;
                     } else if (Array.isArray(currentValue) && currentValue.length > 0) {
