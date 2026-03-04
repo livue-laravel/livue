@@ -207,6 +207,9 @@ export function createEventDirective(eventName, options = {}) {
                         // Server method proxy from template-transform (v-click="resetItems")
                         if (typeof currentValue.__livueMethodName === 'string') {
                             methodName = currentValue.__livueMethodName;
+                            if (Array.isArray(currentValue.__livueMethodArgs)) {
+                                args = currentValue.__livueMethodArgs.slice();
+                            }
                         } else {
                             // Direct function call: v-click="livue.increment" or v-click="() => livue.increment(2)"
                             const doCall = function() {

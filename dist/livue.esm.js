@@ -211,8 +211,8 @@ function ra(e, t, n, r) {
     const d = Pi(n.state.value[e]);
     return Oe(d, o, Object.keys(a || {}).reduce((c, p) => (c[p] = Vi(qi(() => {
       xn(n);
-      const m = n._s.get(e);
-      return a[p].call(m, m);
+      const v = n._s.get(e);
+      return a[p].call(v, v);
     })), c), {}));
   }
   return s = Gi(e, u, t, n, r, !0), s;
@@ -220,43 +220,43 @@ function ra(e, t, n, r) {
 function Gi(e, t, n = {}, r, i, o) {
   let a;
   const l = Oe({ actions: {} }, n), s = { deep: !0 };
-  let u, d, c = /* @__PURE__ */ new Set(), p = /* @__PURE__ */ new Set(), m;
+  let u, d, c = /* @__PURE__ */ new Set(), p = /* @__PURE__ */ new Set(), v;
   const h = r.state.value[e];
   !o && !h && (r.state.value[e] = {}), Mt({});
   let y;
-  function w(I) {
-    let N;
-    u = d = !1, typeof I == "function" ? (I(r.state.value[e]), N = {
+  function S(I) {
+    let x;
+    u = d = !1, typeof I == "function" ? (I(r.state.value[e]), x = {
       type: At.patchFunction,
       storeId: e,
-      events: m
-    }) : (lr(r.state.value[e], I), N = {
+      events: v
+    }) : (lr(r.state.value[e], I), x = {
       type: At.patchObject,
       payload: I,
       storeId: e,
-      events: m
+      events: v
     });
-    const k = y = /* @__PURE__ */ Symbol();
+    const L = y = /* @__PURE__ */ Symbol();
     On().then(() => {
-      y === k && (u = !0);
-    }), d = !0, Xe(c, N, r.state.value[e]);
+      y === L && (u = !0);
+    }), d = !0, Xe(c, x, r.state.value[e]);
   }
-  const T = o ? function() {
-    const { state: N } = n, k = N ? N() : {};
+  const A = o ? function() {
+    const { state: x } = n, L = x ? x() : {};
     this.$patch((j) => {
-      Oe(j, k);
+      Oe(j, L);
     });
   } : (
     /* istanbul ignore next */
     Ki
   );
-  function A() {
+  function C() {
     a.stop(), c.clear(), p.clear(), r._s.delete(e);
   }
-  const C = (I, N = "") => {
+  const M = (I, x = "") => {
     if (Fr in I)
-      return I[Hn] = N, I;
-    const k = function() {
+      return I[Hn] = x, I;
+    const L = function() {
       xn(r);
       const j = Array.from(arguments), q = /* @__PURE__ */ new Set(), U = /* @__PURE__ */ new Set();
       function J(G) {
@@ -267,65 +267,65 @@ function Gi(e, t, n = {}, r, i, o) {
       }
       Xe(p, {
         args: j,
-        name: k[Hn],
-        store: _,
+        name: L[Hn],
+        store: w,
         after: J,
         onError: ne
       });
       let b;
       try {
-        b = I.apply(this && this.$id === e ? this : _, j);
+        b = I.apply(this && this.$id === e ? this : w, j);
       } catch (G) {
         throw Xe(U, G), G;
       }
       return b instanceof Promise ? b.then((G) => (Xe(q, G), G)).catch((G) => (Xe(U, G), Promise.reject(G))) : (Xe(q, b), b);
     };
-    return k[Fr] = !0, k[Hn] = N, k;
-  }, O = {
+    return L[Fr] = !0, L[Hn] = x, L;
+  }, k = {
     _p: r,
     // _s: scope,
     $id: e,
     $onAction: qr.bind(null, p),
-    $patch: w,
-    $reset: T,
-    $subscribe(I, N = {}) {
-      const k = qr(c, I, N.detached, () => j()), j = a.run(() => Se(() => r.state.value[e], (q) => {
-        (N.flush === "sync" ? d : u) && I({
+    $patch: S,
+    $reset: A,
+    $subscribe(I, x = {}) {
+      const L = qr(c, I, x.detached, () => j()), j = a.run(() => Se(() => r.state.value[e], (q) => {
+        (x.flush === "sync" ? d : u) && I({
           storeId: e,
           type: At.direct,
-          events: m
+          events: v
         }, q);
-      }, Oe({}, s, N)));
-      return k;
+      }, Oe({}, s, x)));
+      return L;
     },
-    $dispose: A
-  }, _ = _e(O);
-  r._s.set(e, _);
-  const R = (r._a && r._a.runWithContext || Qo)(() => r._e.run(() => (a = Ri()).run(() => t({ action: C }))));
-  for (const I in R) {
-    const N = R[I];
-    if (vn(N) && !na(N) || Hi(N))
-      o || (h && ta(N) && (vn(N) ? N.value = h[I] : lr(N, h[I])), r.state.value[e][I] = N);
-    else if (typeof N == "function") {
-      const k = C(N, I);
-      R[I] = k, l.actions[I] = N;
+    $dispose: C
+  }, w = _e(k);
+  r._s.set(e, w);
+  const N = (r._a && r._a.runWithContext || Qo)(() => r._e.run(() => (a = Ri()).run(() => t({ action: M }))));
+  for (const I in N) {
+    const x = N[I];
+    if (vn(x) && !na(x) || Hi(x))
+      o || (h && ta(x) && (vn(x) ? x.value = h[I] : lr(x, h[I])), r.state.value[e][I] = x);
+    else if (typeof x == "function") {
+      const L = M(x, I);
+      N[I] = L, l.actions[I] = x;
     }
   }
-  return Oe(_, R), Oe(Po(_), R), Object.defineProperty(_, "$state", {
+  return Oe(w, N), Oe(Po(w), N), Object.defineProperty(w, "$state", {
     get: () => r.state.value[e],
     set: (I) => {
-      w((N) => {
-        Oe(N, I);
+      S((x) => {
+        Oe(x, I);
       });
     }
   }), r._p.forEach((I) => {
-    Oe(_, a.run(() => I({
-      store: _,
+    Oe(w, a.run(() => I({
+      store: w,
       app: r._a,
       pinia: r,
       options: l
     })));
-  }), h && o && n.hydrate && n.hydrate(_.$state, h), u = !0, d = !0, _;
+  }), h && o && n.hydrate && n.hydrate(w.$state, h), u = !0, d = !0, w;
 }
 // @__NO_SIDE_EFFECTS__
 function ia(e, t, n) {
@@ -458,9 +458,9 @@ function ca(e, t, n) {
   function o(u, d, c) {
     let p = n && n.$id ? n.$id : "";
     if (d === void 0) {
-      let m = Ue(p, u, c || {});
-      if (m)
-        return m;
+      let v = Ue(p, u, c || {});
+      if (v)
+        return v;
       throw new Error("[LiVue] store(name): store not found. Provide a definition or register it in PHP.");
     }
     return Ar(p, u, d, c);
@@ -513,30 +513,37 @@ function to(e) {
 function sr(e, t, n, r, i, o) {
   let a = Wr(e);
   a = Br(a);
-  let l = zr(a), s = Vn.compile(l.html), u = _r(s), d = [];
-  function c(m, h) {
-    let y = u.value, w = y(m, d);
-    return to(w), w;
+  let l = zr(a), s = Vn.compile(l.html), u = _r(s), d = [], c = !1;
+  function p(h, y) {
+    let S = u.value;
+    c = !0;
+    let A;
+    try {
+      A = S(h, d);
+    } finally {
+      c = !1;
+    }
+    return to(A), A;
   }
-  c._rc = !0;
-  let p = {
+  p._rc = !0;
+  let v = {
     name: o || "LiVueComponent",
-    render: c,
+    render: p,
     setup: function() {
       Vn.provide("livue", n);
-      let m = Jo(t);
-      var h = new Proxy(n.errors, {
-        get: function(C, O, _) {
-          var L = Reflect.get(C, O, _);
-          return Array.isArray(L) ? L[0] : L;
+      let h = Jo(t);
+      var y = new Proxy(n.errors, {
+        get: function(k, w, T) {
+          var N = Reflect.get(k, w, T);
+          return Array.isArray(N) ? N[0] : N;
         }
       });
-      let y = Object.assign({}, m, r, { livue: n, stores: n.stores, livueV: i, lvErrors: h });
+      let S = Object.assign({}, h, r, { livue: n, stores: n.stores, livueV: i, lvErrors: y });
       if (l.setupCode) {
-        let C = ca(l.setupCode, m, n);
-        C && Object.assign(y, C);
+        let k = ca(l.setupCode, h, n);
+        k && Object.assign(S, k);
       }
-      var w = {
+      var A = {
         // JS internals
         then: 1,
         toJSON: 1,
@@ -571,49 +578,66 @@ function sr(e, t, n, r, i, o) {
         BigInt: 1,
         console: 1,
         Error: 1
-      }, T = /^[a-zA-Z][a-zA-Z0-9_]*$/;
-      function A(C) {
-        return typeof C == "string" && !w[C] && T.test(C);
+      }, C = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+      function M(k) {
+        return typeof k == "string" && !A[k] && C.test(k);
       }
-      return new Proxy(y, {
-        get: function(C, O, _) {
-          if (O in C || typeof O == "symbol") return Reflect.get(C, O, _);
-          if (A(O)) {
-            var L = function() {
-              return n.call(O, ...arguments);
+      return new Proxy(S, {
+        get: function(k, w, T) {
+          if (w in k || typeof w == "symbol") return Reflect.get(k, w, T);
+          if (M(w)) {
+            var N = function() {
+              var I = Array.prototype.slice.call(arguments);
+              if (c) {
+                var x = function() {
+                  return n.call(w, ...I);
+                };
+                return Object.defineProperty(x, "__livueMethodName", {
+                  value: w,
+                  configurable: !1,
+                  enumerable: !1,
+                  writable: !1
+                }), Object.defineProperty(x, "__livueMethodArgs", {
+                  value: I,
+                  configurable: !1,
+                  enumerable: !1,
+                  writable: !1
+                }), x;
+              }
+              return n.call(w, ...I);
             };
-            return Object.defineProperty(L, "__livueMethodName", {
-              value: O,
+            return Object.defineProperty(N, "__livueMethodName", {
+              value: w,
               configurable: !1,
               enumerable: !1,
               writable: !1
-            }), L;
+            }), N;
           }
         },
-        getOwnPropertyDescriptor: function(C, O) {
-          var _ = Object.getOwnPropertyDescriptor(C, O);
-          if (_) return _;
-          if (A(O))
+        getOwnPropertyDescriptor: function(k, w) {
+          var T = Object.getOwnPropertyDescriptor(k, w);
+          if (T) return T;
+          if (M(w))
             return { configurable: !0, enumerable: !1 };
         },
-        has: function(C, O) {
-          return !!(O in C || A(O));
+        has: function(k, w) {
+          return !!(w in k || M(w));
         },
-        set: function(C, O, _) {
-          return C[O] = _, !0;
+        set: function(k, w, T) {
+          return k[w] = T, !0;
         },
-        ownKeys: function(C) {
-          return Reflect.ownKeys(C);
+        ownKeys: function(k) {
+          return Reflect.ownKeys(k);
         }
       });
     }
   };
-  return p._updateRender = function(m) {
-    let h = Wr(m);
-    h = Br(h);
-    let y = zr(h), w = Vn.compile(y.html);
-    w !== u.value && (d.length = 0, u.value = w);
-  }, p;
+  return v._updateRender = function(h) {
+    let y = Wr(h);
+    y = Br(y);
+    let S = zr(y), A = Vn.compile(S.html);
+    A !== u.value && (d.length = 0, u.value = A);
+  }, v;
 }
 let We = null;
 function ct() {
@@ -934,22 +958,22 @@ async function Ht(e, t, n) {
           detail: {
             url: r,
             doc: u,
-            onSwap: function(T) {
-              typeof T == "function" && T(u);
+            onSwap: function(A) {
+              typeof A == "function" && A(u);
             }
           }
         });
         window.dispatchEvent(d);
         var c = Na(), p = /* @__PURE__ */ new Set();
-        c.forEach(function(T) {
-          T.livueIds.forEach(function(A) {
-            p.add(A);
+        c.forEach(function(A) {
+          A.livueIds.forEach(function(C) {
+            p.add(C);
           });
-        }), bt._stopObserver(), bt.destroyExcept(p), c.forEach(function(T) {
-          T.element.parentNode && T.element.parentNode.removeChild(T.element);
+        }), bt._stopObserver(), bt.destroyExcept(p), c.forEach(function(A) {
+          A.element.parentNode && A.element.parentNode.removeChild(A.element);
         });
-        var m = u.querySelector("title");
-        m && (document.title = m.textContent), document.body.innerHTML = u.body.innerHTML, Ia(c);
+        var v = u.querySelector("title");
+        v && (document.title = v.textContent), document.body.innerHTML = u.body.innerHTML, Ia(c);
         var h = u.querySelector('meta[name="csrf-token"]'), y = document.querySelector('meta[name="csrf-token"]');
         if (h && y && (y.setAttribute("content", h.getAttribute("content")), fa()), Ma(u), Pa(u), t && (Pe = oo(), history.pushState(
           { livueNavigate: !0, url: r, pageKey: Pe },
@@ -958,15 +982,15 @@ async function Ht(e, t, n) {
         )), Ra(u), bt.rebootPreserving(), n)
           _a(Pe);
         else if (location.hash) {
-          var w = document.querySelector(location.hash);
-          w ? w.scrollIntoView() : window.scrollTo(0, 0);
+          var S = document.querySelector(location.hash);
+          S ? S.scrollIntoView() : window.scrollTo(0, 0);
         } else
           window.scrollTo(0, 0);
         window.dispatchEvent(new CustomEvent("livue:navigated", {
           detail: { url: r }
         }));
-      } catch (T) {
-        console.error("[LiVue] Navigation failed:", T), window.location.href = e;
+      } catch (A) {
+        console.error("[LiVue] Navigation failed:", A), window.location.href = e;
       } finally {
         it = !1, ve.showProgressBar && je.done();
       }
@@ -1140,10 +1164,10 @@ async function uo() {
       Accept: "application/json"
     };
     r && (i["X-CSRF-TOKEN"] = r);
-    var o = e.map(function(w) {
-      return w.payload;
-    }), a = t.map(function(w) {
-      return w.payload;
+    var o = e.map(function(S) {
+      return S.payload;
+    }), a = t.map(function(S) {
+      return S.payload;
     }), l = {};
     o.length > 0 && (l.updates = o), a.length > 0 && (l.lazyLoads = a), me("request.started", {
       url: n,
@@ -1168,7 +1192,7 @@ async function uo() {
           t[c].reject(d);
         return;
       }
-      for (var p = u.responses || [], m = u.lazyResponses || [], c = 0; c < p.length; c++)
+      for (var p = u.responses || [], v = u.lazyResponses || [], c = 0; c < p.length; c++)
         if (p[c] && p[c].redirect) {
           Dr(p[c].redirect);
           return;
@@ -1189,7 +1213,7 @@ async function uo() {
           e[c].resolve(h);
       }
       for (var c = 0; c < t.length; c++) {
-        var h = m[c];
+        var h = v[c];
         if (!h) {
           t[c].reject(new Error("No response for lazy load at index " + c));
           continue;
@@ -1204,19 +1228,19 @@ async function uo() {
         url: n,
         success: !0,
         responses: p,
-        lazyResponses: m,
+        lazyResponses: v,
         updateCount: e.length,
         lazyCount: t.length
       });
-    } catch (w) {
+    } catch (S) {
       for (var c = 0; c < e.length; c++)
-        e[c].reject(w);
+        e[c].reject(S);
       for (var c = 0; c < t.length; c++)
-        t[c].reject(w);
+        t[c].reject(S);
       me("request.finished", {
         url: n,
         success: !1,
-        error: w,
+        error: S,
         updateCount: e.length,
         lazyCount: t.length
       });
@@ -1317,7 +1341,7 @@ function mr(e) {
   fo.delete(e);
 }
 var po = [];
-function x(e, t, n) {
+function O(e, t, n) {
   po.push({
     name: e,
     directive: t
@@ -1362,16 +1386,16 @@ function ho(e, t, n) {
   for (let i = 0; i < t.length; i++) {
     const o = t[i], { channel: a, type: l, event: s, method: u, isPresenceEvent: d, isCustomEvent: c } = o, p = Ua(a, l);
     if (!p) continue;
-    const m = l + ":" + a + ":" + s + ":" + e;
-    if (He.has(m)) {
-      r.push(m);
+    const v = l + ":" + a + ":" + s + ":" + e;
+    if (He.has(v)) {
+      r.push(v);
       continue;
     }
     const h = function(y) {
       try {
         n(u, y);
-      } catch (w) {
-        console.error('[LiVue Echo] Error calling method "' + u + '":', w);
+      } catch (S) {
+        console.error('[LiVue Echo] Error calling method "' + u + '":', S);
       }
     };
     if (l === "presence" && d)
@@ -1380,14 +1404,14 @@ function ho(e, t, n) {
       const y = c ? "." + s : s;
       p.listen(y, h);
     }
-    He.set(m, {
+    He.set(v, {
       channel: p,
       channelKey: l + ":" + a,
       event: s,
       handler: h,
       isPresenceEvent: d,
       isCustomEvent: c
-    }), r.push(m);
+    }), r.push(v);
   }
   return function() {
     for (let i = 0; i < r.length; i++)
@@ -1572,8 +1596,8 @@ function el(e, t, n, r, i) {
     var c = ct();
     c && u.setRequestHeader("X-CSRF-TOKEN", c), u.setRequestHeader("Accept", "application/json"), i && u.upload && u.upload.addEventListener("progress", function(p) {
       if (p.lengthComputable) {
-        var m = Math.round(p.loaded / p.total * 100);
-        i({ overall: m });
+        var v = Math.round(p.loaded / p.total * 100);
+        i({ overall: v });
       }
     }), u.onload = function() {
       var p;
@@ -1589,8 +1613,8 @@ function el(e, t, n, r, i) {
           errors: p.errors || []
         });
       else {
-        var m = new Error(p.error || p.message || "Upload failed");
-        m.status = u.status, m.data = p, a(m);
+        var v = new Error(p.error || p.message || "Upload failed");
+        v.status = u.status, v.data = p, a(v);
       }
     }, u.onerror = function() {
       a(new Error("Network error during upload"));
@@ -1604,8 +1628,8 @@ function st(e, t) {
     let r = null, i = null, o = null, a = null, l = function(s) {
       return i = s, clearTimeout(r), new Promise(function(u, d) {
         o = u, a = d, r = setTimeout(function() {
-          let c = i, p = o, m = a;
-          i = null, o = null, a = null, Promise.resolve(c()).then(p).catch(m);
+          let c = i, p = o, v = a;
+          i = null, o = null, a = null, Promise.resolve(c()).then(p).catch(v);
         }, t);
       });
     };
@@ -1720,10 +1744,10 @@ async function al(e, t = {}) {
       const p = s.split(`
 `);
       s = p.pop() || "";
-      for (const m of p)
-        if (m.trim())
+      for (const v of p)
+        if (v.trim())
           try {
-            const h = JSON.parse(m);
+            const h = JSON.parse(v);
             if (h.stream)
               ll(h.stream), n(h.stream);
             else {
@@ -1732,7 +1756,7 @@ async function al(e, t = {}) {
               h.snapshot && (u = h);
             }
           } catch (h) {
-            console.error("[LiVue Stream] Parse error:", h, m);
+            console.error("[LiVue Stream] Parse error:", h, v);
           }
     }
     if (s.trim())
@@ -1784,10 +1808,10 @@ function ul(e, t) {
   for (let a of o) {
     let l = n[a] || {}, s = r[a] || {}, u = Or(l), d = {};
     for (let c in s)
-      d[c] = /* @__PURE__ */ (function(p, m) {
+      d[c] = /* @__PURE__ */ (function(p, v) {
         return function() {
           let h = Array.prototype.slice.call(arguments);
-          return t(p + "." + m, h);
+          return t(p + "." + v, h);
         };
       })(a, c);
     i[a] = _e(Object.assign({}, u, d));
@@ -1816,25 +1840,25 @@ function dl(e, t) {
 }
 function vr(e, t, n, r, i, o, a) {
   a = a || {};
-  let l = za(), s = n.name, u = n.vueMethods || {}, d = n.jsonMethods || [], c = n.confirms || {}, p = n.isolate || !1, m = n.urlParams || null, h = n.uploads || null, y = n.tabSync || null, w = !1, T = i, A = o, C = a.initialHtml || null, O = _e({}), _ = [];
-  function L() {
-    for (let f = 0; f < _.length; f++)
+  let l = za(), s = n.name, u = n.vueMethods || {}, d = n.jsonMethods || [], c = n.confirms || {}, p = n.isolate || !1, v = n.urlParams || null, h = n.uploads || null, y = n.tabSync || null, S = !1, A = i, C = o, M = a.initialHtml || null, k = _e({}), w = [];
+  function T() {
+    for (let f = 0; f < w.length; f++)
       try {
-        _[f]();
+        w[f]();
       } catch {
       }
-    _ = [];
+    w = [];
   }
-  function R(f) {
-    if (L(), !!Array.isArray(f))
+  function N(f) {
+    if (T(), !!Array.isArray(f))
       for (let g = 0; g < f.length; g++) {
-        let E = f[g];
-        if (!E || typeof E != "object" || !E.bridge || typeof E.bridge != "object") continue;
-        let D = Ue(e, E.name, { scope: E.scope || "auto" });
+        let _ = f[g];
+        if (!_ || typeof _ != "object" || !_.bridge || typeof _.bridge != "object") continue;
+        let D = Ue(e, _.name, { scope: _.scope || "auto" });
         if (!D) continue;
-        let v = E.bridge;
-        for (let H in v) {
-          let B = v[H];
+        let m = _.bridge;
+        for (let H in m) {
+          let B = m[H];
           if (!B || typeof B != "object") continue;
           let Z = B.prop, $ = B.mode || "two-way";
           if (!(!Z || !(Z in t))) {
@@ -1844,7 +1868,7 @@ function vr(e, t, n, r, i, o, a) {
               }, function(qe) {
                 t[Z] !== qe && (t[Z] = qe);
               });
-              _.push(Y);
+              w.push(Y);
             }
             if ($ === "two-way" || $ === "state-to-store") {
               let Y = Se(function() {
@@ -1852,7 +1876,7 @@ function vr(e, t, n, r, i, o, a) {
               }, function(qe) {
                 D[H] !== qe && (D[H] = qe);
               });
-              _.push(Y);
+              w.push(Y);
             }
           }
         }
@@ -1860,21 +1884,21 @@ function vr(e, t, n, r, i, o, a) {
   }
   function I(f) {
     let g = la(e, f);
-    for (let E in g)
-      O[E] = g[E];
-    R(f);
+    for (let _ in g)
+      k[_] = g[_];
+    N(f);
   }
   I(n.stores || []), a.cleanups && typeof a.cleanups.cleanup == "function" && a.cleanups.cleanup(function() {
-    L(), sa(e);
+    T(), sa(e);
   });
-  function N(f) {
-    let g = document.querySelector('meta[name="livue-prefix"]'), D = "/" + (g ? g.getAttribute("content") : "livue") + "/download?token=" + encodeURIComponent(f.token), v = document.createElement("a");
-    v.href = D, v.download = f.name, v.style.display = "none", document.body.appendChild(v), v.click(), document.body.removeChild(v);
+  function x(f) {
+    let g = document.querySelector('meta[name="livue-prefix"]'), D = "/" + (g ? g.getAttribute("content") : "livue") + "/download?token=" + encodeURIComponent(f.token), m = document.createElement("a");
+    m.href = D, m.download = f.name, m.style.display = "none", document.body.appendChild(m), m.click(), document.body.removeChild(m);
   }
-  function k() {
-    let f = Jt(T, t);
+  function L() {
+    let f = Jt(A, t);
     return {
-      snapshot: A,
+      snapshot: C,
       diffs: f
     };
   }
@@ -1884,56 +1908,56 @@ function vr(e, t, n, r, i, o, a) {
       return;
     }
     if (f.errorBoundary) {
-      let v = f.errorBoundary;
-      b.errorState.hasError = v.hasError, b.errorState.errorMessage = v.errorMessage, b.errorState.errorDetails = v.errorDetails, b.errorState.recover = v.recover, (!v.errorHandled || !v.recover) && me("error.occurred", {
-        error: new Error(v.errorMessage || "Component error"),
+      let m = f.errorBoundary;
+      b.errorState.hasError = m.hasError, b.errorState.errorMessage = m.errorMessage, b.errorState.errorDetails = m.errorDetails, b.errorState.recover = m.recover, (!m.errorHandled || !m.recover) && me("error.occurred", {
+        error: new Error(m.errorMessage || "Component error"),
         componentName: s,
         componentId: e,
-        context: { method: v.errorMethod, serverHandled: v.errorHandled },
+        context: { method: m.errorMethod, serverHandled: m.errorHandled },
         preventDefault: function() {
         }
       });
     }
-    if (f.download && N(f.download), f.snapshot) {
-      let v = JSON.parse(f.snapshot);
-      if (v.state) {
-        let H = lt(v.state);
-        Uo(t, H), T = JSON.parse(JSON.stringify(H));
+    if (f.download && x(f.download), f.snapshot) {
+      let m = JSON.parse(f.snapshot);
+      if (m.state) {
+        let H = lt(m.state);
+        Uo(t, H), A = JSON.parse(JSON.stringify(H));
       }
-      A = f.snapshot, v.memo && (v.memo.errors ? be(b.errors, v.memo.errors) : hr(b.errors), v.memo.vueMethods && (u = v.memo.vueMethods), v.memo.jsonMethods && (d = v.memo.jsonMethods), v.memo.urlParams && (m = v.memo.urlParams), v.memo.uploads && (h = v.memo.uploads), v.memo.confirms && (c = v.memo.confirms), (v.memo.composables || v.memo.composableActions) && cl(J, v.memo), v.memo.stores && I(v.memo.stores));
+      C = f.snapshot, m.memo && (m.memo.errors ? be(b.errors, m.memo.errors) : hr(b.errors), m.memo.vueMethods && (u = m.memo.vueMethods), m.memo.jsonMethods && (d = m.memo.jsonMethods), m.memo.urlParams && (v = m.memo.urlParams), m.memo.uploads && (h = m.memo.uploads), m.memo.confirms && (c = m.memo.confirms), (m.memo.composables || m.memo.composableActions) && cl(J, m.memo), m.memo.stores && I(m.memo.stores));
     }
-    if (m && Za(m, t), (f.html || f.fragments) && r && r._updateTemplate) {
-      let v = {};
+    if (v && Za(v, t), (f.html || f.fragments) && r && r._updateTemplate) {
+      let m = {};
       if (f.snapshot) {
         let H = JSON.parse(f.snapshot);
-        H.memo && (H.memo.transitionType && (v.transitionType = H.memo.transitionType), H.memo.skipTransition && (v.skipTransition = !0));
+        H.memo && (H.memo.transitionType && (m.transitionType = H.memo.transitionType), H.memo.skipTransition && (m.skipTransition = !0));
       }
       if (f.fragments) {
-        let H = C || (a.el ? a.el.innerHTML : null);
+        let H = M || (a.el ? a.el.innerHTML : null);
         if (H) {
           let B = dl(H, f.fragments);
-          C = B, r._updateTemplate(B, v);
+          M = B, r._updateTemplate(B, m);
         }
       } else
-        C = f.html, r._updateTemplate(f.html, v);
+        M = f.html, r._updateTemplate(f.html, m);
     }
     if (f.events && f.events.length > 0) {
-      for (var E = 0; E < f.events.length; E++)
-        f.events[E].sourceId = e;
+      for (var _ = 0; _ < f.events.length; _++)
+        f.events[_].sourceId = e;
       Ga(f.events);
     }
     if (f.js && f.js.length > 0)
       for (var D = 0; D < f.js.length; D++)
         try {
           new Function("state", "livue", f.js[D])(t, b);
-        } catch (v) {
-          console.error("[LiVue] Error executing ->vue() JS:", v);
+        } catch (m) {
+          console.error("[LiVue] Error executing ->vue() JS:", m);
         }
     if (f.benchmark && me("benchmark.received", {
       componentId: e,
       componentName: s,
       timings: f.benchmark
-    }), y && y.enabled && f.snapshot && !w && JSON.parse(f.snapshot).state) {
+    }), y && y.enabled && f.snapshot && !S && JSON.parse(f.snapshot).state) {
       let H = Bi(t), B = [];
       for (let Z in H)
         (!g || !(Z in g)) && B.push(Z);
@@ -1942,7 +1966,7 @@ function vr(e, t, n, r, i, o, a) {
         Object.keys(Z).length > 0 && il(s, Z, B, y);
       }
     }
-    if (w = !1, f.jsonResult !== void 0)
+    if (S = !1, f.jsonResult !== void 0)
       return f.jsonResult;
   }
   let q = _e({}), U = {}, J = {}, ne = function(f, g) {
@@ -1959,14 +1983,14 @@ function vr(e, t, n, r, i, o, a) {
     streamingMethod: null,
     loadingTargets: q,
     refs: {},
-    stores: O,
+    stores: k,
     /**
      * Check if any property (or a specific property) has changed since last sync.
      * @param {string} [property] - Property name to check, or omit for any
      * @returns {boolean}
      */
     isDirty: function(f) {
-      let g = Jt(T, t);
+      let g = Jt(A, t);
       return f === void 0 ? Object.keys(g).length > 0 : f in g;
     },
     /**
@@ -1975,7 +1999,7 @@ function vr(e, t, n, r, i, o, a) {
      * @returns {Set<string>}
      */
     get dirtyFields() {
-      let f = Jt(T, t);
+      let f = Jt(A, t);
       return new Set(Object.keys(f));
     },
     /**
@@ -1984,21 +2008,21 @@ function vr(e, t, n, r, i, o, a) {
      * @returns {*}
      */
     getOriginal: function(f) {
-      return f === void 0 ? JSON.parse(JSON.stringify(T)) : T[f] !== void 0 ? JSON.parse(JSON.stringify(T[f])) : void 0;
+      return f === void 0 ? JSON.parse(JSON.stringify(A)) : A[f] !== void 0 ? JSON.parse(JSON.stringify(A[f])) : void 0;
     },
     /**
      * Reset a property to its original (server-confirmed) value.
      * @param {string} property - Property name to reset
      */
     resetProperty: function(f) {
-      f in T && (t[f] = JSON.parse(JSON.stringify(T[f])));
+      f in A && (t[f] = JSON.parse(JSON.stringify(A[f])));
     },
     /**
      * Reset all properties to their original (server-confirmed) values.
      */
     resetAll: function() {
-      for (let f in T)
-        f in t && (t[f] = JSON.parse(JSON.stringify(T[f])));
+      for (let f in A)
+        f in t && (t[f] = JSON.parse(JSON.stringify(A[f])));
     },
     /**
      * Check if a specific action (or any action) is loading.
@@ -2037,9 +2061,9 @@ function vr(e, t, n, r, i, o, a) {
      * @param {Array|*} paramsOrFirst - Array of params (new API) or first param (old API)
      * @param {object} [options] - { debounce?: number, throttle?: number }
      */
-    call: async function(f, g, E) {
-      let D, v = null;
-      if (arguments.length === 1 ? D = [] : arguments.length === 2 ? Array.isArray(g) ? D = g : D = [g] : arguments.length >= 3 && (Array.isArray(g) && E && typeof E == "object" && (E.debounce || E.throttle) ? (D = g, v = E) : D = Array.prototype.slice.call(arguments, 1)), U[f])
+    call: async function(f, g, _) {
+      let D, m = null;
+      if (arguments.length === 1 ? D = [] : arguments.length === 2 ? Array.isArray(g) ? D = g : D = [g] : arguments.length >= 3 && (Array.isArray(g) && _ && typeof _ == "object" && (_.debounce || _.throttle) ? (D = g, m = _) : D = Array.prototype.slice.call(arguments, 1)), U[f])
         return U[f](b, D);
       if (u[f]) {
         try {
@@ -2055,7 +2079,7 @@ function vr(e, t, n, r, i, o, a) {
         b.loading = !0, b.processing = f, q[f] = !0;
         let Z;
         try {
-          let $ = k(), Y = await qn($.snapshot, f, D, $.diffs, p || H);
+          let $ = L(), Y = await qn($.snapshot, f, D, $.diffs, p || H);
           Z = j(Y, $.diffs);
         } catch ($) {
           if (H)
@@ -2066,7 +2090,7 @@ function vr(e, t, n, r, i, o, a) {
         }
         return Z;
       };
-      return v && v.debounce ? st(e + ":" + f, v.debounce)(B) : v && v.throttle ? jt(e + ":" + f, v.throttle)(B) : B();
+      return m && m.debounce ? st(e + ":" + f, m.debounce)(B) : m && m.throttle ? jt(e + ":" + f, m.throttle)(B) : B();
     },
     /**
      * Call a method with inline confirmation (bypasses #[Confirm] attribute).
@@ -2076,9 +2100,9 @@ function vr(e, t, n, r, i, o, a) {
      * @param {...*} args - Method arguments
      */
     callWithConfirm: async function(f, g) {
-      let E = Array.prototype.slice.call(arguments, 2), D = { message: g || "Are you sure?" };
+      let _ = Array.prototype.slice.call(arguments, 2), D = { message: g || "Are you sure?" };
       if (await b._showConfirm(D))
-        return b.call.apply(b, [f].concat(E));
+        return b.call.apply(b, [f].concat(_));
     },
     /**
      * Show confirmation dialog (native or custom).
@@ -2108,14 +2132,14 @@ function vr(e, t, n, r, i, o, a) {
      * @param {object} [options] - { scope?: 'component'|'global' }
      * @returns {object}
      */
-    store: function(f, g, E) {
+    store: function(f, g, _) {
       if (g === void 0) {
-        let D = Ue(e, f, E || { scope: "auto" });
+        let D = Ue(e, f, _ || { scope: "auto" });
         if (D)
           return D;
         throw new Error('[LiVue] store("' + f + '"): store not found. Provide a definition or register it in PHP.');
       }
-      return Ar(e, f, g, E);
+      return Ar(e, f, g, _);
     },
     /**
      * Resolve a previously registered store by name.
@@ -2127,7 +2151,7 @@ function vr(e, t, n, r, i, o, a) {
     useStore: function(f) {
       let g = Ue(e, f, { scope: "auto" });
       if (g)
-        return O[f] = g, g;
+        return k[f] = g, g;
       throw new Error('[LiVue] useStore("' + f + '"): store not found.');
     },
     /**
@@ -2139,7 +2163,7 @@ function vr(e, t, n, r, i, o, a) {
     useGlobalStore: function(f) {
       let g = Ue(e, f, { scope: "global" });
       if (g)
-        return O[f] = g, g;
+        return k[f] = g, g;
       throw new Error('[LiVue] useGlobalStore("' + f + '"): global store not found.');
     },
     /**
@@ -2149,7 +2173,7 @@ function vr(e, t, n, r, i, o, a) {
     sync: async function() {
       b.loading = !0, b.processing = "$sync";
       try {
-        let f = k(), g = await qn(f.snapshot, null, [], f.diffs, p);
+        let f = L(), g = await qn(f.snapshot, null, [], f.diffs, p);
         j(g, f.diffs);
       } catch (f) {
         f.status === 422 && f.data && f.data.errors ? be(b.errors, f.data.errors) : Ye(f, s);
@@ -2177,8 +2201,8 @@ function vr(e, t, n, r, i, o, a) {
      * @param {string} eventName
      * @param {*} [data]
      */
-    dispatchTo: function(f, g, E) {
-      ln(g, E, "to", s, e, f);
+    dispatchTo: function(f, g, _) {
+      ln(g, _, "to", s, e, f);
     },
     /**
      * Dispatch an event to this component only.
@@ -2210,11 +2234,11 @@ function vr(e, t, n, r, i, o, a) {
         console.error('[LiVue] Property "' + f + '" is not configured for uploads.');
         return;
       }
-      var E = jn(t, f);
-      E && E.__livue_upload && E.ref && Fn([E.ref]), b.uploading = !0, b.uploadProgress = 0;
+      var _ = jn(t, f);
+      _ && _.__livue_upload && _.ref && Fn([_.ref]), b.uploading = !0, b.uploadProgress = 0;
       try {
-        var D = await Qa(g, s, f, h[f].token, function(v) {
-          b.uploadProgress = v;
+        var D = await Qa(g, s, f, h[f].token, function(m) {
+          b.uploadProgress = m;
         });
         Ut(t, f, {
           __livue_upload: !0,
@@ -2224,8 +2248,8 @@ function vr(e, t, n, r, i, o, a) {
           size: D.size,
           previewUrl: D.previewUrl
         });
-      } catch (v) {
-        v.status === 422 && v.data && v.data.errors ? be(b.errors, v.data.errors) : Ye(v, s);
+      } catch (m) {
+        m.status === 422 && m.data && m.data.errors ? be(b.errors, m.data.errors) : Ye(m, s);
       } finally {
         b.uploading = !1, b.uploadProgress = 0;
       }
@@ -2247,9 +2271,9 @@ function vr(e, t, n, r, i, o, a) {
       }
       b.uploading = !0, b.uploadProgress = 0;
       try {
-        var E = await el(g, s, f, h[f].token, function(Y) {
+        var _ = await el(g, s, f, h[f].token, function(Y) {
           b.uploadProgress = Y.overall;
-        }), D = E.results || [], v = E.errors || [], H = jn(t, f), B = Array.isArray(H) ? H : [];
+        }), D = _.results || [], m = _.errors || [], H = jn(t, f), B = Array.isArray(H) ? H : [];
         if (D.length > 0) {
           var Z = D.map(function(Y) {
             return {
@@ -2263,9 +2287,9 @@ function vr(e, t, n, r, i, o, a) {
           });
           Ut(t, f, B.concat(Z));
         }
-        if (v.length > 0) {
+        if (m.length > 0) {
           var $ = {};
-          v.forEach(function(Y) {
+          m.forEach(function(Y) {
             var qe = f + "." + Y.index;
             $[qe] = {
               file: Y.file,
@@ -2290,12 +2314,12 @@ function vr(e, t, n, r, i, o, a) {
      * @param {number} [index] - For array properties, the index to remove
      */
     removeUpload: function(f, g) {
-      var E = jn(t, f);
-      if (g !== void 0 && Array.isArray(E)) {
-        var D = E[g];
-        D && D.__livue_upload && D.ref && Fn([D.ref]), E.splice(g, 1), Ut(t, f, E.slice());
+      var _ = jn(t, f);
+      if (g !== void 0 && Array.isArray(_)) {
+        var D = _[g];
+        D && D.__livue_upload && D.ref && Fn([D.ref]), _.splice(g, 1), Ut(t, f, _.slice());
       } else
-        E && E.__livue_upload && E.ref && Fn([E.ref]), Ut(t, f, null);
+        _ && _.__livue_upload && _.ref && Fn([_.ref]), Ut(t, f, null);
     },
     /**
      * Call a method using HTTP streaming.
@@ -2307,11 +2331,11 @@ function vr(e, t, n, r, i, o, a) {
      */
     stream: async function(f, g) {
       g = g || [], b.loading = !0, b.streaming = !0, b.processing = f, b.streamingMethod = f, q[f] = !0;
-      let E;
+      let _;
       try {
-        let D = k();
+        let D = L();
         D.method = f, D.params = g, D.componentId = e;
-        let v = await al(D, {
+        let m = await al(D, {
           onChunk: function(H) {
           },
           onComplete: function(H) {
@@ -2320,13 +2344,13 @@ function vr(e, t, n, r, i, o, a) {
             console.error("[LiVue Stream] Error:", H);
           }
         });
-        v && (E = j(v, D.diffs));
+        m && (_ = j(m, D.diffs));
       } catch (D) {
         D.status === 422 && D.data && D.data.errors ? be(b.errors, D.data.errors) : Ye(D, s);
       } finally {
         b.loading = !1, b.streaming = !1, b.processing = null, b.streamingMethod = null, delete q[f];
       }
-      return E;
+      return _;
     },
     /**
      * Toggle a boolean property.
@@ -2354,8 +2378,8 @@ function vr(e, t, n, r, i, o, a) {
         function() {
           return t[f];
         },
-        function(E, D) {
-          g(E, D);
+        function(_, D) {
+          g(_, D);
         }
       );
     },
@@ -2433,7 +2457,7 @@ function vr(e, t, n, r, i, o, a) {
      * @private
      */
     _updateServerState: function(f, g) {
-      T = JSON.parse(JSON.stringify(f)), A = g;
+      A = JSON.parse(JSON.stringify(f)), C = g;
     },
     /**
      * Store cleanup collector for hooks.
@@ -2446,29 +2470,29 @@ function vr(e, t, n, r, i, o, a) {
      * @returns {object}
      */
     _getDevToolsInfo: function() {
-      let f = Jt(T, t), g = {};
-      for (let E in J) {
-        let D = J[E], v = {}, H = [];
+      let f = Jt(A, t), g = {};
+      for (let _ in J) {
+        let D = J[_], m = {}, H = [];
         for (let B in D)
           if (typeof D[B] == "function")
             H.push(B);
           else
             try {
-              v[B] = JSON.parse(JSON.stringify(D[B]));
+              m[B] = JSON.parse(JSON.stringify(D[B]));
             } catch {
-              v[B] = "[Unserializable]";
+              m[B] = "[Unserializable]";
             }
-        g[E] = { data: v, actions: H };
+        g[_] = { data: m, actions: H };
       }
       return {
-        serverState: JSON.parse(JSON.stringify(T)),
+        serverState: JSON.parse(JSON.stringify(A)),
         clientState: JSON.parse(JSON.stringify(t)),
         dirtyFields: Object.keys(f),
         diffs: f,
         memo: {
           name: s,
           isolate: p,
-          urlParams: m,
+          urlParams: v,
           tabSync: y,
           hasUploads: !!h,
           uploadProps: h ? Object.keys(h) : [],
@@ -2493,7 +2517,7 @@ function vr(e, t, n, r, i, o, a) {
   async function G() {
     b.loading = !0, b.processing = "$refresh", q.$refresh = !0;
     try {
-      let f = k(), g = await qn(f.snapshot, null, [], f.diffs, p);
+      let f = L(), g = await qn(f.snapshot, null, [], f.diffs, p);
       return j(g, f.diffs);
     } catch (f) {
       f.status === 422 && f.data && f.data.errors ? be(b.errors, f.data.errors) : Ye(f, s);
@@ -2503,33 +2527,33 @@ function vr(e, t, n, r, i, o, a) {
   }
   U.$refresh = function() {
     return G();
-  }, y && y.enabled && rl(s, function(f, g, E) {
+  }, y && y.enabled && rl(s, function(f, g, _) {
     let D = !1;
-    if (E.reactive === !0)
+    if (_.reactive === !0)
       D = !0;
-    else if (Array.isArray(E.reactive) && E.reactive.length > 0) {
-      for (let v in f)
-        if (E.reactive.includes(v)) {
+    else if (Array.isArray(_.reactive) && _.reactive.length > 0) {
+      for (let m in f)
+        if (_.reactive.includes(m)) {
           D = !0;
           break;
         }
     }
     if (D) {
-      for (let v in f)
-        E.only && !E.only.includes(v) || E.except && E.except.includes(v) || v in t && (t[v] = f[v]);
-      w = !0, b.sync();
+      for (let m in f)
+        _.only && !_.only.includes(m) || _.except && _.except.includes(m) || m in t && (t[m] = f[m]);
+      S = !0, b.sync();
       return;
     }
-    for (let v in f)
-      E.only && !E.only.includes(v) || E.except && E.except.includes(v) || v in t && (t[v] = f[v]);
-    for (let v in f)
-      E.only && !E.only.includes(v) || E.except && E.except.includes(v) || (T[v] = JSON.parse(JSON.stringify(f[v])));
+    for (let m in f)
+      _.only && !_.only.includes(m) || _.except && _.except.includes(m) || m in t && (t[m] = f[m]);
+    for (let m in f)
+      _.only && !_.only.includes(m) || _.except && _.except.includes(m) || (A[m] = JSON.parse(JSON.stringify(f[m])));
   });
   var ce = { then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1 };
   return { livue: new Proxy(b, {
-    get: function(f, g, E) {
+    get: function(f, g, _) {
       if (g in f || typeof g == "symbol")
-        return Reflect.get(f, g, E);
+        return Reflect.get(f, g, _);
       if (typeof g == "string" && g.startsWith("$") && U[g])
         return function() {
           var D = Array.prototype.slice.call(arguments);
@@ -2541,8 +2565,8 @@ function vr(e, t, n, r, i, o, a) {
           return b.call(g, ...D);
         };
     },
-    set: function(f, g, E, D) {
-      return Reflect.set(f, g, E, D);
+    set: function(f, g, _, D) {
+      return Reflect.set(f, g, _, D);
     },
     has: function(f, g) {
       return typeof g == "string" && g.startsWith("$") && U[g] ? !0 : Reflect.has(f, g);
@@ -2567,40 +2591,40 @@ function sn(e, t) {
   Array.from(
     n.querySelectorAll("[data-livue-id][data-livue-snapshot]:not([data-livue-island])")
   ).reverse().forEach(function(s) {
-    let u = s.dataset.livueId, d = s.dataset.livueSnapshot || "{}", c = JSON.parse(d), p = c.memo ? c.memo.name : "", m = lt(c.state || {}), h = c.memo || {}, y = s.innerHTML, w = s.tagName.toLowerCase(), T = s.nextElementSibling;
-    for (; T; ) {
-      let k = T.nextElementSibling;
-      if (T.tagName === "SCRIPT" && T.getAttribute("type") === "application/livue-setup")
-        y += T.outerHTML, T.parentNode.removeChild(T);
+    let u = s.dataset.livueId, d = s.dataset.livueSnapshot || "{}", c = JSON.parse(d), p = c.memo ? c.memo.name : "", v = lt(c.state || {}), h = c.memo || {}, y = s.innerHTML, S = s.tagName.toLowerCase(), A = s.nextElementSibling;
+    for (; A; ) {
+      let L = A.nextElementSibling;
+      if (A.tagName === "SCRIPT" && A.getAttribute("type") === "application/livue-setup")
+        y += A.outerHTML, A.parentNode.removeChild(A);
       else
         break;
-      T = k;
+      A = L;
     }
-    let A = t._childRegistry[u];
-    if (!A)
-      for (let k in t._childRegistry) {
-        let j = t._childRegistry[k];
-        if (j.name === p && !o[k]) {
-          A = j;
+    let C = t._childRegistry[u];
+    if (!C)
+      for (let L in t._childRegistry) {
+        let j = t._childRegistry[L];
+        if (j.name === p && !o[L]) {
+          C = j;
           break;
         }
       }
-    if (A) {
-      o[A.id] = !0, A.rootTag = w;
-      let k = h.reactive || [];
-      if (k.length > 0) {
-        for (var C = 0; C < k.length; C++) {
-          var O = k[C];
-          O in m && (A.state[O] = m[O]);
+    if (C) {
+      o[C.id] = !0, C.rootTag = S;
+      let L = h.reactive || [];
+      if (L.length > 0) {
+        for (var M = 0; M < L.length; M++) {
+          var k = L[M];
+          k in v && (C.state[k] = v[k]);
         }
-        A.livue._updateServerState(m, d), A.componentRef && A.componentRef._updateTemplate && A.componentRef._updateTemplate(y);
+        C.livue._updateServerState(v, d), C.componentRef && C.componentRef._updateTemplate && C.componentRef._updateTemplate(y);
       }
     }
-    let _ = !A;
-    if (!A) {
+    let w = !C;
+    if (!C) {
       let j = "livue-child-" + Yo();
       t._versions[j] = 0;
-      let q = ir(m), U = JSON.parse(JSON.stringify(m)), J = Object.assign({ name: h.name || p }, h), ne = { _updateTemplate: null }, b = so(), G = vr(u, q, J, ne, U, d, {
+      let q = ir(v), U = JSON.parse(JSON.stringify(v)), J = Object.assign({ name: h.name || p }, h), ne = { _updateTemplate: null }, b = so(), G = vr(u, q, J, ne, U, d, {
         el: s,
         rootComponent: t,
         isChild: !0,
@@ -2614,7 +2638,7 @@ function sn(e, t) {
         isChild: !0
       });
       let f = h.errors || null;
-      f && be(ce.errors, f), A = {
+      f && be(ce.errors, f), C = {
         tagName: j,
         state: q,
         memo: J,
@@ -2623,104 +2647,104 @@ function sn(e, t) {
         componentRef: ne,
         name: p,
         id: u,
-        rootTag: w
+        rootTag: S
       };
       let g = h.listeners || null;
       if (g)
         for (let D in g)
-          (function(v, H) {
+          (function(m, H) {
             yn(D, p, u, function(B) {
-              H.call(v, B);
+              H.call(m, B);
             });
           })(g[D], ce);
-      let E = h.echo || null;
-      E && E.length && (function(D, v) {
-        ho(D, E, function(H, B) {
-          v.call(H, B);
+      let _ = h.echo || null;
+      _ && _.length && (function(D, m) {
+        ho(D, _, function(H, B) {
+          m.call(H, B);
         });
       })(u, ce), ne._updateTemplate = function(D) {
-        let v = t.el.querySelector('[data-livue-id="' + u + '"]');
-        v && Ui(v);
+        let m = t.el.querySelector('[data-livue-id="' + u + '"]');
+        m && Ui(m);
         let H = sn(D, t), B = Sn(
-          "<" + A.rootTag + ">" + H.template + "</" + A.rootTag + ">",
+          "<" + C.rootTag + ">" + H.template + "</" + C.rootTag + ">",
           'data-livue-id="' + u + '"'
         );
         if (!t.vueApp) return;
         for (let $ in H.childDefs)
           t.vueApp._context.components[$] || t.vueApp.component($, H.childDefs[$]);
-        t.vueApp._context.components[A.tagName]._updateRender(B), On(function() {
+        t.vueApp._context.components[C.tagName]._updateRender(B), On(function() {
           let $ = t.el.querySelector('[data-livue-id="' + u + '"]');
           $ && Ji($);
         });
-      }, t._childRegistry[u] = A;
+      }, t._childRegistry[u] = C;
     }
-    let L = A.tagName, R = s.dataset.livueRef;
-    R && t._rootLivue && (t._rootLivue.refs[R] = {
+    let T = C.tagName, N = s.dataset.livueRef;
+    N && t._rootLivue && (t._rootLivue.refs[N] = {
       /**
        * Call a method on the child component.
        * @param {string} method - Method name
        * @param {Array} [params] - Parameters to pass
        * @returns {Promise}
        */
-      call: function(k, j) {
-        return A.livue.call(k, j || []);
+      call: function(L, j) {
+        return C.livue.call(L, j || []);
       },
       /**
        * Set a property on the child component.
        * @param {string} key - Property name
        * @param {*} value - Value to set
        */
-      set: function(k, j) {
-        return A.livue.set(k, j);
+      set: function(L, j) {
+        return C.livue.set(L, j);
       },
       /**
        * Dispatch an event from the child.
        * @param {string} event - Event name
        * @param {*} [data] - Event data
        */
-      dispatch: function(k, j) {
-        return A.livue.dispatch(k, j);
+      dispatch: function(L, j) {
+        return C.livue.dispatch(L, j);
       },
       /**
        * Sync the child's state with the server.
        * @returns {Promise}
        */
       sync: function() {
-        return A.livue.sync();
+        return C.livue.sync();
       },
       /**
        * Access to the child's reactive state (read-only reference).
        */
       get state() {
-        return A.state;
+        return C.state;
       },
       /**
        * Access to the child's livue helper.
        */
       get livue() {
-        return A.livue;
+        return C.livue;
       }
     });
     let I = s.dataset.livueModel;
-    if (I && t._rootState && yn("$modelUpdate", A.name, u, function(k) {
-      k && k.value !== void 0 && (t._rootState[I] = k.value);
-    }), _) {
-      let k = Sn(
-        "<" + w + ">" + y + "</" + w + ">",
+    if (I && t._rootState && yn("$modelUpdate", C.name, u, function(L) {
+      L && L.value !== void 0 && (t._rootState[I] = L.value);
+    }), w) {
+      let L = Sn(
+        "<" + S + ">" + y + "</" + S + ">",
         'data-livue-id="' + u + '"'
       );
-      i[L] = sr(
-        k,
-        A.state,
-        A.livue,
-        A.composables || {},
+      i[T] = sr(
+        L,
+        C.state,
+        C.livue,
+        C.composables || {},
         t._versions,
-        A.name
+        C.name
       );
     }
-    t._versions[L] === void 0 && (t._versions[L] = 0);
-    let N = document.createElement(L);
-    N.setAttribute(":key", "livueV['" + L + "']"), s.parentNode.replaceChild(N, s);
+    t._versions[T] === void 0 && (t._versions[T] = 0);
+    let x = document.createElement(T);
+    x.setAttribute(":key", "livueV['" + T + "']"), s.parentNode.replaceChild(x, s);
   });
   let l = n.querySelectorAll("[data-livue-island]");
   for (let s = 0; s < l.length; s++)
@@ -2844,36 +2868,36 @@ function gl(e) {
       function s(u) {
         let d = JSON.parse(u.snapshot);
         Wn++;
-        let c = "lazy-" + Wn + "-" + Date.now(), p = d.memo ? d.memo.name : "", m = lt(d.state || {}), h = d.memo || {}, { createLivueHelper: y, buildComponentDef: w, processTemplate: T, createReactiveState: A } = e._lazyHelpers, C = A(m), O = JSON.parse(JSON.stringify(m)), _ = { _updateTemplate: null }, L = y(
+        let c = "lazy-" + Wn + "-" + Date.now(), p = d.memo ? d.memo.name : "", v = lt(d.state || {}), h = d.memo || {}, { createLivueHelper: y, buildComponentDef: S, processTemplate: A, createReactiveState: C } = e._lazyHelpers, M = C(v), k = JSON.parse(JSON.stringify(v)), w = { _updateTemplate: null }, T = y(
           c,
-          C,
+          M,
           h,
-          _,
-          O,
+          w,
+          k,
           u.snapshot
         );
-        h.errors && be(L.errors, h.errors);
-        let R = "livue-lazy-child-" + Wn, I = T(u.html, e), N = Sn(
+        h.errors && be(T.errors, h.errors);
+        let N = "livue-lazy-child-" + Wn, I = A(u.html, e), x = Sn(
           I.template,
           'data-livue-id="' + c + '"'
-        ), k = w(N, C, L, e._versions, p);
+        ), L = S(x, M, T, e._versions, p);
         e._childRegistry[c] = {
-          tagName: R,
-          state: C,
+          tagName: N,
+          state: M,
           memo: h,
-          livue: L,
-          componentRef: _,
+          livue: T,
+          componentRef: w,
           name: p,
           id: c
-        }, _._updateTemplate = function(q) {
-          let U = T(q, e), J = Sn(
+        }, w._updateTemplate = function(q) {
+          let U = A(q, e), J = Sn(
             U.template,
             'data-livue-id="' + c + '"'
           );
           for (let b in U.childDefs)
             e.vueApp._context.components[b] || e.vueApp.component(b, U.childDefs[b]);
-          let ne = w(J, C, L, e._versions, p);
-          e.vueApp._context.components[R] = ne, e._versions[R] = (e._versions[R] || 0) + 1, i.value = ne;
+          let ne = S(J, M, T, e._versions, p);
+          e.vueApp._context.components[N] = ne, e._versions[N] = (e._versions[N] || 0) + 1, i.value = ne;
         };
         let j = h.listeners || null;
         if (j)
@@ -2882,10 +2906,10 @@ function gl(e) {
               yn(q, p, c, function(ne) {
                 J.call(U, ne);
               });
-            })(j[q], L);
+            })(j[q], T);
         for (let q in I.childDefs)
           e.vueApp._context.components[q] || e.vueApp.component(q, I.childDefs[q]);
-        e._versions[R] = 0, e.vueApp._context.components[R] || e.vueApp.component(R, k), i.value = k, r.value = !0;
+        e._versions[N] = 0, e.vueApp._context.components[N] || e.vueApp.component(N, L), i.value = L, r.value = !0;
       }
       return zi(function() {
         t.config.onLoad ? requestAnimationFrame(function() {
@@ -2931,31 +2955,31 @@ class yl {
        * @param {string} [options.transitionType] - Transition type (e.g., 'forward', 'backward')
        * @param {boolean} [options.skipTransition] - Skip the View Transition
        */
-      _updateTemplate: function(y, w) {
-        w = w || {}, me("template.updating", {
+      _updateTemplate: function(y, S) {
+        S = S || {}, me("template.updating", {
           component: { id: r.componentId, name: r.name, state: r.state, livue: r._rootLivue },
           el: r.el,
           html: y
         });
-        var T = ml(r.el);
+        var A = ml(r.el);
         Ui(r.el);
-        let A = sn(y, r);
+        let C = sn(y, r);
         if (!r.vueApp) return;
-        for (let O in A.childDefs)
-          r.vueApp._context.components[O] || r.vueApp.component(O, A.childDefs[O]);
-        function C() {
-          r._currentRootDef._updateRender(A.template), On(function() {
-            Ji(r.el), vl(r.el, T), me("template.updated", {
+        for (let k in C.childDefs)
+          r.vueApp._context.components[k] || r.vueApp.component(k, C.childDefs[k]);
+        function M() {
+          r._currentRootDef._updateRender(C.template), On(function() {
+            Ji(r.el), vl(r.el, A), me("template.updated", {
               component: { id: r.componentId, name: r.name, state: r.state, livue: r._rootLivue },
               el: r.el
             });
           });
         }
-        if (w.skipTransition) {
-          C();
+        if (S.skipTransition) {
+          M();
           return;
         }
-        gr() ? hl(C, { type: w.transitionType }) : C();
+        gr() ? hl(M, { type: S.transitionType }) : M();
       }
     }, o = JSON.parse(JSON.stringify(lt(t.state || {})));
     this._cleanups = so();
@@ -2978,17 +3002,17 @@ class yl {
     let c = t.memo && t.memo.listeners || null;
     if (c)
       for (let y in c)
-        (function(w, T, A, C) {
-          yn(y, A, C, function(O) {
-            T.call(w, O);
+        (function(S, A, C, M) {
+          yn(y, C, M, function(k) {
+            A.call(S, k);
           });
         })(c[y], l, r.name, r.componentId);
     let p = t.memo && t.memo.echo || null;
-    p && p.length && (this._echoUnsubscribe = ho(r.componentId, p, function(y, w) {
-      l.call(y, w);
+    p && p.length && (this._echoUnsubscribe = ho(r.componentId, p, function(y, S) {
+      l.call(y, S);
     }));
-    let m = sr(u.template, r.state, l, s, r._versions, r.name);
-    this._currentRootDef = m, this._rootDefRef = _r(m), this.vueApp = Bo({
+    let v = sr(u.template, r.state, l, s, r._versions, r.name);
+    this._currentRootDef = v, this._rootDefRef = _r(v), this.vueApp = Bo({
       setup: function() {
         return {
           rootDef: r._rootDefRef
@@ -3143,17 +3167,17 @@ const bl = {
       let h = parseInt(s, 10);
       isNaN(h) || (d = h + "px");
     }
-    let c = l.leave === !0, p = !1, m = new IntersectionObserver(
+    let c = l.leave === !0, p = !1, v = new IntersectionObserver(
       function(h) {
         let y = h[0];
-        (c ? !y.isIntersecting : y.isIntersecting) && (!l.once || !p) && (p = !0, r.call(o, a), l.once && (m.disconnect(), Xt.delete(e)));
+        (c ? !y.isIntersecting : y.isIntersecting) && (!l.once || !p) && (p = !0, r.call(o, a), l.once && (v.disconnect(), Xt.delete(e)));
       },
       {
         threshold: u,
         rootMargin: d
       }
     );
-    m.observe(e), Xt.set(e, m);
+    v.observe(e), Xt.set(e, v);
   },
   unmounted(e) {
     let t = Xt.get(e);
@@ -3350,75 +3374,75 @@ const kl = {
     l.blur && (u = "blur"), (l.change || l.lazy) && (u = "change");
     let { debounceMs: d, throttleMs: c } = Tl(l);
     l.live && !d && !c && (d = 150);
-    function p(_) {
+    function p(w) {
       if (l.number) {
-        let L = Number(_);
-        _ = isNaN(L) ? 0 : L;
+        let T = Number(w);
+        w = isNaN(T) ? 0 : T;
       }
-      l.boolean && (_ = !!_ && _ !== "false" && _ !== "0"), o[a] && typeof o[a] == "object" && "value" in o[a] ? o[a].value = _ : o[a] = _;
+      l.boolean && (w = !!w && w !== "false" && w !== "0"), o[a] && typeof o[a] == "object" && "value" in o[a] ? o[a].value = w : o[a] = w;
     }
-    function m(_) {
+    function v(w) {
       d > 0 ? st(s, d)(function() {
-        p(_);
+        p(w);
       }) : c > 0 ? jt(s, c)(function() {
-        p(_);
-      }) : p(_);
+        p(w);
+      }) : p(w);
     }
     let h;
     o[a] && typeof o[a] == "object" && "value" in o[a] ? h = o[a].value : h = o[a];
-    let y = Ll(n), w = n.component, T = null, A = null, C = null, O = null;
-    if (y && w)
-      O = w.emit, w.emit = function(_, ...L) {
-        if (_ === "update:modelValue") {
-          let R = L[0];
-          m(R);
+    let y = Ll(n), S = n.component, A = null, C = null, M = null, k = null;
+    if (y && S)
+      k = S.emit, S.emit = function(w, ...T) {
+        if (w === "update:modelValue") {
+          let N = T[0];
+          v(N);
           return;
         }
-        return O.call(w, _, ...L);
-      }, w.props && "modelValue" in w.props && (C = Se(
+        return k.call(S, w, ...T);
+      }, S.props && "modelValue" in S.props && (M = Se(
         function() {
           return o[a] && typeof o[a] == "object" && "value" in o[a] ? o[a].value : o[a];
         },
-        function(_) {
-          w.vnode && w.vnode.props && (w.vnode.props.modelValue = _), w.exposed && typeof w.exposed.setValue == "function" && w.exposed.setValue(_), w.update && w.update();
+        function(w) {
+          S.vnode && S.vnode.props && (S.vnode.props.modelValue = w), S.exposed && typeof S.exposed.setValue == "function" && S.exposed.setValue(w), S.update && S.update();
         },
         { immediate: !0 }
       )), dt.set(e, {
         isComponent: !0,
-        componentInstance: w,
-        originalEmit: O,
-        stopWatcher: C,
+        componentInstance: S,
+        originalEmit: k,
+        stopWatcher: M,
         property: a,
         state: o,
         modifiers: l
       });
     else {
       if (d > 0) {
-        let _ = st(s, d);
-        T = function(L) {
-          let R = Yt(L.target);
-          _(function() {
-            p(R);
+        let w = st(s, d);
+        A = function(T) {
+          let N = Yt(T.target);
+          w(function() {
+            p(N);
           });
         };
       } else if (c > 0) {
-        let _ = jt(s, c);
-        T = function(L) {
-          let R = Yt(L.target);
-          _(function() {
-            p(R);
+        let w = jt(s, c);
+        A = function(T) {
+          let N = Yt(T.target);
+          w(function() {
+            p(N);
           });
         };
       } else
-        T = function(_) {
-          p(Yt(_.target));
+        A = function(w) {
+          p(Yt(w.target));
         };
-      l.enter ? (A = function(_) {
-        _.key === "Enter" && p(Yt(_.target));
-      }, e.addEventListener("keyup", A)) : e.addEventListener(u, T), ci(e, h), dt.set(e, {
+      l.enter ? (C = function(w) {
+        w.key === "Enter" && p(Yt(w.target));
+      }, e.addEventListener("keyup", C)) : e.addEventListener(u, A), ci(e, h), dt.set(e, {
         isComponent: !1,
-        handler: T,
-        keyHandler: A,
+        handler: A,
+        keyHandler: C,
         eventType: u,
         property: a,
         modifiers: l,
@@ -3468,7 +3492,7 @@ const Nl = {
     function p() {
       c.isPaused || d && !c.isVisible || (o ? r.call(o, a) : r.call("$refresh", []));
     }
-    function m() {
+    function v() {
       c.intervalId || (c.intervalId = setInterval(p, s));
     }
     function h() {
@@ -3479,7 +3503,7 @@ const Nl = {
         c.isVisible = y[0].isIntersecting;
       },
       { threshold: 0 }
-    ), c.observer.observe(e)), document.addEventListener("visibilitychange", h), c.visibilityHandler = h, m(), $n.set(e, c);
+    ), c.observer.observe(e)), document.addEventListener("visibilitychange", h), c.visibilityHandler = h, v(), $n.set(e, c);
   },
   unmounted(e) {
     let t = $n.get(e);
@@ -3770,76 +3794,76 @@ function W(e, t = {}) {
         return;
       }
       if (u && !i) {
-        const L = "v-" + e;
-        gi.has(L) || (console.warn(
-          "[LiVue] " + L + ": argument syntax (v-" + e + ":method) is not supported. Use v-" + e + '="method" or v-' + e + `="['method', ...args]".`
-        ), gi.add(L));
+        const T = "v-" + e;
+        gi.has(T) || (console.warn(
+          "[LiVue] " + T + ": argument syntax (v-" + e + ":method) is not supported. Use v-" + e + '="method" or v-' + e + `="['method', ...args]".`
+        ), gi.add(T));
       }
       vi++;
-      const p = "v-" + e + "-" + vi, m = Fl(d);
+      const p = "v-" + e + "-" + vi, v = Fl(d);
       let h = null, y = null;
-      d.debounce && (h = st(p, m)), d.throttle && (y = jt(p, m));
-      let w = !1, T = null;
-      i && u && (T = u);
-      const A = function(L) {
-        let R = T, I = [];
+      d.debounce && (h = st(p, v)), d.throttle && (y = jt(p, v));
+      let S = !1, A = null;
+      i && u && (A = u);
+      const C = function(T) {
+        let N = A, I = [];
         if (i && u) {
-          R = u;
-          const k = l.value;
-          k != null && (I = Array.isArray(k) ? k : [k]);
+          N = u;
+          const L = l.value;
+          L != null && (I = Array.isArray(L) ? L : [L]);
         } else {
-          const k = l.value;
-          if (typeof k == "function")
-            if (typeof k.__livueMethodName == "string")
-              R = k.__livueMethodName;
+          const L = l.value;
+          if (typeof L == "function")
+            if (typeof L.__livueMethodName == "string")
+              N = L.__livueMethodName, Array.isArray(L.__livueMethodArgs) && (I = L.__livueMethodArgs.slice());
             else {
               const j = function() {
-                k();
+                L();
               };
               h ? h(j) : y ? y(j) : j();
               return;
             }
-          else typeof k == "string" ? R = k : Array.isArray(k) && k.length > 0 && (R = k[0], I = k.slice(1));
+          else typeof L == "string" ? N = L : Array.isArray(L) && L.length > 0 && (N = L[0], I = L.slice(1));
         }
-        if (!R) {
+        if (!N) {
           console.warn("[LiVue] v-" + e + ": no method specified");
           return;
         }
-        const N = function() {
-          d.confirm ? c.callWithConfirm(R, "Are you sure?", ...I) : c.call(R, ...I);
+        const x = function() {
+          d.confirm ? c.callWithConfirm(N, "Are you sure?", ...I) : c.call(N, ...I);
         };
-        h ? h(N) : y ? y(N) : N();
-      }, C = function(L) {
-        if (!(d.self && L.target !== a) && !(r && !zl(L, d))) {
+        h ? h(x) : y ? y(x) : x();
+      }, M = function(T) {
+        if (!(d.self && T.target !== a) && !(r && !zl(T, d))) {
           if (d.once) {
-            if (w)
+            if (S)
               return;
-            w = !0;
+            S = !0;
           }
-          d.prevent && L.preventDefault(), d.stop && L.stopPropagation(), A();
+          d.prevent && T.preventDefault(), d.stop && T.stopPropagation(), C();
         }
-      }, O = {};
-      d.capture && (O.capture = !0), d.passive && (O.passive = !0);
-      const _ = {
-        handler: C,
-        options: O,
+      }, k = {};
+      d.capture && (k.capture = !0), d.passive && (k.passive = !0);
+      const w = {
+        handler: M,
+        options: k,
         outsideHandler: null
       };
       if (n && d.outside) {
-        const L = function(R) {
-          if (!a.contains(R.target) && R.target !== a) {
+        const T = function(N) {
+          if (!a.contains(N.target) && N.target !== a) {
             if (d.once) {
-              if (w)
+              if (S)
                 return;
-              w = !0;
+              S = !0;
             }
-            A();
+            C();
           }
         };
-        document.addEventListener(e, L, O), _.outsideHandler = L;
+        document.addEventListener(e, T, k), w.outsideHandler = T;
       } else
-        a.addEventListener(e, C, O);
-      o.set(a, _);
+        a.addEventListener(e, M, k);
+      o.set(a, w);
     },
     updated(a, l, s) {
     },
@@ -4322,7 +4346,7 @@ function fe(e, t, n) {
       e.className = (r + (n ? " " + t : "")).replace(Ai, " ");
     }
 }
-function M(e, t, n) {
+function P(e, t, n) {
   var r = e && e.style;
   if (r) {
     if (n === void 0)
@@ -4336,7 +4360,7 @@ function at(e, t) {
     n = e;
   else
     do {
-      var r = M(e, "transform");
+      var r = P(e, "transform");
       r && r !== "none" && (n = r + " " + n);
     } while (!t && (e = e.parentNode));
   var i = window.DOMMatrix || window.WebKitCSSMatrix || window.CSSMatrix || window.MSCSSMatrix;
@@ -4361,15 +4385,15 @@ function te(e, t, n, r, i) {
     var o, a, l, s, u, d, c;
     if (e !== window && e.parentNode && e !== Ae() ? (o = e.getBoundingClientRect(), a = o.top, l = o.left, s = o.bottom, u = o.right, d = o.height, c = o.width) : (a = 0, l = 0, s = window.innerHeight, u = window.innerWidth, d = window.innerHeight, c = window.innerWidth), (t || n) && e !== window && (i = i || e.parentNode, !ke))
       do
-        if (i && i.getBoundingClientRect && (M(i, "transform") !== "none" || n && M(i, "position") !== "static")) {
+        if (i && i.getBoundingClientRect && (P(i, "transform") !== "none" || n && P(i, "position") !== "static")) {
           var p = i.getBoundingClientRect();
-          a -= p.top + parseInt(M(i, "border-top-width")), l -= p.left + parseInt(M(i, "border-left-width")), s = a + o.height, u = l + o.width;
+          a -= p.top + parseInt(P(i, "border-top-width")), l -= p.left + parseInt(P(i, "border-left-width")), s = a + o.height, u = l + o.width;
           break;
         }
       while (i = i.parentNode);
     if (r && e !== window) {
-      var m = at(i || e), h = m && m.a, y = m && m.d;
-      m && (a /= y, l /= h, c /= h, d /= y, s = a + d, u = l + c);
+      var v = at(i || e), h = v && v.a, y = v && v.d;
+      v && (a /= y, l /= h, c /= h, d /= y, s = a + d, u = l + c);
     }
     return {
       top: a,
@@ -4392,7 +4416,7 @@ function Di(e, t, n) {
 }
 function ut(e, t, n, r) {
   for (var i = 0, o = 0, a = e.children; o < a.length; ) {
-    if (a[o].style.display !== "none" && a[o] !== P.ghost && (r || a[o] !== P.dragged) && we(a[o], n.draggable, e, !1)) {
+    if (a[o].style.display !== "none" && a[o] !== R.ghost && (r || a[o] !== R.dragged) && we(a[o], n.draggable, e, !1)) {
       if (i === t)
         return a[o];
       i++;
@@ -4402,7 +4426,7 @@ function ut(e, t, n, r) {
   return null;
 }
 function Mr(e, t) {
-  for (var n = e.lastElementChild; n && (n === P.ghost || M(n, "display") === "none" || t && !Dn(n, t)); )
+  for (var n = e.lastElementChild; n && (n === R.ghost || P(n, "display") === "none" || t && !Dn(n, t)); )
     n = n.previousElementSibling;
   return n || null;
 }
@@ -4411,7 +4435,7 @@ function he(e, t) {
   if (!e || !e.parentNode)
     return -1;
   for (; e = e.previousElementSibling; )
-    e.nodeName.toUpperCase() !== "TEMPLATE" && e !== P.clone && (!t || Dn(e, t)) && n++;
+    e.nodeName.toUpperCase() !== "TEMPLATE" && e !== R.clone && (!t || Dn(e, t)) && n++;
   return n;
 }
 function Ci(e) {
@@ -4436,7 +4460,7 @@ function Re(e, t) {
   var n = e, r = !1;
   do
     if (n.clientWidth < n.scrollWidth || n.clientHeight < n.scrollHeight) {
-      var i = M(n);
+      var i = P(n);
       if (n.clientWidth < n.scrollWidth && (i.overflowX == "auto" || i.overflowX == "scroll") || n.clientHeight < n.scrollHeight && (i.overflowY == "auto" || i.overflowY == "scroll")) {
         if (!n.getBoundingClientRect || n === document.body) return Ae();
         if (r || t) return n;
@@ -4494,7 +4518,7 @@ function ms() {
       if (e = [], !!this.options.animation) {
         var r = [].slice.call(this.el.children);
         r.forEach(function(i) {
-          if (!(M(i, "display") === "none" || i === P.ghost)) {
+          if (!(P(i, "display") === "none" || i === R.ghost)) {
             e.push({
               target: i,
               rect: te(i)
@@ -4525,9 +4549,9 @@ function ms() {
       }
       var o = !1, a = 0;
       e.forEach(function(l) {
-        var s = 0, u = l.target, d = u.fromRect, c = te(u), p = u.prevFromRect, m = u.prevToRect, h = l.rect, y = at(u, !0);
+        var s = 0, u = l.target, d = u.fromRect, c = te(u), p = u.prevFromRect, v = u.prevToRect, h = l.rect, y = at(u, !0);
         y && (c.top -= y.f, c.left -= y.e), u.toRect = c, u.thisAnimationDuration && Xn(p, c) && !Xn(d, c) && // Make sure animatingRect is on line between toRect & fromRect
-        (h.top - c.top) / (h.left - c.left) === (d.top - c.top) / (d.left - c.left) && (s = gs(h, p, m, i.options)), Xn(c, d) || (u.prevFromRect = d, u.prevToRect = c, s || (s = i.options.animation), i.animate(u, h, c, s)), s && (o = !0, a = Math.max(a, s), clearTimeout(u.animationResetTimer), u.animationResetTimer = setTimeout(function() {
+        (h.top - c.top) / (h.left - c.left) === (d.top - c.top) / (d.left - c.left) && (s = gs(h, p, v, i.options)), Xn(c, d) || (u.prevFromRect = d, u.prevToRect = c, s || (s = i.options.animation), i.animate(u, h, c, s)), s && (o = !0, a = Math.max(a, s), clearTimeout(u.animationResetTimer), u.animationResetTimer = setTimeout(function() {
           u.animationTime = 0, u.prevFromRect = null, u.fromRect = null, u.prevToRect = null, u.thisAnimationDuration = null;
         }, s), u.thisAnimationDuration = s);
       }), clearTimeout(t), o ? t = setTimeout(function() {
@@ -4536,10 +4560,10 @@ function ms() {
     },
     animate: function(r, i, o, a) {
       if (a) {
-        M(r, "transition", ""), M(r, "transform", "");
+        P(r, "transition", ""), P(r, "transform", "");
         var l = at(this.el), s = l && l.a, u = l && l.d, d = (i.left - o.left) / (s || 1), c = (i.top - o.top) / (u || 1);
-        r.animatingX = !!d, r.animatingY = !!c, M(r, "transform", "translate3d(" + d + "px," + c + "px,0)"), this.forRepaintDummy = vs(r), M(r, "transition", "transform " + a + "ms" + (this.options.easing ? " " + this.options.easing : "")), M(r, "transform", "translate3d(0,0,0)"), typeof r.animated == "number" && clearTimeout(r.animated), r.animated = setTimeout(function() {
-          M(r, "transition", ""), M(r, "transform", ""), r.animated = !1, r.animatingX = !1, r.animatingY = !1;
+        r.animatingX = !!d, r.animatingY = !!c, P(r, "transform", "translate3d(" + d + "px," + c + "px,0)"), this.forRepaintDummy = vs(r), P(r, "transition", "transform " + a + "ms" + (this.options.easing ? " " + this.options.easing : "")), P(r, "transform", "translate3d(0,0,0)"), typeof r.animated == "number" && clearTimeout(r.animated), r.animated = setTimeout(function() {
+          P(r, "transition", ""), P(r, "transform", ""), r.animated = !1, r.animatingX = !1, r.animatingY = !1;
         }, a);
       }
     }
@@ -4604,23 +4628,23 @@ var Ke = [], Yn = {
   }
 };
 function ys(e) {
-  var t = e.sortable, n = e.rootEl, r = e.name, i = e.targetEl, o = e.cloneEl, a = e.toEl, l = e.fromEl, s = e.oldIndex, u = e.newIndex, d = e.oldDraggableIndex, c = e.newDraggableIndex, p = e.originalEvent, m = e.putSortable, h = e.extraEventProperties;
+  var t = e.sortable, n = e.rootEl, r = e.name, i = e.targetEl, o = e.cloneEl, a = e.toEl, l = e.fromEl, s = e.oldIndex, u = e.newIndex, d = e.oldDraggableIndex, c = e.newDraggableIndex, p = e.originalEvent, v = e.putSortable, h = e.extraEventProperties;
   if (t = t || n && n[ue], !!t) {
-    var y, w = t.options, T = "on" + r.charAt(0).toUpperCase() + r.substr(1);
+    var y, S = t.options, A = "on" + r.charAt(0).toUpperCase() + r.substr(1);
     window.CustomEvent && !ke && !Wt ? y = new CustomEvent(r, {
       bubbles: !0,
       cancelable: !0
-    }) : (y = document.createEvent("Event"), y.initEvent(r, !0, !0)), y.to = a || n, y.from = l || n, y.item = i || n, y.clone = o, y.oldIndex = s, y.newIndex = u, y.oldDraggableIndex = d, y.newDraggableIndex = c, y.originalEvent = p, y.pullMode = m ? m.lastPutMode : void 0;
-    var A = De(De({}, h), Bt.getEventProperties(r, t));
-    for (var C in A)
-      y[C] = A[C];
-    n && n.dispatchEvent(y), w[T] && w[T].call(t, y);
+    }) : (y = document.createEvent("Event"), y.initEvent(r, !0, !0)), y.to = a || n, y.from = l || n, y.item = i || n, y.clone = o, y.oldIndex = s, y.newIndex = u, y.oldDraggableIndex = d, y.newDraggableIndex = c, y.originalEvent = p, y.pullMode = v ? v.lastPutMode : void 0;
+    var C = De(De({}, h), Bt.getEventProperties(r, t));
+    for (var M in C)
+      y[M] = C[M];
+    n && n.dispatchEvent(y), S[A] && S[A].call(t, y);
   }
 }
 var bs = ["evt"], se = function(t, n) {
   var r = arguments.length > 2 && arguments[2] !== void 0 ? arguments[2] : {}, i = r.evt, o = cs(r, bs);
-  Bt.pluginEvent.bind(P)(t, n, De({
-    dragEl: S,
+  Bt.pluginEvent.bind(R)(t, n, De({
+    dragEl: E,
     parentEl: Q,
     ghostEl: V,
     rootEl: X,
@@ -4630,7 +4654,7 @@ var bs = ["evt"], se = function(t, n) {
     cloneHidden: Me,
     dragStarted: wt,
     putSortable: re,
-    activeSortable: P.active,
+    activeSortable: R.active,
     originalEvent: i,
     oldIndex: nt,
     oldDraggableIndex: xt,
@@ -4657,7 +4681,7 @@ function ae(e) {
   ys(De({
     putSortable: re,
     cloneEl: K,
-    targetEl: S,
+    targetEl: E,
     rootEl: X,
     oldIndex: nt,
     oldDraggableIndex: xt,
@@ -4665,7 +4689,7 @@ function ae(e) {
     newDraggableIndex: xe
   }, e));
 }
-var S, Q, V, X, Be, cn, K, Me, nt, de, xt, xe, Qt, re, et = !1, Cn = !1, Tn = [], Fe, ge, Kn, Gn, Ti, Li, wt, Ge, Nt, It = !1, en = !1, fn, oe, Zn = [], br = !1, Ln = [], Mn = typeof document < "u", tn = Ir, ki = Wt || ke ? "cssFloat" : "float", ws = Mn && !bo && !Ir && "draggable" in document.createElement("div"), To = (function() {
+var E, Q, V, X, Be, cn, K, Me, nt, de, xt, xe, Qt, re, et = !1, Cn = !1, Tn = [], Fe, ge, Kn, Gn, Ti, Li, wt, Ge, Nt, It = !1, en = !1, fn, oe, Zn = [], br = !1, Ln = [], Mn = typeof document < "u", tn = Ir, ki = Wt || ke ? "cssFloat" : "float", ws = Mn && !bo && !Ir && "draggable" in document.createElement("div"), To = (function() {
   if (Mn) {
     if (ke)
       return !1;
@@ -4673,7 +4697,7 @@ var S, Q, V, X, Be, cn, K, Me, nt, de, xt, xe, Qt, re, et = !1, Cn = !1, Tn = []
     return e.style.cssText = "pointer-events:auto", e.style.pointerEvents === "auto";
   }
 })(), Lo = function(t, n) {
-  var r = M(t), i = parseInt(r.width) - parseInt(r.paddingLeft) - parseInt(r.paddingRight) - parseInt(r.borderLeftWidth) - parseInt(r.borderRightWidth), o = ut(t, 0, n), a = ut(t, 1, n), l = o && M(o), s = a && M(a), u = l && parseInt(l.marginLeft) + parseInt(l.marginRight) + te(o).width, d = s && parseInt(s.marginLeft) + parseInt(s.marginRight) + te(a).width;
+  var r = P(t), i = parseInt(r.width) - parseInt(r.paddingLeft) - parseInt(r.paddingRight) - parseInt(r.borderLeftWidth) - parseInt(r.borderRightWidth), o = ut(t, 0, n), a = ut(t, 1, n), l = o && P(o), s = a && P(a), u = l && parseInt(l.marginLeft) + parseInt(l.marginRight) + te(o).width, d = s && parseInt(s.marginLeft) + parseInt(s.marginRight) + te(a).width;
   if (r.display === "flex")
     return r.flexDirection === "column" || r.flexDirection === "column-reverse" ? "vertical" : "horizontal";
   if (r.display === "grid")
@@ -4717,16 +4741,16 @@ var S, Q, V, X, Be, cn, K, Me, nt, de, xt, xe, Qt, re, et = !1, Cn = !1, Tn = []
     name: i
   }), r.name = i.name, r.checkPull = n(i.pull, !0), r.checkPut = n(i.put), r.revertClone = i.revertClone, t.group = r;
 }, Oo = function() {
-  !To && V && M(V, "display", "none");
+  !To && V && P(V, "display", "none");
 }, xo = function() {
-  !To && V && M(V, "display", "");
+  !To && V && P(V, "display", "");
 };
 Mn && !bo && document.addEventListener("click", function(e) {
   if (Cn)
     return e.preventDefault(), e.stopPropagation && e.stopPropagation(), e.stopImmediatePropagation && e.stopImmediatePropagation(), Cn = !1, !1;
 }, !0);
 var ze = function(t) {
-  if (S) {
+  if (E) {
     t = t.touches ? t.touches[0] : t;
     var n = Es(t.clientX, t.clientY);
     if (n) {
@@ -4737,9 +4761,9 @@ var ze = function(t) {
     }
   }
 }, _s = function(t) {
-  S && S.parentNode[ue]._isOutsideThisEl(t.target);
+  E && E.parentNode[ue]._isOutsideThisEl(t.target);
 };
-function P(e, t) {
+function R(e, t) {
   if (!(e && e.nodeType && e.nodeType === 1))
     throw "Sortable: `el` must be an HTMLElement, not ".concat({}.toString.call(e));
   this.el = e, this.options = t = Le({}, t), e[ue] = this;
@@ -4786,7 +4810,7 @@ function P(e, t) {
       y: 0
     },
     // Disabled on Safari: #1571; Enabled on Safari IOS: #2244
-    supportPointer: P.supportPointer !== !1 && "PointerEvent" in window && (!kt || Ir),
+    supportPointer: R.supportPointer !== !1 && "PointerEvent" in window && (!kt || Ir),
     emptyInsertThreshold: 5
   };
   Bt.initializePlugins(this, e, n);
@@ -4797,19 +4821,19 @@ function P(e, t) {
     i.charAt(0) === "_" && typeof this[i] == "function" && (this[i] = this[i].bind(this));
   this.nativeDraggable = t.forceFallback ? !1 : ws, this.nativeDraggable && (this.options.touchStartThreshold = 1), t.supportPointer ? z(e, "pointerdown", this._onTapStart) : (z(e, "mousedown", this._onTapStart), z(e, "touchstart", this._onTapStart)), this.nativeDraggable && (z(e, "dragover", this), z(e, "dragenter", this)), Tn.push(this.el), t.store && t.store.get && this.sort(t.store.get(this) || []), Le(this, ms());
 }
-P.prototype = /** @lends Sortable.prototype */
+R.prototype = /** @lends Sortable.prototype */
 {
-  constructor: P,
+  constructor: R,
   _isOutsideThisEl: function(t) {
     !this.el.contains(t) && t !== this.el && (Ge = null);
   },
   _getDirection: function(t, n) {
-    return typeof this.options.direction == "function" ? this.options.direction.call(this, t, n, S) : this.options.direction;
+    return typeof this.options.direction == "function" ? this.options.direction.call(this, t, n, E) : this.options.direction;
   },
   _onTapStart: function(t) {
     if (t.cancelable) {
       var n = this, r = this.el, i = this.options, o = i.preventOnFilter, a = t.type, l = t.touches && t.touches[0] || t.pointerType && t.pointerType === "touch" && t, s = (l || t).target, u = t.target.shadowRoot && (t.path && t.path[0] || t.composedPath && t.composedPath()[0]) || s, d = i.filter;
-      if (xs(r), !S && !(/mousedown|pointerdown/.test(a) && t.button !== 0 || i.disabled) && !u.isContentEditable && !(!this.nativeDraggable && kt && s && s.tagName.toUpperCase() === "SELECT") && (s = we(s, i.draggable, r, !1), !(s && s.animated) && cn !== s)) {
+      if (xs(r), !E && !(/mousedown|pointerdown/.test(a) && t.button !== 0 || i.disabled) && !u.isContentEditable && !(!this.nativeDraggable && kt && s && s.tagName.toUpperCase() === "SELECT") && (s = we(s, i.draggable, r, !1), !(s && s.animated) && cn !== s)) {
         if (nt = he(s), xt = he(s, i.draggable), typeof d == "function") {
           if (d.call(this, t, s, this)) {
             ae({
@@ -4846,30 +4870,30 @@ P.prototype = /** @lends Sortable.prototype */
   },
   _prepareDragStart: function(t, n, r) {
     var i = this, o = i.el, a = i.options, l = o.ownerDocument, s;
-    if (r && !S && r.parentNode === o) {
+    if (r && !E && r.parentNode === o) {
       var u = te(r);
-      if (X = o, S = r, Q = S.parentNode, Be = S.nextSibling, cn = r, Qt = a.group, P.dragged = S, Fe = {
-        target: S,
+      if (X = o, E = r, Q = E.parentNode, Be = E.nextSibling, cn = r, Qt = a.group, R.dragged = E, Fe = {
+        target: E,
         clientX: (n || t).clientX,
         clientY: (n || t).clientY
-      }, Ti = Fe.clientX - u.left, Li = Fe.clientY - u.top, this._lastX = (n || t).clientX, this._lastY = (n || t).clientY, S.style["will-change"] = "all", s = function() {
+      }, Ti = Fe.clientX - u.left, Li = Fe.clientY - u.top, this._lastX = (n || t).clientX, this._lastY = (n || t).clientY, E.style["will-change"] = "all", s = function() {
         if (se("delayEnded", i, {
           evt: t
-        }), P.eventCanceled) {
+        }), R.eventCanceled) {
           i._onDrop();
           return;
         }
-        i._disableDelayedDragEvents(), !_i && i.nativeDraggable && (S.draggable = !0), i._triggerDragStart(t, n), ae({
+        i._disableDelayedDragEvents(), !_i && i.nativeDraggable && (E.draggable = !0), i._triggerDragStart(t, n), ae({
           sortable: i,
           name: "choose",
           originalEvent: t
-        }), fe(S, a.chosenClass, !0);
+        }), fe(E, a.chosenClass, !0);
       }, a.ignore.split(",").forEach(function(d) {
-        Eo(S, d.trim(), Qn);
-      }), z(l, "dragover", ze), z(l, "mousemove", ze), z(l, "touchmove", ze), a.supportPointer ? (z(l, "pointerup", i._onDrop), !this.nativeDraggable && z(l, "pointercancel", i._onDrop)) : (z(l, "mouseup", i._onDrop), z(l, "touchend", i._onDrop), z(l, "touchcancel", i._onDrop)), _i && this.nativeDraggable && (this.options.touchStartThreshold = 4, S.draggable = !0), se("delayStart", this, {
+        Eo(E, d.trim(), Qn);
+      }), z(l, "dragover", ze), z(l, "mousemove", ze), z(l, "touchmove", ze), a.supportPointer ? (z(l, "pointerup", i._onDrop), !this.nativeDraggable && z(l, "pointercancel", i._onDrop)) : (z(l, "mouseup", i._onDrop), z(l, "touchend", i._onDrop), z(l, "touchcancel", i._onDrop)), _i && this.nativeDraggable && (this.options.touchStartThreshold = 4, E.draggable = !0), se("delayStart", this, {
         evt: t
       }), a.delay && (!a.delayOnTouchOnly || n) && (!this.nativeDraggable || !(Wt || ke))) {
-        if (P.eventCanceled) {
+        if (R.eventCanceled) {
           this._onDrop();
           return;
         }
@@ -4883,14 +4907,14 @@ P.prototype = /** @lends Sortable.prototype */
     Math.max(Math.abs(n.clientX - this._lastX), Math.abs(n.clientY - this._lastY)) >= Math.floor(this.options.touchStartThreshold / (this.nativeDraggable && window.devicePixelRatio || 1)) && this._disableDelayedDrag();
   },
   _disableDelayedDrag: function() {
-    S && Qn(S), clearTimeout(this._dragStartTimer), this._disableDelayedDragEvents();
+    E && Qn(E), clearTimeout(this._dragStartTimer), this._disableDelayedDragEvents();
   },
   _disableDelayedDragEvents: function() {
     var t = this.el.ownerDocument;
     F(t, "mouseup", this._disableDelayedDrag), F(t, "touchend", this._disableDelayedDrag), F(t, "touchcancel", this._disableDelayedDrag), F(t, "pointerup", this._disableDelayedDrag), F(t, "pointercancel", this._disableDelayedDrag), F(t, "mousemove", this._delayedDragTouchMoveHandler), F(t, "touchmove", this._delayedDragTouchMoveHandler), F(t, "pointermove", this._delayedDragTouchMoveHandler);
   },
   _triggerDragStart: function(t, n) {
-    n = n || t.pointerType == "touch" && t, !this.nativeDraggable || n ? this.options.supportPointer ? z(document, "pointermove", this._onTouchMove) : n ? z(document, "touchmove", this._onTouchMove) : z(document, "mousemove", this._onTouchMove) : (z(S, "dragend", this), z(X, "dragstart", this._onDragStart));
+    n = n || t.pointerType == "touch" && t, !this.nativeDraggable || n ? this.options.supportPointer ? z(document, "pointermove", this._onTouchMove) : n ? z(document, "touchmove", this._onTouchMove) : z(document, "mousemove", this._onTouchMove) : (z(E, "dragend", this), z(X, "dragstart", this._onDragStart));
     try {
       document.selection ? dn(function() {
         document.selection.empty();
@@ -4899,12 +4923,12 @@ P.prototype = /** @lends Sortable.prototype */
     }
   },
   _dragStarted: function(t, n) {
-    if (et = !1, X && S) {
+    if (et = !1, X && E) {
       se("dragStarted", this, {
         evt: n
       }), this.nativeDraggable && z(document, "dragover", _s);
       var r = this.options;
-      !t && fe(S, r.dragClass, !1), fe(S, r.ghostClass, !0), P.active = this, t && this._appendGhost(), ae({
+      !t && fe(E, r.dragClass, !1), fe(E, r.ghostClass, !0), R.active = this, t && this._appendGhost(), ae({
         sortable: this,
         name: "start",
         originalEvent: n
@@ -4917,7 +4941,7 @@ P.prototype = /** @lends Sortable.prototype */
       this._lastX = ge.clientX, this._lastY = ge.clientY, Oo();
       for (var t = document.elementFromPoint(ge.clientX, ge.clientY), n = t; t && t.shadowRoot && (t = t.shadowRoot.elementFromPoint(ge.clientX, ge.clientY), t !== n); )
         n = t;
-      if (S.parentNode[ue]._isOutsideThisEl(t), n)
+      if (E.parentNode[ue]._isOutsideThisEl(t), n)
         do {
           if (n[ue]) {
             var r = void 0;
@@ -4937,7 +4961,7 @@ P.prototype = /** @lends Sortable.prototype */
   _onTouchMove: function(t) {
     if (Fe) {
       var n = this.options, r = n.fallbackTolerance, i = n.fallbackOffset, o = t.touches ? t.touches[0] : t, a = V && at(V, !0), l = V && a && a.a, s = V && a && a.d, u = tn && oe && Ci(oe), d = (o.clientX - Fe.clientX + i.x) / (l || 1) + (u ? u[0] - Zn[0] : 0) / (l || 1), c = (o.clientY - Fe.clientY + i.y) / (s || 1) + (u ? u[1] - Zn[1] : 0) / (s || 1);
-      if (!P.active && !et) {
+      if (!R.active && !et) {
         if (r && Math.max(Math.abs(o.clientX - this._lastX), Math.abs(o.clientY - this._lastY)) < r)
           return;
         this._onDragStart(t, !0);
@@ -4952,71 +4976,71 @@ P.prototype = /** @lends Sortable.prototype */
           f: c
         };
         var p = "matrix(".concat(a.a, ",").concat(a.b, ",").concat(a.c, ",").concat(a.d, ",").concat(a.e, ",").concat(a.f, ")");
-        M(V, "webkitTransform", p), M(V, "mozTransform", p), M(V, "msTransform", p), M(V, "transform", p), Kn = d, Gn = c, ge = o;
+        P(V, "webkitTransform", p), P(V, "mozTransform", p), P(V, "msTransform", p), P(V, "transform", p), Kn = d, Gn = c, ge = o;
       }
       t.cancelable && t.preventDefault();
     }
   },
   _appendGhost: function() {
     if (!V) {
-      var t = this.options.fallbackOnBody ? document.body : X, n = te(S, !0, tn, !0, t), r = this.options;
+      var t = this.options.fallbackOnBody ? document.body : X, n = te(E, !0, tn, !0, t), r = this.options;
       if (tn) {
-        for (oe = t; M(oe, "position") === "static" && M(oe, "transform") === "none" && oe !== document; )
+        for (oe = t; P(oe, "position") === "static" && P(oe, "transform") === "none" && oe !== document; )
           oe = oe.parentNode;
         oe !== document.body && oe !== document.documentElement ? (oe === document && (oe = Ae()), n.top += oe.scrollTop, n.left += oe.scrollLeft) : oe = Ae(), Zn = Ci(oe);
       }
-      V = S.cloneNode(!0), fe(V, r.ghostClass, !1), fe(V, r.fallbackClass, !0), fe(V, r.dragClass, !0), M(V, "transition", ""), M(V, "transform", ""), M(V, "box-sizing", "border-box"), M(V, "margin", 0), M(V, "top", n.top), M(V, "left", n.left), M(V, "width", n.width), M(V, "height", n.height), M(V, "opacity", "0.8"), M(V, "position", tn ? "absolute" : "fixed"), M(V, "zIndex", "100000"), M(V, "pointerEvents", "none"), P.ghost = V, t.appendChild(V), M(V, "transform-origin", Ti / parseInt(V.style.width) * 100 + "% " + Li / parseInt(V.style.height) * 100 + "%");
+      V = E.cloneNode(!0), fe(V, r.ghostClass, !1), fe(V, r.fallbackClass, !0), fe(V, r.dragClass, !0), P(V, "transition", ""), P(V, "transform", ""), P(V, "box-sizing", "border-box"), P(V, "margin", 0), P(V, "top", n.top), P(V, "left", n.left), P(V, "width", n.width), P(V, "height", n.height), P(V, "opacity", "0.8"), P(V, "position", tn ? "absolute" : "fixed"), P(V, "zIndex", "100000"), P(V, "pointerEvents", "none"), R.ghost = V, t.appendChild(V), P(V, "transform-origin", Ti / parseInt(V.style.width) * 100 + "% " + Li / parseInt(V.style.height) * 100 + "%");
     }
   },
   _onDragStart: function(t, n) {
     var r = this, i = t.dataTransfer, o = r.options;
     if (se("dragStart", this, {
       evt: t
-    }), P.eventCanceled) {
+    }), R.eventCanceled) {
       this._onDrop();
       return;
     }
-    se("setupClone", this), P.eventCanceled || (K = Do(S), K.removeAttribute("id"), K.draggable = !1, K.style["will-change"] = "", this._hideClone(), fe(K, this.options.chosenClass, !1), P.clone = K), r.cloneId = dn(function() {
-      se("clone", r), !P.eventCanceled && (r.options.removeCloneOnHide || X.insertBefore(K, S), r._hideClone(), ae({
+    se("setupClone", this), R.eventCanceled || (K = Do(E), K.removeAttribute("id"), K.draggable = !1, K.style["will-change"] = "", this._hideClone(), fe(K, this.options.chosenClass, !1), R.clone = K), r.cloneId = dn(function() {
+      se("clone", r), !R.eventCanceled && (r.options.removeCloneOnHide || X.insertBefore(K, E), r._hideClone(), ae({
         sortable: r,
         name: "clone"
       }));
-    }), !n && fe(S, o.dragClass, !0), n ? (Cn = !0, r._loopId = setInterval(r._emulateDragOver, 50)) : (F(document, "mouseup", r._onDrop), F(document, "touchend", r._onDrop), F(document, "touchcancel", r._onDrop), i && (i.effectAllowed = "move", o.setData && o.setData.call(r, i, S)), z(document, "drop", r), M(S, "transform", "translateZ(0)")), et = !0, r._dragStartId = dn(r._dragStarted.bind(r, n, t)), z(document, "selectstart", r), wt = !0, window.getSelection().removeAllRanges(), kt && M(document.body, "user-select", "none");
+    }), !n && fe(E, o.dragClass, !0), n ? (Cn = !0, r._loopId = setInterval(r._emulateDragOver, 50)) : (F(document, "mouseup", r._onDrop), F(document, "touchend", r._onDrop), F(document, "touchcancel", r._onDrop), i && (i.effectAllowed = "move", o.setData && o.setData.call(r, i, E)), z(document, "drop", r), P(E, "transform", "translateZ(0)")), et = !0, r._dragStartId = dn(r._dragStarted.bind(r, n, t)), z(document, "selectstart", r), wt = !0, window.getSelection().removeAllRanges(), kt && P(document.body, "user-select", "none");
   },
   // Returns true - if no further action is needed (either inserted or another condition)
   _onDragOver: function(t) {
-    var n = this.el, r = t.target, i, o, a, l = this.options, s = l.group, u = P.active, d = Qt === s, c = l.sort, p = re || u, m, h = this, y = !1;
+    var n = this.el, r = t.target, i, o, a, l = this.options, s = l.group, u = R.active, d = Qt === s, c = l.sort, p = re || u, v, h = this, y = !1;
     if (br) return;
-    function w(ce, $t) {
+    function S(ce, $t) {
       se(ce, h, De({
         evt: t,
         isOwner: d,
-        axis: m ? "vertical" : "horizontal",
+        axis: v ? "vertical" : "horizontal",
         revert: a,
         dragRect: i,
         targetRect: o,
         canSort: c,
         fromSortable: p,
         target: r,
-        completed: A,
-        onMove: function(g, E) {
-          return nn(X, n, S, i, g, te(g), t, E);
+        completed: C,
+        onMove: function(g, _) {
+          return nn(X, n, E, i, g, te(g), t, _);
         },
-        changed: C
+        changed: M
       }, $t));
     }
-    function T() {
-      w("dragOverAnimationCapture"), h.captureAnimationState(), h !== p && p.captureAnimationState();
+    function A() {
+      S("dragOverAnimationCapture"), h.captureAnimationState(), h !== p && p.captureAnimationState();
     }
-    function A(ce) {
-      return w("dragOverCompleted", {
+    function C(ce) {
+      return S("dragOverCompleted", {
         insertion: ce
-      }), ce && (d ? u._hideClone() : u._showClone(h), h !== p && (fe(S, re ? re.options.ghostClass : u.options.ghostClass, !1), fe(S, l.ghostClass, !0)), re !== h && h !== P.active ? re = h : h === P.active && re && (re = null), p === h && (h._ignoreWhileAnimating = r), h.animateAll(function() {
-        w("dragOverAnimationComplete"), h._ignoreWhileAnimating = null;
-      }), h !== p && (p.animateAll(), p._ignoreWhileAnimating = null)), (r === S && !S.animated || r === n && !r.animated) && (Ge = null), !l.dragoverBubble && !t.rootEl && r !== document && (S.parentNode[ue]._isOutsideThisEl(t.target), !ce && ze(t)), !l.dragoverBubble && t.stopPropagation && t.stopPropagation(), y = !0;
+      }), ce && (d ? u._hideClone() : u._showClone(h), h !== p && (fe(E, re ? re.options.ghostClass : u.options.ghostClass, !1), fe(E, l.ghostClass, !0)), re !== h && h !== R.active ? re = h : h === R.active && re && (re = null), p === h && (h._ignoreWhileAnimating = r), h.animateAll(function() {
+        S("dragOverAnimationComplete"), h._ignoreWhileAnimating = null;
+      }), h !== p && (p.animateAll(), p._ignoreWhileAnimating = null)), (r === E && !E.animated || r === n && !r.animated) && (Ge = null), !l.dragoverBubble && !t.rootEl && r !== document && (E.parentNode[ue]._isOutsideThisEl(t.target), !ce && ze(t)), !l.dragoverBubble && t.stopPropagation && t.stopPropagation(), y = !0;
     }
-    function C() {
-      de = he(S), xe = he(S, l.draggable), ae({
+    function M() {
+      de = he(E), xe = he(E, l.draggable), ae({
         sortable: h,
         name: "change",
         toEl: n,
@@ -5025,47 +5049,47 @@ P.prototype = /** @lends Sortable.prototype */
         originalEvent: t
       });
     }
-    if (t.preventDefault !== void 0 && t.cancelable && t.preventDefault(), r = we(r, l.draggable, n, !0), w("dragOver"), P.eventCanceled) return y;
-    if (S.contains(t.target) || r.animated && r.animatingX && r.animatingY || h._ignoreWhileAnimating === r)
-      return A(!1);
-    if (Cn = !1, u && !l.disabled && (d ? c || (a = Q !== X) : re === this || (this.lastPutMode = Qt.checkPull(this, u, S, t)) && s.checkPut(this, u, S, t))) {
-      if (m = this._getDirection(t, r) === "vertical", i = te(S), w("dragOverValid"), P.eventCanceled) return y;
+    if (t.preventDefault !== void 0 && t.cancelable && t.preventDefault(), r = we(r, l.draggable, n, !0), S("dragOver"), R.eventCanceled) return y;
+    if (E.contains(t.target) || r.animated && r.animatingX && r.animatingY || h._ignoreWhileAnimating === r)
+      return C(!1);
+    if (Cn = !1, u && !l.disabled && (d ? c || (a = Q !== X) : re === this || (this.lastPutMode = Qt.checkPull(this, u, E, t)) && s.checkPut(this, u, E, t))) {
+      if (v = this._getDirection(t, r) === "vertical", i = te(E), S("dragOverValid"), R.eventCanceled) return y;
       if (a)
-        return Q = X, T(), this._hideClone(), w("revert"), P.eventCanceled || (Be ? X.insertBefore(S, Be) : X.appendChild(S)), A(!0);
-      var O = Mr(n, l.draggable);
-      if (!O || Ts(t, m, this) && !O.animated) {
-        if (O === S)
-          return A(!1);
-        if (O && n === t.target && (r = O), r && (o = te(r)), nn(X, n, S, i, r, o, t, !!r) !== !1)
-          return T(), O && O.nextSibling ? n.insertBefore(S, O.nextSibling) : n.appendChild(S), Q = n, C(), A(!0);
-      } else if (O && Cs(t, m, this)) {
-        var _ = ut(n, 0, l, !0);
-        if (_ === S)
-          return A(!1);
-        if (r = _, o = te(r), nn(X, n, S, i, r, o, t, !1) !== !1)
-          return T(), n.insertBefore(S, _), Q = n, C(), A(!0);
+        return Q = X, A(), this._hideClone(), S("revert"), R.eventCanceled || (Be ? X.insertBefore(E, Be) : X.appendChild(E)), C(!0);
+      var k = Mr(n, l.draggable);
+      if (!k || Ts(t, v, this) && !k.animated) {
+        if (k === E)
+          return C(!1);
+        if (k && n === t.target && (r = k), r && (o = te(r)), nn(X, n, E, i, r, o, t, !!r) !== !1)
+          return A(), k && k.nextSibling ? n.insertBefore(E, k.nextSibling) : n.appendChild(E), Q = n, M(), C(!0);
+      } else if (k && Cs(t, v, this)) {
+        var w = ut(n, 0, l, !0);
+        if (w === E)
+          return C(!1);
+        if (r = w, o = te(r), nn(X, n, E, i, r, o, t, !1) !== !1)
+          return A(), n.insertBefore(E, w), Q = n, M(), C(!0);
       } else if (r.parentNode === n) {
         o = te(r);
-        var L = 0, R, I = S.parentNode !== n, N = !Ss(S.animated && S.toRect || i, r.animated && r.toRect || o, m), k = m ? "top" : "left", j = Di(r, "top", "top") || Di(S, "top", "top"), q = j ? j.scrollTop : void 0;
-        Ge !== r && (R = o[k], It = !1, en = !N && l.invertSwap || I), L = Ls(t, r, o, m, N ? 1 : l.swapThreshold, l.invertedSwapThreshold == null ? l.swapThreshold : l.invertedSwapThreshold, en, Ge === r);
+        var T = 0, N, I = E.parentNode !== n, x = !Ss(E.animated && E.toRect || i, r.animated && r.toRect || o, v), L = v ? "top" : "left", j = Di(r, "top", "top") || Di(E, "top", "top"), q = j ? j.scrollTop : void 0;
+        Ge !== r && (N = o[L], It = !1, en = !x && l.invertSwap || I), T = Ls(t, r, o, v, x ? 1 : l.swapThreshold, l.invertedSwapThreshold == null ? l.swapThreshold : l.invertedSwapThreshold, en, Ge === r);
         var U;
-        if (L !== 0) {
-          var J = he(S);
+        if (T !== 0) {
+          var J = he(E);
           do
-            J -= L, U = Q.children[J];
-          while (U && (M(U, "display") === "none" || U === V));
+            J -= T, U = Q.children[J];
+          while (U && (P(U, "display") === "none" || U === V));
         }
-        if (L === 0 || U === r)
-          return A(!1);
-        Ge = r, Nt = L;
+        if (T === 0 || U === r)
+          return C(!1);
+        Ge = r, Nt = T;
         var ne = r.nextElementSibling, b = !1;
-        b = L === 1;
-        var G = nn(X, n, S, i, r, o, t, b);
+        b = T === 1;
+        var G = nn(X, n, E, i, r, o, t, b);
         if (G !== !1)
-          return (G === 1 || G === -1) && (b = G === 1), br = !0, setTimeout(Ds, 30), T(), b && !ne ? n.appendChild(S) : r.parentNode.insertBefore(S, b ? ne : r), j && Ao(j, 0, q - j.scrollTop), Q = S.parentNode, R !== void 0 && !en && (fn = Math.abs(R - te(r)[k])), C(), A(!0);
+          return (G === 1 || G === -1) && (b = G === 1), br = !0, setTimeout(Ds, 30), A(), b && !ne ? n.appendChild(E) : r.parentNode.insertBefore(E, b ? ne : r), j && Ao(j, 0, q - j.scrollTop), Q = E.parentNode, N !== void 0 && !en && (fn = Math.abs(N - te(r)[L])), M(), C(!0);
       }
-      if (n.contains(S))
-        return A(!1);
+      if (n.contains(E))
+        return C(!1);
     }
     return !1;
   },
@@ -5079,13 +5103,13 @@ P.prototype = /** @lends Sortable.prototype */
   },
   _onDrop: function(t) {
     var n = this.el, r = this.options;
-    if (de = he(S), xe = he(S, r.draggable), se("drop", this, {
+    if (de = he(E), xe = he(E, r.draggable), se("drop", this, {
       evt: t
-    }), Q = S && S.parentNode, de = he(S), xe = he(S, r.draggable), P.eventCanceled) {
+    }), Q = E && E.parentNode, de = he(E), xe = he(E, r.draggable), R.eventCanceled) {
       this._nulling();
       return;
     }
-    et = !1, en = !1, It = !1, clearInterval(this._loopId), clearTimeout(this._dragStartTimer), wr(this.cloneId), wr(this._dragStartId), this.nativeDraggable && (F(document, "drop", this), F(n, "dragstart", this._onDragStart)), this._offMoveEvents(), this._offUpEvents(), kt && M(document.body, "user-select", ""), M(S, "transform", ""), t && (wt && (t.cancelable && t.preventDefault(), !r.dropBubble && t.stopPropagation()), V && V.parentNode && V.parentNode.removeChild(V), (X === Q || re && re.lastPutMode !== "clone") && K && K.parentNode && K.parentNode.removeChild(K), S && (this.nativeDraggable && F(S, "dragend", this), Qn(S), S.style["will-change"] = "", wt && !et && fe(S, re ? re.options.ghostClass : this.options.ghostClass, !1), fe(S, this.options.chosenClass, !1), ae({
+    et = !1, en = !1, It = !1, clearInterval(this._loopId), clearTimeout(this._dragStartTimer), wr(this.cloneId), wr(this._dragStartId), this.nativeDraggable && (F(document, "drop", this), F(n, "dragstart", this._onDragStart)), this._offMoveEvents(), this._offUpEvents(), kt && P(document.body, "user-select", ""), P(E, "transform", ""), t && (wt && (t.cancelable && t.preventDefault(), !r.dropBubble && t.stopPropagation()), V && V.parentNode && V.parentNode.removeChild(V), (X === Q || re && re.lastPutMode !== "clone") && K && K.parentNode && K.parentNode.removeChild(K), E && (this.nativeDraggable && F(E, "dragend", this), Qn(E), E.style["will-change"] = "", wt && !et && fe(E, re ? re.options.ghostClass : this.options.ghostClass, !1), fe(E, this.options.chosenClass, !1), ae({
       sortable: this,
       name: "unchoose",
       toEl: Q,
@@ -5124,7 +5148,7 @@ P.prototype = /** @lends Sortable.prototype */
       name: "sort",
       toEl: Q,
       originalEvent: t
-    })), P.active && ((de == null || de === -1) && (de = nt, xe = xt), ae({
+    })), R.active && ((de == null || de === -1) && (de = nt, xe = xt), ae({
       sortable: this,
       name: "end",
       toEl: Q,
@@ -5132,7 +5156,7 @@ P.prototype = /** @lends Sortable.prototype */
     }), this.save()))), this._nulling();
   },
   _nulling: function() {
-    se("nulling", this), X = S = Q = V = Be = K = cn = Me = Fe = ge = wt = de = xe = nt = xt = Ge = Nt = re = Qt = P.dragged = P.ghost = P.clone = P.active = null, Ln.forEach(function(t) {
+    se("nulling", this), X = E = Q = V = Be = K = cn = Me = Fe = ge = wt = de = xe = nt = xt = Ge = Nt = re = Qt = R.dragged = R.ghost = R.clone = R.active = null, Ln.forEach(function(t) {
       t.checked = !0;
     }), Ln.length = Kn = Gn = 0;
   },
@@ -5144,7 +5168,7 @@ P.prototype = /** @lends Sortable.prototype */
         break;
       case "dragenter":
       case "dragover":
-        S && (this._onDragOver(t), As(t));
+        E && (this._onDragOver(t), As(t));
         break;
       case "selectstart":
         t.preventDefault();
@@ -5214,8 +5238,8 @@ P.prototype = /** @lends Sortable.prototype */
   },
   _hideClone: function() {
     if (!Me) {
-      if (se("hideClone", this), P.eventCanceled) return;
-      M(K, "display", "none"), this.options.removeCloneOnHide && K.parentNode && K.parentNode.removeChild(K), Me = !0;
+      if (se("hideClone", this), R.eventCanceled) return;
+      P(K, "display", "none"), this.options.removeCloneOnHide && K.parentNode && K.parentNode.removeChild(K), Me = !0;
     }
   },
   _showClone: function(t) {
@@ -5224,8 +5248,8 @@ P.prototype = /** @lends Sortable.prototype */
       return;
     }
     if (Me) {
-      if (se("showClone", this), P.eventCanceled) return;
-      S.parentNode == X && !this.options.group.revertClone ? X.insertBefore(K, S) : Be ? X.insertBefore(K, Be) : X.appendChild(K), this.options.group.revertClone && this.animate(S, K), M(K, "display", ""), Me = !1;
+      if (se("showClone", this), R.eventCanceled) return;
+      E.parentNode == X && !this.options.group.revertClone ? X.insertBefore(K, E) : Be ? X.insertBefore(K, Be) : X.appendChild(K), this.options.group.revertClone && this.animate(E, K), P(K, "display", ""), Me = !1;
     }
   }
 };
@@ -5267,7 +5291,7 @@ function Ls(e, t, n, r, i, o, a, l) {
   return p = p || a, p && (s < d + u * o / 2 || s > c - u * o / 2) ? s > d + u / 2 ? 1 : -1 : 0;
 }
 function ks(e) {
-  return he(S) < he(e) ? 1 : -1;
+  return he(E) < he(e) ? 1 : -1;
 }
 function Os(e) {
   for (var t = e.tagName + e.className + e.src + e.href + e.textContent, n = t.length, r = 0; n--; )
@@ -5288,12 +5312,12 @@ function wr(e) {
   return clearTimeout(e);
 }
 Mn && z(document, "touchmove", function(e) {
-  (P.active || et) && e.cancelable && e.preventDefault();
+  (R.active || et) && e.cancelable && e.preventDefault();
 });
-P.utils = {
+R.utils = {
   on: z,
   off: F,
-  css: M,
+  css: P,
   find: Eo,
   is: function(t, n) {
     return !!we(t, n, t, !1);
@@ -5310,22 +5334,22 @@ P.utils = {
   getChild: ut,
   expando: ue
 };
-P.get = function(e) {
+R.get = function(e) {
   return e[ue];
 };
-P.mount = function() {
+R.mount = function() {
   for (var e = arguments.length, t = new Array(e), n = 0; n < e; n++)
     t[n] = arguments[n];
   t[0].constructor === Array && (t = t[0]), t.forEach(function(r) {
     if (!r.prototype || !r.prototype.constructor)
       throw "Sortable: Mounted plugin must be a constructor function, not ".concat({}.toString.call(r));
-    r.utils && (P.utils = De(De({}, P.utils), r.utils)), Bt.mount(r);
+    r.utils && (R.utils = De(De({}, R.utils), r.utils)), Bt.mount(r);
   });
 };
-P.create = function(e, t) {
-  return new P(e, t);
+R.create = function(e, t) {
+  return new R(e, t);
 };
-P.version = fs;
+R.version = fs;
 var ee = [], St, Sr, Er = !1, er, tr, kn, Et;
 function Ns() {
   function e() {
@@ -5393,16 +5417,16 @@ var nr = _o(function(e, t, n, r) {
     Sr !== n && (Sr = n, pn(), St = t.scroll, d = t.scrollFn, St === !0 && (St = Re(n, !0)));
     var c = 0, p = St;
     do {
-      var m = p, h = te(m), y = h.top, w = h.bottom, T = h.left, A = h.right, C = h.width, O = h.height, _ = void 0, L = void 0, R = m.scrollWidth, I = m.scrollHeight, N = M(m), k = m.scrollLeft, j = m.scrollTop;
-      m === s ? (_ = C < R && (N.overflowX === "auto" || N.overflowX === "scroll" || N.overflowX === "visible"), L = O < I && (N.overflowY === "auto" || N.overflowY === "scroll" || N.overflowY === "visible")) : (_ = C < R && (N.overflowX === "auto" || N.overflowX === "scroll"), L = O < I && (N.overflowY === "auto" || N.overflowY === "scroll"));
-      var q = _ && (Math.abs(A - i) <= a && k + C < R) - (Math.abs(T - i) <= a && !!k), U = L && (Math.abs(w - o) <= a && j + O < I) - (Math.abs(y - o) <= a && !!j);
+      var v = p, h = te(v), y = h.top, S = h.bottom, A = h.left, C = h.right, M = h.width, k = h.height, w = void 0, T = void 0, N = v.scrollWidth, I = v.scrollHeight, x = P(v), L = v.scrollLeft, j = v.scrollTop;
+      v === s ? (w = M < N && (x.overflowX === "auto" || x.overflowX === "scroll" || x.overflowX === "visible"), T = k < I && (x.overflowY === "auto" || x.overflowY === "scroll" || x.overflowY === "visible")) : (w = M < N && (x.overflowX === "auto" || x.overflowX === "scroll"), T = k < I && (x.overflowY === "auto" || x.overflowY === "scroll"));
+      var q = w && (Math.abs(C - i) <= a && L + M < N) - (Math.abs(A - i) <= a && !!L), U = T && (Math.abs(S - o) <= a && j + k < I) - (Math.abs(y - o) <= a && !!j);
       if (!ee[c])
         for (var J = 0; J <= c; J++)
           ee[J] || (ee[J] = {});
-      (ee[c].vx != q || ee[c].vy != U || ee[c].el !== m) && (ee[c].el = m, ee[c].vx = q, ee[c].vy = U, clearInterval(ee[c].pid), (q != 0 || U != 0) && (u = !0, ee[c].pid = setInterval(function() {
-        r && this.layer === 0 && P.active._onTouchMove(kn);
+      (ee[c].vx != q || ee[c].vy != U || ee[c].el !== v) && (ee[c].el = v, ee[c].vx = q, ee[c].vy = U, clearInterval(ee[c].pid), (q != 0 || U != 0) && (u = !0, ee[c].pid = setInterval(function() {
+        r && this.layer === 0 && R.active._onTouchMove(kn);
         var ne = ee[this.layer].vy ? ee[this.layer].vy * l : 0, b = ee[this.layer].vx ? ee[this.layer].vx * l : 0;
-        typeof d == "function" && d.call(P.dragged.parentNode[ue], b, ne, e, kn, ee[this.layer].el) !== "continue" || Ao(ee[this.layer].el, b, ne);
+        typeof d == "function" && d.call(R.dragged.parentNode[ue], b, ne, e, kn, ee[this.layer].el) !== "continue" || Ao(ee[this.layer].el, b, ne);
       }.bind({
         layer: c
       }), 24))), c++;
@@ -5452,8 +5476,8 @@ Rr.prototype = {
 Le(Rr, {
   pluginName: "removeOnSpill"
 });
-P.mount(new Ns());
-P.mount(Rr, Pr);
+R.mount(new Ns());
+R.mount(Rr, Pr);
 const rt = /* @__PURE__ */ new WeakMap(), hn = /* @__PURE__ */ new WeakMap();
 function Is(e) {
   if (e["no-animation"])
@@ -5484,33 +5508,33 @@ const rn = /* @__PURE__ */ new WeakMap(), Ms = {
       preventOnFilter: !1,
       // Callback when item is dropped
       onEnd: function(p) {
-        let m = p.newIndex, h = p.oldIndex;
-        if (h === m)
+        let v = p.newIndex, h = p.oldIndex;
+        if (h === v)
           return;
-        let y = rn.get(e), w = y ? y.value : null, T = typeof w == "string";
-        if (Array.isArray(w)) {
-          let C = p.from;
-          h < m ? C.insertBefore(p.item, C.children[h]) : C.insertBefore(p.item, C.children[h + 1]);
-          let O = w.splice(h, 1)[0];
-          w.splice(m, 0, O);
+        let y = rn.get(e), S = y ? y.value : null, A = typeof S == "string";
+        if (Array.isArray(S)) {
+          let M = p.from;
+          h < v ? M.insertBefore(p.item, M.children[h]) : M.insertBefore(p.item, M.children[h + 1]);
+          let k = S.splice(h, 1)[0];
+          S.splice(v, 0, k);
           return;
         }
-        if (T && r) {
-          let C = w, O = [], _ = p.item, L = hn.get(_);
-          L === void 0 && (L = _.dataset.livueSortItem), typeof L == "string" && /^\d+$/.test(L) && (L = parseInt(L, 10));
-          let R = p.from, I = p.to, N = [L, m].concat(O);
-          if (R !== I) {
+        if (A && r) {
+          let M = S, k = [], w = p.item, T = hn.get(w);
+          T === void 0 && (T = w.dataset.livueSortItem), typeof T == "string" && /^\d+$/.test(T) && (T = parseInt(T, 10));
+          let N = p.from, I = p.to, x = [T, v].concat(k);
+          if (N !== I) {
             let j = I.dataset.livueSortMethod;
-            j && (C = j);
-            let q = R.dataset.livueSortId || R.dataset.livueSortGroup || null;
-            N.push(q);
+            j && (M = j);
+            let q = N.dataset.livueSortId || N.dataset.livueSortGroup || null;
+            x.push(q);
           }
-          r.call(C, N);
+          r.call(M, x);
         }
       }
     };
     typeof t.value == "string" && (e.dataset.livueSortMethod = t.value), e.querySelector("[data-livue-sort-handle]") && (u.handle = "[data-livue-sort-handle]"), s && (u.group = s);
-    let c = P.create(e, u);
+    let c = R.create(e, u);
     rt.set(e, c);
   },
   updated(e, t) {
@@ -5582,7 +5606,7 @@ const rn = /* @__PURE__ */ new WeakMap(), Ms = {
   }
 }, Hs = W("dblclick"), qs = W("mousedown"), Fs = W("mouseup"), zs = W("mouseenter"), Ws = W("mouseleave"), Bs = W("mouseover"), $s = W("mouseout"), Us = W("mousemove"), Js = W("contextmenu"), Xs = W("keydown", { isKeyboardEvent: !0 }), Ys = W("keyup", { isKeyboardEvent: !0 }), Ks = W("keypress", { isKeyboardEvent: !0 }), Gs = W("focus"), Zs = W("focusin"), Qs = W("focusout"), eu = W("touchstart"), tu = W("touchend"), nu = W("touchmove"), ru = W("touchcancel"), iu = W("change"), ou = W("input"), au = W("reset"), lu = W("dragstart"), su = W("dragend"), uu = W("dragenter"), cu = W("dragleave"), fu = W("dragover"), du = W("drop"), pu = W("copy"), hu = W("cut"), mu = W("paste"), vu = W("wheel"), gu = W("resize");
 function yu() {
-  x("init", bl), x("submit", wl), x("intersect", Sl), x("current", Al), x("ignore", Dl), x("model-livue", kl), x("debounce", rs), x("throttle", is), x("blur", xr), x("enter", Nr), x("boolean", ls), x("poll", Nl), x("offline", Ml), x("transition", pl), x("replace", Pl), x("loading", jl), x("target", Hl), x("stream", ql), x("click", Wl), x("navigate", Bl), x("scroll", $l), x("dirty", Ul), x("watch", Kl), x("sort", Ms), x("sort-item", Ps), x("sort-handle", Rs), x("sort-ignore", Vs), x("sort-group", js), x("dblclick", Hs), x("mousedown", qs), x("mouseup", Fs), x("mouseenter", zs), x("mouseleave", Ws), x("mouseover", Bs), x("mouseout", $s), x("mousemove", Us), x("contextmenu", Js), x("keydown", Xs), x("keyup", Ys), x("keypress", Ks), x("focus", Gs), x("focusin", Zs), x("focusout", Qs), x("touchstart", eu), x("touchend", tu), x("touchmove", nu), x("touchcancel", ru), x("change", iu), x("input", ou), x("reset", au), x("dragstart", lu), x("dragend", su), x("dragenter", uu), x("dragleave", cu), x("dragover", fu), x("drop", du), x("copy", pu), x("cut", hu), x("paste", mu), x("wheel", vu), x("resize", gu);
+  O("init", bl), O("submit", wl), O("intersect", Sl), O("current", Al), O("ignore", Dl), O("model-livue", kl), O("debounce", rs), O("throttle", is), O("blur", xr), O("enter", Nr), O("boolean", ls), O("poll", Nl), O("offline", Ml), O("transition", pl), O("replace", Pl), O("loading", jl), O("target", Hl), O("stream", ql), O("click", Wl), O("navigate", Bl), O("scroll", $l), O("dirty", Ul), O("watch", Kl), O("sort", Ms), O("sort-item", Ps), O("sort-handle", Rs), O("sort-ignore", Vs), O("sort-group", js), O("dblclick", Hs), O("mousedown", qs), O("mouseup", Fs), O("mouseenter", zs), O("mouseleave", Ws), O("mouseover", Bs), O("mouseout", $s), O("mousemove", Us), O("contextmenu", Js), O("keydown", Xs), O("keyup", Ys), O("keypress", Ks), O("focus", Gs), O("focusin", Zs), O("focusout", Qs), O("touchstart", eu), O("touchend", tu), O("touchmove", nu), O("touchcancel", ru), O("change", iu), O("input", ou), O("reset", au), O("dragstart", lu), O("dragend", su), O("dragenter", uu), O("dragleave", cu), O("dragover", fu), O("drop", du), O("copy", pu), O("cut", hu), O("paste", mu), O("wheel", vu), O("resize", gu);
 }
 let Ne = null, gt = null, xi = !1;
 function bu() {

@@ -217,6 +217,17 @@ describe('Setup Proxy', () => {
             expect(args[1]).toBe('update');
             expect(args[2]).toEqual(['name', 'John']);
         });
+
+        it('should not fire server calls during render for v-click call expressions', () => {
+            createComponent(
+                { page: 1 },
+                '<div><button v-click="setPage(2)">Go</button></div>',
+            );
+
+            // v-click values are evaluated during render; runtime should defer
+            // instead of sending a request immediately.
+            expect(mockSendAction).not.toHaveBeenCalled();
+        });
     });
 
     describe('existing properties pass through', () => {

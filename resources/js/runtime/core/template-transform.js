@@ -117,6 +117,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     let compiledRender = Vue.compile(extracted.html);
     let currentRenderRef = shallowRef(compiledRender);
     let renderCache = [];
+    let isRendering = false;
 
     // Render wrapper: reads currentRenderRef.value inside the effect -> reactive dependency.
     // Always strips dynamicChildren to disable Vue's block tree optimization.
@@ -130,7 +131,13 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     // diff step checks all nodes instead of just dynamic ones.
     function wrapperRender(_ctx, _cache) {
         let fn = currentRenderRef.value;
-        let vnode = fn(_ctx, renderCache);
+        isRendering = true;
+        let vnode;
+        try {
+            vnode = fn(_ctx, renderCache);
+        } finally {
+            isRendering = false;
+        }
         stripBlockTree(vnode);
         return vnode;
     }
@@ -190,7 +197,33 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
                     if (typeof prop === 'symbol') return Reflect.get(target, prop, receiver);
                     if (isServerMethod(prop)) {
                         var serverMethod = function () {
-                            return livue.call(prop, ...arguments);
+                            var args = Array.prototype.slice.call(arguments);
+
+                            // In custom directive values (e.g. v-click="setPage(2)"),
+                            // Vue evaluates the expression during render. Defer the
+                            // server action until the eventual click handler runs.
+                            if (isRendering) {
+                                var deferredCall = function () {
+                                    return livue.call(prop, ...args);
+                                };
+
+                                Object.defineProperty(deferredCall, '__livueMethodName', {
+                                    value: prop,
+                                    configurable: false,
+                                    enumerable: false,
+                                    writable: false,
+                                });
+                                Object.defineProperty(deferredCall, '__livueMethodArgs', {
+                                    value: args,
+                                    configurable: false,
+                                    enumerable: false,
+                                    writable: false,
+                                });
+
+                                return deferredCall;
+                            }
+
+                            return livue.call(prop, ...args);
                         };
                         // Allow directives to recover the original PHP method name
                         // when the template value is an identifier (e.g. v-click="resetItems").

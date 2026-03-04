@@ -570,6 +570,31 @@ describe('createEventDirective', () => {
 
             expect(fn).toHaveBeenCalledTimes(1);
         });
+
+        it('should use deferred metadata args from setup proxy functions', () => {
+            const directive = createEventDirective('click');
+            const el = document.createElement('button');
+            const deferred = vi.fn();
+            Object.defineProperty(deferred, '__livueMethodName', {
+                value: 'setPage',
+                configurable: false,
+                enumerable: false,
+                writable: false,
+            });
+            Object.defineProperty(deferred, '__livueMethodArgs', {
+                value: [3],
+                configurable: false,
+                enumerable: false,
+                writable: false,
+            });
+
+            directive.mounted(el, { arg: undefined, modifiers: {}, value: deferred }, mockVnode);
+
+            el.click();
+
+            expect(mockLivue.call).toHaveBeenCalledWith('setPage', 3);
+            expect(deferred).not.toHaveBeenCalled();
+        });
     });
 
     describe('cleanup', () => {
