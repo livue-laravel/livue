@@ -2,6 +2,27 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.5.0] - 2026-03-05
+
+### Added
+
+- `defineStores()` pattern for component-scoped store declaration from PHP, with automatic registration lifecycle
+- Dedicated runtime helpers for store resolution split by intent: `useStore(name)` (component-first) and `useGlobalStore(name)` (global-only)
+- Expanded showcase coverage for stores/composables/lazy/streaming/error-boundary and related frontend patterns
+
+### Changed
+
+- `v-click` call expressions are now deferred at render time so expressions like `v-click="setPage(page)"` execute only on user interaction
+- `v-click` argument syntax (`v-click:method`) is treated as unsupported/deprecated in favor of value syntax (`v-click="method"` / `v-click="method(args)"`)
+- Component memo id flow stabilized in request lifecycle so the same component id is preserved across updates
+
+### Fixed
+
+- Fixed production bootstrap issue where store hydration could throw `Cannot read properties of undefined (reading '_s')` by passing the component Pinia instance explicitly to store helpers
+- Fixed lazy component runtime integration after helper return-shape updates
+- Fixed setup script context so PHP composable namespaces are correctly exposed in `@script`
+- Fixed stream controller compatibility path for versions expecting `callMethod()`
+
 ## [1.3.0] - 2026-02-22
 
 ### Added
