@@ -167,7 +167,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
             let base = Object.assign({}, refs, composables, { livue: livue, stores: livue.stores, livueV: versions, lvErrors: errorsProxy });
 
             if (extracted.setupCode) {
-                let extra = executeSetupCode(extracted.setupCode, refs, livue);
+                let extra = executeSetupCode(extracted.setupCode, refs, livue, composables);
                 if (extra) {
                     Object.assign(base, extra);
                 }

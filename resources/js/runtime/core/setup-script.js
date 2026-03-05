@@ -105,13 +105,21 @@ export function extractSetupScript(html) {
  * @param {string} code - The JS code from the @script block
  * @param {object} stateRefs - Result of stateToRefs(state)
  * @param {object} livue - The livue helper
+ * @param {object} composables - Composable namespaces exposed in template (cart, auth, ...)
  * @param {Function} store - Quick helper for creating/using Pinia stores in @script
  * @param {Function} useStore - Get a pre-registered PHP-defined Pinia store
  * @returns {object|null} Additional bindings to merge into setup return
  */
-export function executeSetupCode(code, stateRefs, livue) {
+export function executeSetupCode(code, stateRefs, livue, composables) {
     let stateKeys = Object.keys(stateRefs);
     let stateValues = stateKeys.map(function (k) { return stateRefs[k]; });
+    let composableObj = composables || {};
+    let composableKeys = Object.keys(composableObj);
+    let composableValues = composableKeys.map(function (k) { return composableObj[k]; });
+
+    function isValidIdentifier(name) {
+        return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(name);
+    }
 
     function store(name, definition, options) {
         let componentId = livue && livue.$id ? livue.$id : '';
@@ -138,8 +146,42 @@ export function executeSetupCode(code, stateRefs, livue) {
         return existing;
     }
 
-    let paramNames = _vueApiNames.concat(stateKeys).concat(['livue', 'store', 'useStore']);
-    let paramValues = _vueApiValues.concat(stateValues).concat([livue, store, useStore]);
+    // Build parameter list defensively:
+    // - skip invalid identifiers (can't be function args)
+    // - avoid duplicates (later values override earlier ones)
+    let paramNames = [];
+    let paramValues = [];
+
+    function setParam(name, value) {
+        if (!isValidIdentifier(name)) {
+            return;
+        }
+
+        let existingIndex = paramNames.indexOf(name);
+        if (existingIndex === -1) {
+            paramNames.push(name);
+            paramValues.push(value);
+            return;
+        }
+
+        paramValues[existingIndex] = value;
+    }
+
+    for (let i = 0; i < _vueApiNames.length; i++) {
+        setParam(_vueApiNames[i], _vueApiValues[i]);
+    }
+
+    for (let i = 0; i < stateKeys.length; i++) {
+        setParam(stateKeys[i], stateValues[i]);
+    }
+
+    for (let i = 0; i < composableKeys.length; i++) {
+        setParam(composableKeys[i], composableValues[i]);
+    }
+
+    setParam('livue', livue);
+    setParam('store', store);
+    setParam('useStore', useStore);
 
     try {
         let fn = new (Function.prototype.bind.apply(

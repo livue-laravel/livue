@@ -127,6 +127,7 @@ class ComponentRenderer
         }
 
         $memo = [
+            'id' => $componentId,
             'name' => $componentName,
             'class' => encrypt(get_class($component)),
             'checksum' => $checksum,
@@ -301,6 +302,7 @@ class ComponentRenderer
         $checksum = StateChecksum::generate($componentName, $dehydratedState);
 
         $memo = [
+            'id' => $component->getId(),
             'name' => $componentName,
             'class' => encrypt($componentClass),
             'checksum' => $checksum,

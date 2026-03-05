@@ -23,6 +23,9 @@ use Throwable;
  */
 class SupportErrorBoundary extends ComponentHook
 {
+    private const STORE_METHOD_KEY = 'errorBoundary.method';
+    private const STORE_RESPONSE_KEY = 'errorBoundary.response';
+
     /**
      * Cache for error boundary configuration by class name.
      */
@@ -48,6 +51,37 @@ class SupportErrorBoundary extends ComponentHook
                 'showDetails' => $config['showDetails'] && config('app.debug', false),
             ],
         ];
+    }
+
+    /**
+     * Track the currently invoked method so exception() can resolve
+     * method-level #[ErrorBoundary] configuration.
+     */
+    public function call(Component $component, ComponentStore $store, string $method, array $params): void
+    {
+        $store->set(self::STORE_METHOD_KEY, $method);
+        $store->forget(self::STORE_RESPONSE_KEY);
+    }
+
+    /**
+     * Capture exceptions for components that opt into #[ErrorBoundary].
+     * Returning a non-null value marks the exception as handled.
+     */
+    public function exception(Component $component, ComponentStore $store, \Throwable $e): mixed
+    {
+        $method = $store->get(self::STORE_METHOD_KEY);
+
+        $config = $method
+            ? ($this->getMethodErrorConfig($component, $method) ?? $this->getErrorBoundaryConfig($component))
+            : $this->getErrorBoundaryConfig($component);
+
+        if (empty($config)) {
+            return null;
+        }
+
+        $store->set(self::STORE_RESPONSE_KEY, $this->handleComponentError($component, $e, $method));
+
+        return true;
     }
 
     /**

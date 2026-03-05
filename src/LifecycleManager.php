@@ -321,6 +321,7 @@ class LifecycleManager
 
             $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
             $newMemo = [
+                'id' => $component->getId(),
                 'name' => $componentName,
                 'class' => $memo['class'] ?? encrypt(get_class($component)),
                 'checksum' => $newChecksum,
@@ -363,6 +364,7 @@ class LifecycleManager
 
             $newChecksum = StateChecksum::generate($componentName, $dehydratedState);
             $newMemo = [
+                'id' => $component->getId(),
                 'name' => $componentName,
                 'class' => $memo['class'] ?? encrypt(get_class($component)),
                 'checksum' => $newChecksum,
@@ -445,6 +447,7 @@ class LifecycleManager
         }
 
         $newMemo = [
+            'id' => $component->getId(),
             'name' => $componentName,
             'class' => $memo['class'] ?? encrypt(get_class($component)),
             'checksum' => $newChecksum,
@@ -540,6 +543,11 @@ class LifecycleManager
 
         if ($bench) {
             $result['benchmark'] = $benchTimings;
+        }
+
+        $errorBoundary = $store->get('errorBoundary.response');
+        if (is_array($errorBoundary)) {
+            $result['errorBoundary'] = $errorBoundary;
         }
 
         // 12. Cleanup per-component feature instances and store

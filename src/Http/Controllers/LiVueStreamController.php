@@ -4,6 +4,7 @@ namespace LiVue\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use LiVue\Component;
 use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\Features\SupportStreaming\WithStreaming;
 use LiVue\LifecycleManager;
@@ -23,6 +24,17 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class LiVueStreamController extends Controller
 {
+    private const LIFECYCLE_HOOKS = [
+        'boot',
+        'mount',
+        'hydrate',
+        'dehydrate',
+        'updating',
+        'updated',
+        'rendering',
+        'rendered',
+    ];
+
     public function __invoke(
         Request $request,
         LiVueManager $manager,
@@ -205,7 +217,7 @@ class LiVueStreamController extends Controller
         // Execute method
         $hookRegistry->callHook('call', $component, $method, $params);
         $eventBus->dispatch('component.call', $component, $method, $params);
-        $component->callMethod($method, $params);
+        $this->invokeComponentMethod($component, $method, $params);
 
         // Clear computed cache
         $component->clearComputedCache();
@@ -246,6 +258,41 @@ class LiVueStreamController extends Controller
         }
 
         return $this->buildFinalResponse($component, $componentName, $synthRegistry, $hookRegistry, $extras, true);
+    }
+
+    /**
+     * Invoke a component method with the same security gates used by normal requests.
+     */
+    protected function invokeComponentMethod(Component $component, string $method, array $params): mixed
+    {
+        if (str_starts_with($method, '__')) {
+            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+        }
+
+        if (in_array($method, self::LIFECYCLE_HOOKS, true)) {
+            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+        }
+
+        if (method_exists($component, $method)) {
+            $reflection = new \ReflectionClass($component);
+            $reflectionMethod = $reflection->getMethod($method);
+
+            if (! $reflectionMethod->isPublic()) {
+                throw new \BadMethodCallException("Method [{$method}] is not public on component [{$component->getName()}].");
+            }
+
+            if ($reflectionMethod->getDeclaringClass()->getName() === Component::class) {
+                throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
+            }
+
+            return $component->{$method}(...$params);
+        }
+
+        if ($component::hasMacro($method)) {
+            return $component->{$method}(...$params);
+        }
+
+        throw new \BadMethodCallException("Method [{$method}] does not exist on component [{$component->getName()}].");
     }
 
     /**

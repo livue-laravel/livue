@@ -121,6 +121,11 @@ class LiVueRuntime {
             }
         }.bind(this));
 
+        // Also initialize standalone lazy placeholders present at first paint.
+        // Without this pass, <livue-lazy> outside a LiVue root waits forever
+        // because _processStandaloneLazy currently runs only on DOM mutations.
+        this._processStandaloneLazy(document.body);
+
         // Initialize navigation module (sets history state, popstate listener)
         initNavigation(this);
 
@@ -174,6 +179,9 @@ class LiVueRuntime {
             }
         }.bind(this));
 
+        // Handle standalone lazy placeholders after navigation body swap.
+        this._processStandaloneLazy(document.body);
+
         // Resume observing
         this._startObserver();
     }
@@ -191,6 +199,10 @@ class LiVueRuntime {
                 this._initComponent(el); // _initComponent already skips existing
             }
         }.bind(this));
+
+        // Wrap and initialize any standalone lazy placeholders introduced
+        // during preserved navigations.
+        this._processStandaloneLazy(document.body);
 
         // Resume observing AFTER a frame to let Vue finish any pending DOM cleanup
         // from the destroyed components. Otherwise the observer sees the cleanup

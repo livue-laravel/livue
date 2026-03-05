@@ -129,6 +129,18 @@ class LiVueUpdateController extends Controller
             return ['error' => 'Component not found.', 'status' => 404];
         }
 
+        // Preserve component instance ID across requests.
+        // The ID is used in feature internals (e.g. cache keys, hook stores)
+        // and should remain stable for the lifetime of the frontend instance.
+        $snapshotId = $memo['id'] ?? null;
+        if (is_string($snapshotId) && $snapshotId !== '') {
+            if (! preg_match('/^[A-Za-z0-9._:-]+$/', $snapshotId)) {
+                return ['error' => 'Invalid component id.', 'status' => 400];
+            }
+
+            $component->setId($snapshotId);
+        }
+
         try {
             // Delegate entire lifecycle to LifecycleManager
             return $lifecycle->processUpdate(

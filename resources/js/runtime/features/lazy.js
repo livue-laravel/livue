@@ -86,7 +86,7 @@ export function createLazyComponent(rootComponent) {
                 let childComponentRef = { _updateTemplate: null };
 
                 // Create livue helper
-                let livue = createLivueHelper(
+                let helperResult = createLivueHelper(
                     componentId,
                     childState,
                     memo,
@@ -94,6 +94,8 @@ export function createLazyComponent(rootComponent) {
                     childServerState,
                     data.snapshot
                 );
+                let livue = helperResult.livue;
+                let childComposables = helperResult.composables;
 
                 // Set initial errors
                 if (memo.errors) {
@@ -113,7 +115,14 @@ export function createLazyComponent(rootComponent) {
                 );
 
                 // Create component definition
-                let componentDef = buildComponentDef(template, childState, livue, rootComponent._versions, name);
+                let componentDef = buildComponentDef(
+                    template,
+                    childState,
+                    livue,
+                    childComposables,
+                    rootComponent._versions,
+                    name
+                );
 
                 // Register child in the registry
                 rootComponent._childRegistry[componentId] = {
@@ -142,7 +151,14 @@ export function createLazyComponent(rootComponent) {
                     }
 
                     // Build the new component definition
-                    let newComponentDef = buildComponentDef(newTemplate, childState, livue, rootComponent._versions, name);
+                    let newComponentDef = buildComponentDef(
+                        newTemplate,
+                        childState,
+                        livue,
+                        childComposables,
+                        rootComponent._versions,
+                        name
+                    );
 
                     // Update component definition directly to avoid "already registered" warning
                     rootComponent.vueApp._context.components[tagName] = newComponentDef;
