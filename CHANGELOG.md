@@ -2,6 +2,12 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.5.1] - 2026-03-05
+
+### Fixed
+
+- Tailwind pagination view now uses `@click="setPage(...)"` for page links, preventing ping-pong page navigation caused by `v-click` evaluation in this context
+
 ## [1.5.0] - 2026-03-05
 
 ### Added
