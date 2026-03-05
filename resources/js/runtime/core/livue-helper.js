@@ -59,6 +59,7 @@ export function patchFragments(html, fragments) {
  */
 export function createLivueHelper(componentId, state, memo, componentRef, initialServerState, initialServerSnapshot, context) {
     context = context || {};
+    let pinia = context.pinia || null;
     let errors = createErrors();
     let name = memo.name;
 
@@ -124,7 +125,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             if (!entry || typeof entry !== 'object') continue;
             if (!entry.bridge || typeof entry.bridge !== 'object') continue;
 
-            let instance = useRegisteredStore(componentId, entry.name, { scope: entry.scope || 'auto' });
+            let instance = useRegisteredStore(componentId, entry.name, { scope: entry.scope || 'auto' }, pinia);
             if (!instance) continue;
 
             let bridge = entry.bridge;
@@ -162,7 +163,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     }
 
     function syncStoresFromMemo(storesMemo) {
-        let registered = registerStoresFromMemo(componentId, storesMemo);
+        let registered = registerStoresFromMemo(componentId, storesMemo, pinia);
         for (let key in registered) {
             stores[key] = registered[key];
         }
@@ -438,6 +439,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         loadingTargets: loadingTargets,
         refs: {},
         stores: stores,
+        _pinia: pinia,
 
         /**
          * Check if any property (or a specific property) has changed since last sync.
@@ -691,13 +693,13 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          */
         store: function (name, definition, options) {
             if (definition === undefined) {
-                let existing = useRegisteredStore(componentId, name, options || { scope: 'auto' });
+                let existing = useRegisteredStore(componentId, name, options || { scope: 'auto' }, pinia);
                 if (existing) {
                     return existing;
                 }
                 throw new Error('[LiVue] store("' + name + '"): store not found. Provide a definition or register it in PHP.');
             }
-            return createOrUseStore(componentId, name, definition, options);
+            return createOrUseStore(componentId, name, definition, options, pinia);
         },
 
         /**
@@ -708,7 +710,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          * @returns {object}
          */
         useStore: function (name) {
-            let existing = useRegisteredStore(componentId, name, { scope: 'auto' });
+            let existing = useRegisteredStore(componentId, name, { scope: 'auto' }, pinia);
             if (existing) {
                 stores[name] = existing;
                 return existing;
@@ -723,7 +725,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          * @returns {object}
          */
         useGlobalStore: function (name) {
-            let existing = useRegisteredStore(componentId, name, { scope: 'global' });
+            let existing = useRegisteredStore(componentId, name, { scope: 'global' }, pinia);
             if (existing) {
                 stores[name] = existing;
                 return existing;

@@ -44,7 +44,7 @@ function syncStoreState(store, nextState) {
  * @param {'component'|'global'} [options.scope='component']
  * @returns {object} Pinia store instance
  */
-export function createOrUseStore(componentId, name, definition, options) {
+export function createOrUseStore(componentId, name, definition, options, pinia) {
     if (typeof name !== 'string' || name.trim() === '') {
         throw new Error('[LiVue] store(name, definition, options?): "name" must be a non-empty string.');
     }
@@ -62,7 +62,7 @@ export function createOrUseStore(componentId, name, definition, options) {
         console.warn('[LiVue] store("' + storeId + '") is already registered. Reusing the first definition.');
     }
 
-    return existing.useStore();
+    return existing.useStore(pinia);
 }
 
 /**
@@ -71,7 +71,7 @@ export function createOrUseStore(componentId, name, definition, options) {
  *
  * @returns {object|null}
  */
-export function useRegisteredStore(componentId, name, options) {
+export function useRegisteredStore(componentId, name, options, pinia) {
     if (typeof name !== 'string' || name.trim() === '') {
         throw new Error('[LiVue] useStore(name): "name" must be a non-empty string.');
     }
@@ -91,7 +91,7 @@ export function useRegisteredStore(componentId, name, options) {
     for (let i = 0; i < candidateIds.length; i++) {
         let existing = _quickStoreRegistry.get(candidateIds[i]);
         if (existing) {
-            return existing.useStore();
+            return existing.useStore(pinia);
         }
     }
 
@@ -105,7 +105,7 @@ export function useRegisteredStore(componentId, name, options) {
  * @param {Array} stores
  * @returns {object} Map name => store instance
  */
-export function registerStoresFromMemo(componentId, stores) {
+export function registerStoresFromMemo(componentId, stores, pinia) {
     let result = {};
 
     if (!Array.isArray(stores) || stores.length === 0) {
@@ -120,7 +120,7 @@ export function registerStoresFromMemo(componentId, stores) {
 
         let scope = entry.scope === 'global' ? 'global' : 'component';
         let initialState = unwrapState(entry.state || {});
-        let existing = useRegisteredStore(componentId, entry.name, { scope: scope });
+        let existing = useRegisteredStore(componentId, entry.name, { scope: scope }, pinia);
 
         if (existing) {
             syncStoreState(existing, initialState);
@@ -134,7 +134,7 @@ export function registerStoresFromMemo(componentId, stores) {
             },
         };
 
-        let instance = createOrUseStore(componentId, entry.name, definition, { scope: scope });
+        let instance = createOrUseStore(componentId, entry.name, definition, { scope: scope }, pinia);
         result[entry.name] = instance;
     }
 

@@ -92,7 +92,13 @@ export function createLazyComponent(rootComponent) {
                     memo,
                     childComponentRef,
                     childServerState,
-                    data.snapshot
+                    data.snapshot,
+                    {
+                        rootComponent: rootComponent,
+                        isChild: true,
+                        parentLivue: rootComponent._rootLivue || null,
+                        pinia: rootComponent._pinia || null,
+                    }
                 );
                 let livue = helperResult.livue;
                 let childComposables = helperResult.composables;

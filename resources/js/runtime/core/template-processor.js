@@ -152,6 +152,7 @@ export function processTemplate(html, rootComponent) {
                 isChild: true,
                 parentLivue: rootComponent._rootLivue,
                 cleanups: childCleanups,
+                pinia: rootComponent._pinia || null,
             });
             let livue = helperResult.livue;
             let childComposables = helperResult.composables;

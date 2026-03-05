@@ -80,6 +80,7 @@ export default class LiVueComponent {
         /** @type {object|null} */
         this._rootLivue = null;
         this._rootState = null; // For #[Modelable] two-way binding
+        this._pinia = null;
 
         /**
          * Helper functions exposed to the lazy directive.
@@ -191,6 +192,7 @@ export default class LiVueComponent {
 
         // Create cleanup collector for root hooks
         this._cleanups = createCleanupCollector();
+        this._pinia = createPinia();
 
         // Create the root livue helper with opaque snapshot string
         // IMPORTANT: Must be created BEFORE processTemplate so refs can be registered
@@ -201,6 +203,7 @@ export default class LiVueComponent {
             parentLivue: null,
             cleanups: this._cleanups,
             initialHtml: this.el.innerHTML,
+            pinia: this._pinia,
         });
         let livue = helperResult.livue;
         let rootComposables = helperResult.composables;
@@ -302,7 +305,7 @@ export default class LiVueComponent {
         let app = this.vueApp;
 
         // 1. Install Pinia (LiVue uses it internally)
-        let piniaInstance = createPinia();
+        let piniaInstance = this._pinia || createPinia();
         app.use(piniaInstance);
 
         // 2. Apply user's setup callbacks AFTER Pinia

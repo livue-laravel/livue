@@ -123,21 +123,23 @@ export function executeSetupCode(code, stateRefs, livue, composables) {
 
     function store(name, definition, options) {
         let componentId = livue && livue.$id ? livue.$id : '';
+        let pinia = livue && livue._pinia ? livue._pinia : undefined;
 
         if (definition === undefined) {
-            let existing = useRegisteredStore(componentId, name, options || {});
+            let existing = useRegisteredStore(componentId, name, options || {}, pinia);
             if (existing) {
                 return existing;
             }
             throw new Error('[LiVue] store(name): store not found. Provide a definition or register it in PHP.');
         }
 
-        return createOrUseStore(componentId, name, definition, options);
+        return createOrUseStore(componentId, name, definition, options, pinia);
     }
 
     function useStore(name) {
         let componentId = livue && livue.$id ? livue.$id : '';
-        let existing = useRegisteredStore(componentId, name, { scope: 'auto' });
+        let pinia = livue && livue._pinia ? livue._pinia : undefined;
+        let existing = useRegisteredStore(componentId, name, { scope: 'auto' }, pinia);
 
         if (!existing) {
             throw new Error('[LiVue] useStore("' + name + '"): store not found.');
