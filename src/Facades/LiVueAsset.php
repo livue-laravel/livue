@@ -15,6 +15,8 @@ use LiVue\Features\SupportAssets\AssetManager;
  * @method static void registerScriptData(array $data, string $package = 'app')
  * @method static void registerImport(string $module, string $url)
  * @method static void registerImports(array $imports)
+ * @method static string getScriptSrc(string $id, string $package = 'app')
+ * @method static string getStyleHref(string $id, string $package = 'app')
  * @method static array getStyles(?array $packages = null)
  * @method static array getScripts(?array $packages = null)
  * @method static array getCssVariables(?array $packages = null)

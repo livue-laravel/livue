@@ -17,6 +17,7 @@ class SupportBladeDirectives extends ComponentHook
         static::registerLiVueDirective();
         static::registerScriptsDirective();
         static::registerStylesDirective();
+        static::registerOnRequestAssetDirectives();
         static::registerSetupScriptDirectives();
         static::registerHeadDirective();
         static::registerTeleportDirectives();
@@ -61,6 +62,23 @@ class SupportBladeDirectives extends ComponentHook
     {
         Blade::directive('livueStyles', function () {
             return '<?php echo app(\\LiVue\\LiVueManager::class)->renderStyles(); ?>';
+        });
+    }
+
+    /**
+     * @livueLoadStyle('id', 'package') / @livueLoadScript('id', 'package', [...])
+     *
+     * Loads on-request assets with automatic client-side deduplication.
+     * Useful for scoped assets inside specific component templates.
+     */
+    protected static function registerOnRequestAssetDirectives(): void
+    {
+        Blade::directive('livueLoadStyle', function (string $expression) {
+            return "<?php echo app(\\LiVue\\LiVueManager::class)->renderOnRequestStyle(...[{$expression}]); ?>";
+        });
+
+        Blade::directive('livueLoadScript', function (string $expression) {
+            return "<?php echo app(\\LiVue\\LiVueManager::class)->renderOnRequestScript(...[{$expression}]); ?>";
         });
     }
 

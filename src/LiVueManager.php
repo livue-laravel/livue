@@ -247,6 +247,105 @@ JS;
     }
 
     /**
+     * Render an on-request stylesheet loader snippet.
+     *
+     * The snippet loads the stylesheet into <head> and deduplicates by
+     * package+id across repeated renders and SPA navigations.
+     */
+    public function renderOnRequestStyle(string $id, string $package = 'app'): string
+    {
+        $href = app(AssetManager::class)->getStyleHref($id, $package);
+        $key = "style:{$package}:{$id}";
+        $payload = [
+            'kind' => 'style',
+            'key' => $key,
+            'href' => $href,
+        ];
+
+        return $this->buildOnRequestLoaderScript($payload);
+    }
+
+    /**
+     * Render an on-request script loader snippet.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function renderOnRequestScript(string $id, string $package = 'app', array $options = []): string
+    {
+        $src = app(AssetManager::class)->getScriptSrc($id, $package);
+        $key = "script:{$package}:{$id}";
+        $payload = [
+            'kind' => 'script',
+            'key' => $key,
+            'src' => $src,
+            'type' => $options['type'] ?? null,
+            'defer' => (bool) ($options['defer'] ?? true),
+            'async' => (bool) ($options['async'] ?? false),
+        ];
+
+        return $this->buildOnRequestLoaderScript($payload);
+    }
+
+    /**
+     * Build the inline loader script for on-request assets.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    protected function buildOnRequestLoaderScript(array $payload): string
+    {
+        $nonceAttr = $this->getNonceAttribute();
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+
+        return <<<HTML
+<script{$nonceAttr} data-livue-on-request-loader>
+(function () {
+    var p = {$json};
+    var loaded = window.__livueOnRequestAssets = window.__livueOnRequestAssets || {};
+
+    if (loaded[p.key]) {
+        return;
+    }
+
+    if (document.querySelector('[data-livue-asset="' + p.key + '"]')) {
+        loaded[p.key] = true;
+        return;
+    }
+
+    if (p.kind === 'style') {
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = p.href;
+        link.setAttribute('data-livue-asset', p.key);
+        link.setAttribute('data-navigate-track', '');
+        document.head.appendChild(link);
+        loaded[p.key] = true;
+        return;
+    }
+
+    if (p.kind === 'script') {
+        var script = document.createElement('script');
+        script.src = p.src;
+        if (p.type) {
+            script.type = p.type;
+        }
+        if (p.defer) {
+            script.defer = true;
+        }
+        if (p.async) {
+            script.async = true;
+        }
+        script.setAttribute('data-livue-asset', p.key);
+        script.setAttribute('data-navigate-track', '');
+        script.setAttribute('data-navigate-once', '');
+        document.head.appendChild(script);
+        loaded[p.key] = true;
+    }
+})();
+</script>
+HTML;
+    }
+
+    /**
      * Get the current CSP nonce.
      * Returns null if CSP support is disabled.
      */

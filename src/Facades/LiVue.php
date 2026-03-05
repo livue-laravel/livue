@@ -14,6 +14,8 @@ use LiVue\LiVueManager;
  * @method static \LiVue\Component resolveByClass(string $class)
  * @method static \LiVue\Features\SupportTesting\Testable test(string $componentClass, array $params = [])
  * @method static string|null getNonce()
+ * @method static string renderOnRequestStyle(string $id, string $package = 'app')
+ * @method static string renderOnRequestScript(string $id, string $package = 'app', array $options = [])
  * @method static void addPersistentMiddleware(array $middleware)
  * @method static void createStore(string $name, array|callable $definition)
  * @method static array<string, mixed>|null getGlobalStore(string $name)

@@ -20,6 +20,8 @@ abstract class Asset
 
     protected bool $isRemote = false;
 
+    protected bool $isOnRequest = false;
+
     public function __construct(string $id, string $path = '')
     {
         $this->id = $id;
@@ -43,6 +45,27 @@ abstract class Asset
         $this->package = $package;
 
         return $this;
+    }
+
+    /**
+     * Mark this asset to be loaded on request instead of globally.
+     *
+     * On-request assets are registered in the asset manager but excluded from
+     * the default @livueScripts / @livueStyles output.
+     */
+    public function onRequest(bool $condition = true): static
+    {
+        $this->isOnRequest = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Backward-compatible alias for onRequest().
+     */
+    public function loadedOnRequest(bool $condition = true): static
+    {
+        return $this->onRequest($condition);
     }
 
     /**
@@ -75,6 +98,14 @@ abstract class Asset
     public function isRemote(): bool
     {
         return $this->isRemote;
+    }
+
+    /**
+     * Check whether this asset should be loaded on request.
+     */
+    public function isOnRequest(): bool
+    {
+        return $this->isOnRequest;
     }
 
     /**

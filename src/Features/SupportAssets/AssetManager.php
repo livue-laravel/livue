@@ -2,6 +2,7 @@
 
 namespace LiVue\Features\SupportAssets;
 
+use Exception;
 use LiVue\Attributes\Css;
 use LiVue\Attributes\Js;
 use LiVue\Component;
@@ -195,6 +196,44 @@ class AssetManager
         }
 
         return $data;
+    }
+
+    /**
+     * Get the source URL for a registered script by ID and package.
+     */
+    public function getScriptSrc(string $id, string $package = 'app'): string
+    {
+        /** @var array<JsAsset> $scripts */
+        $scripts = $this->getScripts([$package]);
+
+        foreach ($scripts as $script) {
+            if ($script->getId() !== $id) {
+                continue;
+            }
+
+            return $script->getUrl();
+        }
+
+        throw new Exception("Script with ID [{$id}] not found for package [{$package}].");
+    }
+
+    /**
+     * Get the href URL for a registered stylesheet by ID and package.
+     */
+    public function getStyleHref(string $id, string $package = 'app'): string
+    {
+        /** @var array<CssAsset> $styles */
+        $styles = $this->getStyles([$package]);
+
+        foreach ($styles as $style) {
+            if ($style->getId() !== $id) {
+                continue;
+            }
+
+            return $style->getUrl();
+        }
+
+        throw new Exception("Stylesheet with ID [{$id}] not found for package [{$package}].");
     }
 
     /**
@@ -392,6 +431,7 @@ class AssetManager
                     $src = $script['src'] ?? '';
                     $content = $script['content'] ?? null;
                     $id = $content ? 'inline:' . md5($content) : 'src:' . md5($src);
+                    $isOnRequest = (bool) ($script['onRequest'] ?? $script['loadedOnRequest'] ?? false);
 
                     $asset = JsAsset::make($id, $src)
                         ->defer($script['defer'] ?? true)
@@ -404,6 +444,10 @@ class AssetManager
 
                     if ($content) {
                         $asset->inline($content);
+                    }
+
+                    if ($isOnRequest) {
+                        $asset->onRequest();
                     }
 
                     $this->scripts[$package][$id] = $asset;
@@ -422,6 +466,7 @@ class AssetManager
                     $href = $style['href'] ?? '';
                     $content = $style['content'] ?? null;
                     $id = $content ? 'inline:' . md5($content) : 'href:' . md5($href);
+                    $isOnRequest = (bool) ($style['onRequest'] ?? $style['loadedOnRequest'] ?? false);
 
                     $asset = CssAsset::make($id, $href)->package($package);
 
@@ -431,6 +476,10 @@ class AssetManager
 
                     if ($content) {
                         $asset->inline($content);
+                    }
+
+                    if ($isOnRequest) {
+                        $asset->onRequest();
                     }
 
                     $this->styles[$package][$id] = $asset;
@@ -522,6 +571,10 @@ class AssetManager
 
         // Then render stylesheets
         foreach ($this->getStyles() as $asset) {
+            if ($asset->isOnRequest()) {
+                continue;
+            }
+
             $output .= $asset->toHtml($nonce) . "\n";
         }
 
@@ -537,6 +590,10 @@ class AssetManager
 
         // Render scripts
         foreach ($this->getScripts() as $asset) {
+            if ($asset->isOnRequest()) {
+                continue;
+            }
+
             $output .= $asset->toHtml($nonce) . "\n";
         }
 
