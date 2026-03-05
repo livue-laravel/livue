@@ -9,6 +9,8 @@ use LiVue\Features\SupportAssets\AssetManager;
  * Facade for LiVue Asset Management.
  *
  * @method static void register(array $assets, string $package = 'app')
+ * @method static string registerForPackage(array $assets, ?string $path = null, string $fallback = 'app')
+ * @method static string resolvePackageName(?string $path = null, string $fallback = 'app')
  * @method static void registerScript(string $src, ?string $type = null, bool $defer = true, bool $async = false)
  * @method static void registerStyle(string $href, ?string $media = null)
  * @method static void registerCssVariables(array $variables, string $package = 'app')

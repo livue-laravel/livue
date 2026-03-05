@@ -59,6 +59,20 @@ describe('onRequest assets', function () {
             ->toBe('https://cdn.example.com/table.css');
     });
 
+    it('appends explicit asset version query string when provided', function () {
+        $manager = app(AssetManager::class);
+
+        $manager->register([
+            Js::make('table-js', '/js/table.js')->version('1.2.3')->onRequest(),
+            Css::make('table-css', '/css/table.css?theme=dark')->version('1.2.3')->onRequest(),
+        ], 'primix/tables');
+
+        expect($manager->getScriptSrc('table-js', 'primix/tables'))
+            ->toBe('/js/table.js?v=1.2.3');
+        expect($manager->getStyleHref('table-css', 'primix/tables'))
+            ->toBe('/css/table.css?theme=dark&v=1.2.3');
+    });
+
     it('throws if requested script or style id is missing', function () {
         $manager = app(AssetManager::class);
 
@@ -75,10 +89,12 @@ describe('onRequest assets', function () {
             'scripts' => [
                 ['src' => 'https://cdn.example.com/eager.js'],
                 ['src' => 'https://cdn.example.com/lazy.js', 'onRequest' => true],
+                ['src' => '/js/versioned.js', 'onRequest' => true, 'version' => '9.9.9'],
             ],
             'styles' => [
                 ['href' => 'https://cdn.example.com/eager.css'],
                 ['href' => 'https://cdn.example.com/lazy.css', 'onRequest' => true],
+                ['href' => '/css/versioned.css', 'onRequest' => true, 'version' => '9.9.9'],
             ],
         ], 'primix/dynamic');
 
@@ -87,8 +103,12 @@ describe('onRequest assets', function () {
 
         expect($scripts)->toContain('eager.js');
         expect($scripts)->not->toContain('lazy.js');
+        expect($manager->getScriptSrc('src:' . md5('/js/versioned.js'), 'primix/dynamic'))
+            ->toBe('/js/versioned.js?v=9.9.9');
         expect($styles)->toContain('eager.css');
         expect($styles)->not->toContain('lazy.css');
+        expect($manager->getStyleHref('href:' . md5('/css/versioned.css'), 'primix/dynamic'))
+            ->toBe('/css/versioned.css?v=9.9.9');
     });
 
     it('renders utility snippets for on-request style and script loading', function () {

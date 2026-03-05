@@ -2,6 +2,7 @@
 
 namespace LiVue;
 
+use Composer\InstalledVersions;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
@@ -141,8 +142,8 @@ class LiVueManager
     {
         $prefix = config('livue.route_prefix', 'livue');
         $bundlePath = dirname(__DIR__) . '/dist/livue.js';
-        $bundleHash = file_exists($bundlePath) ? substr(md5_file($bundlePath), 0, 8) : '';
-        $bundleUrl = url($prefix . '/livue.js') . ($bundleHash ? '?v=' . $bundleHash : '');
+        $bundleVersion = $this->getCoreBundleVersion($bundlePath);
+        $bundleUrl = url($prefix . '/livue.js') . ($bundleVersion ? '?v=' . urlencode($bundleVersion) : '');
         $nonce = $this->getNonce();
         $nonceAttr = $this->getNonceAttribute();
 
@@ -220,6 +221,37 @@ JS;
         }
 
         return $output;
+    }
+
+    /**
+     * Resolve version for the core LiVue bundle URL.
+     *
+     * Strategy:
+     * 1. Composer package version (livue/livue)
+     * 2. Configured asset version (livue.asset_version / app.asset_version)
+     * 3. Bundle content hash fallback (for local dev path repositories)
+     */
+    protected function getCoreBundleVersion(string $bundlePath): ?string
+    {
+        try {
+            $packageVersion = InstalledVersions::getVersion('livue/livue');
+            if (is_string($packageVersion) && $packageVersion !== '') {
+                return $packageVersion;
+            }
+        } catch (\Throwable) {
+            // Fall through to config/hash fallback.
+        }
+
+        $configuredVersion = config('livue.asset_version', config('app.asset_version'));
+        if (is_string($configuredVersion) && $configuredVersion !== '') {
+            return $configuredVersion;
+        }
+
+        if (file_exists($bundlePath)) {
+            return substr(md5_file($bundlePath), 0, 8);
+        }
+
+        return null;
     }
 
     /**

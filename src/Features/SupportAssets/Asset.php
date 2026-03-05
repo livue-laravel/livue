@@ -22,6 +22,8 @@ abstract class Asset
 
     protected bool $isOnRequest = false;
 
+    protected ?string $version = null;
+
     public function __construct(string $id, string $path = '')
     {
         $this->id = $id;
@@ -66,6 +68,19 @@ abstract class Asset
     public function loadedOnRequest(bool $condition = true): static
     {
         return $this->onRequest($condition);
+    }
+
+    /**
+     * Set an explicit version for this asset.
+     *
+     * When provided, this value takes precedence over package/config versions
+     * and is appended as ?v=... to the asset URL.
+     */
+    public function version(?string $version): static
+    {
+        $this->version = ($version !== null && $version !== '') ? $version : null;
+
+        return $this;
     }
 
     /**
@@ -126,6 +141,10 @@ abstract class Asset
      */
     public function getVersion(): ?string
     {
+        if ($this->version !== null) {
+            return $this->version;
+        }
+
         if ($this->package === 'app') {
             return config('livue.asset_version', config('app.asset_version'));
         }
@@ -133,7 +152,7 @@ abstract class Asset
         try {
             return InstalledVersions::getVersion($this->package);
         } catch (\OutOfBoundsException) {
-            // Package not found in Composer, try filament/support-style fallback
+            // Package not found in Composer, try LiVue package fallback
             try {
                 return InstalledVersions::getVersion('livue/livue');
             } catch (\OutOfBoundsException) {

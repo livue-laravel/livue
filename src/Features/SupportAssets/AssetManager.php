@@ -13,7 +13,7 @@ use ReflectionClass;
 /**
  * Manages CSS and JS assets for LiVue.
  *
- * Provides a Filament-style asset management system with:
+ * Provides an asset management system with:
  * - Package-based organization
  * - CSS variables support
  * - Script data for JavaScript configuration
@@ -91,6 +91,90 @@ class AssetManager
                 }
             }
         }
+    }
+
+    /**
+     * Register assets resolving the package name dynamically from composer.json.
+     *
+     * @param  array<Asset|array>  $assets  Array of Asset objects or legacy format
+     * @param  string|null  $path  composer.json file path or any directory inside the package
+     * @param  string  $fallback  Fallback package name if resolution fails
+     * @return string Resolved package name used for registration
+     */
+    public function registerForPackage(array $assets, ?string $path = null, string $fallback = 'app'): string
+    {
+        $package = $this->resolvePackageName($path, $fallback);
+        $this->register($assets, $package);
+
+        return $package;
+    }
+
+    /**
+     * Resolve package name from composer.json.
+     *
+     * If path is:
+     * - null: uses app base composer.json
+     * - a composer.json file: reads it directly
+     * - a directory: walks up to find nearest composer.json
+     */
+    public function resolvePackageName(?string $path = null, string $fallback = 'app'): string
+    {
+        $composerPath = $this->resolveComposerJsonPath($path);
+
+        if ($composerPath === null || ! is_file($composerPath)) {
+            return $fallback;
+        }
+
+        $content = @file_get_contents($composerPath);
+        if (! is_string($content) || $content === '') {
+            return $fallback;
+        }
+
+        /** @var array<string, mixed>|null $decoded */
+        $decoded = json_decode($content, true);
+        if (! is_array($decoded)) {
+            return $fallback;
+        }
+
+        $name = $decoded['name'] ?? null;
+
+        return (is_string($name) && $name !== '') ? $name : $fallback;
+    }
+
+    /**
+     * Resolve the most relevant composer.json path from input.
+     */
+    protected function resolveComposerJsonPath(?string $path): ?string
+    {
+        if ($path === null) {
+            return base_path('composer.json');
+        }
+
+        if (is_file($path)) {
+            return basename($path) === 'composer.json' ? $path : null;
+        }
+
+        if (! is_dir($path)) {
+            return null;
+        }
+
+        $current = realpath($path) ?: $path;
+
+        while (true) {
+            $candidate = $current . DIRECTORY_SEPARATOR . 'composer.json';
+            if (is_file($candidate)) {
+                return $candidate;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current) {
+                break;
+            }
+
+            $current = $parent;
+        }
+
+        return null;
     }
 
     /**
@@ -438,6 +522,10 @@ class AssetManager
                         ->async($script['async'] ?? false)
                         ->package($package);
 
+                    if (array_key_exists('version', $script)) {
+                        $asset->version($script['version']);
+                    }
+
                     if (isset($script['type'])) {
                         $asset->type($script['type']);
                     }
@@ -469,6 +557,10 @@ class AssetManager
                     $isOnRequest = (bool) ($style['onRequest'] ?? $style['loadedOnRequest'] ?? false);
 
                     $asset = CssAsset::make($id, $href)->package($package);
+
+                    if (array_key_exists('version', $style)) {
+                        $asset->version($style['version']);
+                    }
 
                     if (isset($style['media'])) {
                         $asset->media($style['media']);
