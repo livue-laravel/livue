@@ -60,6 +60,9 @@ class LiVueAssetInjectionMiddleware
             $html = $this->injectScripts($html);
         }
 
+        // Ensure on-request loaders are executed early by placing them in <head>.
+        $html = $this->hoistOnRequestLoadersToHead($html);
+
         $response->setContent($html);
 
         return $response;
@@ -239,5 +242,53 @@ class LiVueAssetInjectionMiddleware
         }
 
         return $html;
+    }
+
+    /**
+     * Move @livueLoadStyle/@livueLoadScript loader snippets into <head>.
+     *
+     * This avoids late execution in the middle of body markup, reducing
+     * FOUC/race conditions for scoped assets that should be available early.
+     */
+    protected function hoistOnRequestLoadersToHead(string $html): string
+    {
+        if (! str_contains($html, 'data-livue-on-request-loader')) {
+            return $html;
+        }
+
+        $pattern = '/<script\b[^>]*\bdata-livue-on-request-loader\b[^>]*>.*?<\/script>\s*/is';
+
+        if (! preg_match_all($pattern, $html, $matches)) {
+            return $html;
+        }
+
+        $uniqueSnippets = [];
+        foreach ($matches[0] as $snippet) {
+            $normalized = trim($snippet);
+            if ($normalized === '') {
+                continue;
+            }
+
+            $uniqueSnippets[$normalized] = $normalized;
+        }
+
+        if ($uniqueSnippets === []) {
+            return $html;
+        }
+
+        $hoisted = implode("\n", array_values($uniqueSnippets));
+        $html = preg_replace($pattern, '', $html) ?? $html;
+
+        $headEnd = stripos($html, '</head>');
+        if ($headEnd !== false) {
+            return substr_replace($html, $hoisted . "\n", $headEnd, 0);
+        }
+
+        $bodyEnd = stripos($html, '</body>');
+        if ($bodyEnd !== false) {
+            return substr_replace($html, $hoisted . "\n", $bodyEnd, 0);
+        }
+
+        return $hoisted . "\n" . $html;
     }
 }

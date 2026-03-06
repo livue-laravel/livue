@@ -3,6 +3,7 @@
 use LiVue\Features\SupportAssets\AssetManager;
 use LiVue\Features\SupportAssets\Css;
 use LiVue\Features\SupportAssets\Js;
+use LiVue\Http\Middleware\LiVueAssetInjectionMiddleware;
 use LiVue\LiVueManager;
 
 describe('onRequest assets', function () {
@@ -142,5 +143,85 @@ BLADE);
 
         expect($compiled)->toContain('renderOnRequestStyle');
         expect($compiled)->toContain('renderOnRequestScript');
+    });
+
+    it('hoists on-request loader snippets into head before body content', function () {
+        $assetManager = app(AssetManager::class);
+        $manager = app(LiVueManager::class);
+        $middleware = new class($manager) extends LiVueAssetInjectionMiddleware
+        {
+            public function hoistForTest(string $html): string
+            {
+                return $this->hoistOnRequestLoadersToHead($html);
+            }
+        };
+
+        $assetManager->register([
+            Js::make('table-js', 'https://cdn.example.com/table.js')->onRequest(),
+            Css::make('table-css', 'https://cdn.example.com/table.css')->onRequest(),
+        ], 'primix/tables');
+
+        $styleLoader = $manager->renderOnRequestStyle('table-css', 'primix/tables');
+        $scriptLoader = $manager->renderOnRequestScript('table-js', 'primix/tables');
+
+        $html = <<<HTML
+<!doctype html>
+<html>
+<head><title>Test</title></head>
+<body>
+    <div id="content">Hello</div>
+    {$styleLoader}
+    {$scriptLoader}
+</body>
+</html>
+HTML;
+
+        $result = $middleware->hoistForTest($html);
+
+        $headEndPos = stripos($result, '</head>');
+        $bodyContentPos = strpos($result, '<div id="content">');
+        $styleKeyPos = strpos($result, 'style:primix/tables:table-css');
+        $scriptKeyPos = strpos($result, 'script:primix/tables:table-js');
+
+        expect($headEndPos)->not->toBeFalse();
+        expect($bodyContentPos)->not->toBeFalse();
+        expect($styleKeyPos)->not->toBeFalse();
+        expect($scriptKeyPos)->not->toBeFalse();
+        expect($styleKeyPos)->toBeLessThan($headEndPos);
+        expect($scriptKeyPos)->toBeLessThan($headEndPos);
+        expect(substr($result, $bodyContentPos))->not->toContain('data-livue-on-request-loader');
+    });
+
+    it('deduplicates hoisted on-request loader snippets', function () {
+        $assetManager = app(AssetManager::class);
+        $manager = app(LiVueManager::class);
+        $middleware = new class($manager) extends LiVueAssetInjectionMiddleware
+        {
+            public function hoistForTest(string $html): string
+            {
+                return $this->hoistOnRequestLoadersToHead($html);
+            }
+        };
+
+        $assetManager->register([
+            Css::make('table-css', 'https://cdn.example.com/table.css')->onRequest(),
+        ], 'primix/tables');
+
+        $styleLoader = $manager->renderOnRequestStyle('table-css', 'primix/tables');
+
+        $html = <<<HTML
+<!doctype html>
+<html>
+<head></head>
+<body>
+    {$styleLoader}
+    {$styleLoader}
+</body>
+</html>
+HTML;
+
+        $result = $middleware->hoistForTest($html);
+
+        expect(substr_count($result, 'style:primix/tables:table-css'))->toBe(1);
     });
 });
