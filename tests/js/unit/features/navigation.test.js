@@ -604,6 +604,29 @@ describe('Navigation Module', () => {
             expect(document.getElementById('content')).not.toBeNull();
         });
 
+        it('should skip import map scripts during script replay', async () => {
+            const replaceSpy = vi.spyOn(document.body, 'replaceChild');
+
+            const newPageHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head><title>New Page</title></head>
+                <body>
+                    <script type="importmap">{"imports":{"vue":"https://example.com/vue.js"}}</script>
+                    <div id="content">Content</div>
+                </body>
+                </html>
+            `;
+
+            mockFetch.mockResolvedValue(createMockResponse(newPageHtml));
+
+            await navigation.navigateTo('/page', true, false);
+
+            expect(replaceSpy).not.toHaveBeenCalled();
+            expect(document.getElementById('content')).not.toBeNull();
+            replaceSpy.mockRestore();
+        });
+
         it('should skip scripts with livue in src', async () => {
             // Test that navigation completes successfully even when the source HTML
             // would have had LiVue scripts (which are skipped by the navigation logic)

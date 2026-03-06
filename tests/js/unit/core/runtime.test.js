@@ -28,8 +28,17 @@ beforeEach(async () => {
             this.el = el;
             this.destroy = vi.fn();
             this.state = {};
-            this._rootLivue = {};
+            this._rootLivue = {
+                $refresh: vi.fn(),
+            };
             this._childRegistry = {};
+            this.vueApp = {
+                _instance: {
+                    proxy: {
+                        $forceUpdate: vi.fn(),
+                    },
+                },
+            };
             mockComponents.push(this);
         },
     }));
@@ -373,6 +382,36 @@ describe('LiVueRuntime', () => {
             LiVue.setup(null);
 
             expect(LiVue._setupCallbacks.length).toBe(initialLength);
+        });
+
+        it('should apply late setup callback to already mounted apps', async () => {
+            const el = createMockLiVueElement({ id: 'comp-1', name: 'counter' });
+            document.body.appendChild(el);
+            LiVue.boot();
+
+            const callback = vi.fn();
+            LiVue.setup(callback);
+
+            const component = LiVue.find('comp-1');
+            expect(callback).toHaveBeenCalledWith(component.vueApp);
+
+            await Promise.resolve();
+            expect(component.vueApp._instance.proxy.$forceUpdate).toHaveBeenCalledTimes(1);
+        });
+
+        it('should fallback to $refresh when proxy is unavailable', async () => {
+            const el = createMockLiVueElement({ id: 'comp-1', name: 'counter' });
+            document.body.appendChild(el);
+            LiVue.boot();
+
+            const component = LiVue.find('comp-1');
+            component.vueApp._instance.proxy = null;
+
+            const callback = vi.fn();
+            LiVue.setup(callback);
+
+            await Promise.resolve();
+            expect(component._rootLivue.$refresh).toHaveBeenCalledTimes(1);
         });
     });
 

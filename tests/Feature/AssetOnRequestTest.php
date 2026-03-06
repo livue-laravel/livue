@@ -5,6 +5,8 @@ use LiVue\Features\SupportAssets\Css;
 use LiVue\Features\SupportAssets\Js;
 use LiVue\Http\Middleware\LiVueAssetInjectionMiddleware;
 use LiVue\LiVueManager;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 describe('onRequest assets', function () {
 
@@ -223,5 +225,43 @@ HTML;
         $result = $middleware->hoistForTest($html);
 
         expect(substr_count($result, 'style:primix/tables:table-css'))->toBe(1);
+    });
+
+    it('does not hoist on-request loaders for SPA navigate responses', function () {
+        $assetManager = app(AssetManager::class);
+        $manager = app(LiVueManager::class);
+        $middleware = app(LiVueAssetInjectionMiddleware::class);
+
+        $assetManager->register([
+            Js::make('table-js', 'https://cdn.example.com/table.js')->onRequest(),
+            Css::make('table-css', 'https://cdn.example.com/table.css')->onRequest(),
+        ], 'primix/tables');
+
+        $styleLoader = $manager->renderOnRequestStyle('table-css', 'primix/tables');
+        $scriptLoader = $manager->renderOnRequestScript('table-js', 'primix/tables');
+
+        $html = <<<HTML
+<!doctype html>
+<html>
+<head><title>Test</title></head>
+<body>
+    <div id="content" data-livue-id="abc" data-livue-snapshot="{}">Hello</div>
+    {$styleLoader}
+    {$scriptLoader}
+</body>
+</html>
+HTML;
+
+        $request = Request::create('/test', 'GET', server: [
+            'HTTP_X_LIVUE_NAVIGATE' => '1',
+        ]);
+
+        $response = new Response($html, 200, ['Content-Type' => 'text/html']);
+
+        $result = $middleware->handle($request, fn () => $response)->getContent();
+        $bodyPos = strpos($result, '<body>');
+
+        expect($bodyPos)->not->toBeFalse();
+        expect(substr($result, $bodyPos))->toContain('data-livue-on-request-loader');
     });
 });

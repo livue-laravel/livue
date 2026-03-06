@@ -86,6 +86,65 @@ class LiVueRuntime {
             return;
         }
         this._setupCallbacks.push(callback);
+
+        // If components are already mounted (late-loaded package assets),
+        // apply this callback immediately to existing apps as well.
+        if (this.components.size > 0) {
+            this._applySetupCallbackToMountedApps(callback);
+        }
+    }
+
+    /**
+     * Apply a newly-registered setup callback to already-mounted Vue apps.
+     * This handles late-loaded package scripts that call LiVue.setup()
+     * after initial boot.
+     *
+     * @param {Function} callback
+     * @private
+     */
+    async _applySetupCallbackToMountedApps(callback) {
+        let mountedComponents = [];
+
+        this.components.forEach(function (component) {
+            if (component && component.vueApp) {
+                mountedComponents.push(component);
+            }
+        });
+
+        if (mountedComponents.length === 0) {
+            return;
+        }
+
+        for (let i = 0; i < mountedComponents.length; i++) {
+            try {
+                let result = callback(mountedComponents[i].vueApp);
+                if (result && typeof result.then === 'function') {
+                    await result;
+                }
+            } catch (error) {
+                console.error('[LiVue] Error in setup() callback:', error);
+            }
+        }
+
+        // Trigger a local re-render so newly registered global components/
+        // directives/plugins are picked up by already-mounted trees.
+        queueMicrotask(function () {
+            mountedComponents.forEach(function (component) {
+                let proxy = component.vueApp &&
+                    component.vueApp._instance &&
+                    component.vueApp._instance.proxy;
+
+                if (proxy && typeof proxy.$forceUpdate === 'function') {
+                    proxy.$forceUpdate();
+                    return;
+                }
+
+                let livue = component._rootLivue;
+                if (livue && typeof livue.$refresh === 'function') {
+                    livue.$refresh();
+                }
+            });
+        });
     }
 
     /**

@@ -60,8 +60,12 @@ class LiVueAssetInjectionMiddleware
             $html = $this->injectScripts($html);
         }
 
-        // Ensure on-request loaders are executed early by placing them in <head>.
-        $html = $this->hoistOnRequestLoadersToHead($html);
+        // For full-page responses, execute on-request loaders early by hoisting them to <head>.
+        // For SPA navigate responses, keep loaders in body so the navigation runtime can
+        // replay and execute them after DOM swap.
+        if (! $request->headers->has('X-LiVue-Navigate')) {
+            $html = $this->hoistOnRequestLoadersToHead($html);
+        }
 
         $response->setContent($html);
 

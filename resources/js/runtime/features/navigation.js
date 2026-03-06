@@ -913,9 +913,9 @@ function executeBodyScripts(doc) {
             return;
         }
 
-        // Skip module scripts - they are already loaded and shouldn't be re-executed
-        // This includes Vite's module scripts that load LiVue
-        if (oldScript.type === 'module') {
+        // Skip module/import-map/speculation scripts.
+        // Re-applying import maps after modules are resolved causes browser warnings.
+        if (oldScript.type === 'module' || oldScript.type === 'importmap' || oldScript.type === 'speculationrules') {
             return;
         }
 

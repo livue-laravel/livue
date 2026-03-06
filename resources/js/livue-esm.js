@@ -52,16 +52,25 @@ if (config.showProgressOnRequest !== undefined) {
     LiVueRuntime.progress.configure({ showOnRequest: config.showProgressOnRequest });
 }
 
-// Boot when DOM is ready (handle case where DOMContentLoaded already fired)
-// Use queueMicrotask to ensure setup() can be called before boot
+// Boot when DOM is ready.
+// In "interactive" state, wait for DOMContentLoaded/load to ensure deferred
+// module scripts had time to register LiVue.setup() callbacks.
+let _booted = false;
 function bootLiVue() {
+    if (_booted) {
+        return;
+    }
+
+    _booted = true;
     LiVueRuntime.boot();
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootLiVue);
+    document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
+} else if (document.readyState === 'interactive') {
+    document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
+    window.addEventListener('load', bootLiVue, { once: true });
 } else {
-    // Delay boot to allow setup() to be called after import
     queueMicrotask(bootLiVue);
 }
 
