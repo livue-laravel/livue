@@ -51,9 +51,12 @@ trait HandlesRendering
             $compiler->compile($path);
         }
 
-        // Use private variable names to avoid collisions with view data
+        // Use private variable names to avoid collisions with view data.
+        // Match Laravel's View::gatherData() behavior: shared data (e.g. $errors)
+        // must be merged into local view data before extraction.
         $__path = $compiled;
-        $__data = $viewData;
+        $__shared = $__env->getShared();
+        $__data = array_merge($__shared, $viewData);
 
         // Extract variables - $this will be available because we're inside a method!
         extract($__data, EXTR_SKIP);

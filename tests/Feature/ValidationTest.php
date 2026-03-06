@@ -1,6 +1,7 @@
 <?php
 
 use LiVue\Tests\Fixtures\ContactForm;
+use LiVue\Tests\Fixtures\ErrorDirectiveForm;
 
 describe('Validation', function () {
 
@@ -65,6 +66,14 @@ describe('Validation', function () {
             ])
             ->call('submit')
             ->assertHasNoErrors();
+    });
+
+    it('supports Blade @error directives in component views', function () {
+        livue(ErrorDirectiveForm::class)
+            ->assertDontSee('error-message')
+            ->call('submit')
+            ->assertHasErrors('email')
+            ->assertSee('error-message');
     });
 
 });
