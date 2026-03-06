@@ -1,13 +1,17 @@
 /**
  * Tests for template transformations applied before Vue.compile().
  *
- * transformMagicVariables rewrites $errors to lvErrors so that
+ * transformMagicVariables rewrites:
+ * - $errors to lvErrors so that
  * Vue's template compiler resolves them through the setup proxy
  * (Vue's PublicInstanceProxyHandlers.get skips setupState for $-prefixed keys).
  *
  * lvErrors is a Proxy over livue.errors that auto-unwraps arrays
  * to their first element, so $errors.field returns the message string
  * directly instead of an array.
+ *
+ * It also rewrites known $shortcut() calls (e.g. $dispatch()) to
+ * livue.$shortcut() so templates can use concise "magic" calls.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -46,6 +50,37 @@ describe('transformMagicVariables', () => {
 
         it('should leave templates without $errors unchanged', () => {
             let html = '<div v-if="count > 0">{{ name }}</div>';
+            expect(transformMagicVariables(html)).toBe(html);
+        });
+    });
+
+    describe('magic shortcut rewriting', () => {
+        it('should rewrite $refresh() to livue.$refresh()', () => {
+            let html = '<button @click="$refresh()"></button>';
+            expect(transformMagicVariables(html)).toBe('<button @click="livue.$refresh()"></button>');
+        });
+
+        it('should rewrite $dispatch(), $call(), and $on()', () => {
+            let html = '@click="$dispatch(\'saved\', { id: 1 }); $call(\'syncNow\'); $on(\'saved\', cb)"';
+            let result = transformMagicVariables(html);
+
+            expect(result).toContain('livue.$dispatch(\'saved\', { id: 1 })');
+            expect(result).toContain('livue.$call(\'syncNow\')');
+            expect(result).toContain('livue.$on(\'saved\', cb)');
+        });
+
+        it('should support optional whitespace before parentheses', () => {
+            let html = '@click="$dispatch (\'saved\')"';
+            expect(transformMagicVariables(html)).toBe('@click="livue.$dispatch (\'saved\')"');
+        });
+
+        it('should not rewrite non-matching names (word boundary)', () => {
+            let html = '@click="$dispatcher()"';
+            expect(transformMagicVariables(html)).toBe(html);
+        });
+
+        it('should not rewrite property-like usage without call parentheses', () => {
+            let html = '{{ $refresh }}';
             expect(transformMagicVariables(html)).toBe(html);
         });
     });

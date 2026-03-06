@@ -59,18 +59,64 @@ export function transformVModelModifiers(html) {
 }
 
 /**
- * Transform $errors magic variable into an internal setupState key.
+ * Shortcuts available in Blade templates.
  *
- * Vue's RuntimeCompiledPublicInstanceProxyHandlers blocks both $ and _
- * prefixed keys from template resolution ($ skips setupState in get,
- * _ is filtered by the has trap). The replacement key must start with
- * a letter to pass both guards.
+ * Vue runtime-compiled templates can't resolve $-prefixed keys from setup
+ * state directly. We rewrite known shortcuts to explicit livue calls.
+ */
+const magicMethodShortcuts = [
+    '$refresh',
+    '$call',
+    '$callWithConfirm',
+    '$sync',
+    '$set',
+    '$toggle',
+    '$watch',
+    '$dispatch',
+    '$dispatchTo',
+    '$dispatchSelf',
+    '$on',
+    '$navigate',
+    '$upload',
+    '$uploadMultiple',
+    '$removeUpload',
+    '$stream',
+    '$store',
+    '$useStore',
+    '$useGlobalStore',
+    '$isDirty',
+    '$getOriginal',
+    '$resetProperty',
+    '$resetAll',
+    '$isLoading',
+    '$clearErrors',
+    '$onError',
+    '$clearError',
+];
+
+function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Transform magic variables / shortcuts into template-safe bindings.
+ *
+ * - `$errors` -> `lvErrors` (auto-unwrapped errors proxy)
+ * - known `$method(...)` shortcuts -> `livue.$method(...)`
  *
  * @param {string} html - Template HTML
  * @returns {string} - Transformed HTML
  */
 export function transformMagicVariables(html) {
-    return html.replace(/\$errors\b/g, 'lvErrors');
+    let transformed = html.replace(/\$errors\b/g, 'lvErrors');
+
+    for (let i = 0; i < magicMethodShortcuts.length; i++) {
+        let shortcut = magicMethodShortcuts[i];
+        let pattern = new RegExp(escapeRegExp(shortcut) + '\\b(?=\\s*\\()', 'g');
+        transformed = transformed.replace(pattern, 'livue.' + shortcut);
+    }
+
+    return transformed;
 }
 
 /**
@@ -108,10 +154,14 @@ function stripBlockTree(vnode) {
  * @returns {{ name: string, render: function, setup: function, _updateRender: function }}
  */
 export function buildComponentDef(templateHtml, state, livue, composables, versions, name) {
+    // Extract @script first so template transforms never mutate user setup code.
+    let extracted = extractSetupScript(templateHtml);
+
     // Transform v-model.debounce etc. into v-model + v-debounce directive
-    let transformedHtml = transformVModelModifiers(templateHtml);
+    // and rewrite magic template shortcuts.
+    let transformedHtml = transformVModelModifiers(extracted.html);
     transformedHtml = transformMagicVariables(transformedHtml);
-    let extracted = extractSetupScript(transformedHtml);
+    extracted.html = transformedHtml;
 
     // Compile template with Vue.compile() (has internal cache for template strings)
     let compiledRender = Vue.compile(extracted.html);
@@ -265,10 +315,10 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     // Vue.compile() caches by template string, so identical strings return the
     // same function reference — the === check skips unnecessary reactive updates.
     def._updateRender = function (newHtml) {
-        let newTransformed = transformVModelModifiers(newHtml);
+        let newExtracted = extractSetupScript(newHtml);
+        let newTransformed = transformVModelModifiers(newExtracted.html);
         newTransformed = transformMagicVariables(newTransformed);
-        let newExtracted = extractSetupScript(newTransformed);
-        let newCompiled = Vue.compile(newExtracted.html);
+        let newCompiled = Vue.compile(newTransformed);
         if (newCompiled === currentRenderRef.value) return;
         renderCache.length = 0;
         currentRenderRef.value = newCompiled;

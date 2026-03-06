@@ -11,6 +11,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 let LiVueComponent;
 let mockSendAction;
 let mockDefineStore;
+let mockOn;
+let mockEmit;
 
 // Shared response stub
 function makeResponse(overrides) {
@@ -42,9 +44,11 @@ beforeEach(async () => {
         removeComponentErrorHandler: vi.fn(),
     }));
 
+    mockOn = vi.fn(() => vi.fn());
+    mockEmit = vi.fn();
     vi.doMock('@/features/events.js', () => ({
-        on: vi.fn(),
-        emit: vi.fn(),
+        on: mockOn,
+        emit: mockEmit,
         removeByComponentId: vi.fn(),
         processServerEvents: vi.fn(),
     }));
@@ -229,6 +233,43 @@ describe('Magic Methods', () => {
             let args = mockSendAction.mock.calls[0];
             expect(args[1]).toBeNull();
         });
+
+        it('should proxy $dispatch() to dispatch()', () => {
+            let livue = createComponent();
+
+            livue.$dispatch('saved', { id: 42 });
+
+            expect(mockEmit).toHaveBeenCalledTimes(1);
+            let args = mockEmit.mock.calls[0];
+            expect(args[0]).toBe('saved');
+            expect(args[1]).toEqual({ id: 42 });
+            expect(args[2]).toBe('broadcast');
+        });
+
+        it('should proxy $call() to call()', async () => {
+            let livue = createComponent();
+
+            await livue.$call('increment', 2);
+
+            expect(mockSendAction).toHaveBeenCalledTimes(1);
+            let args = mockSendAction.mock.calls[0];
+            expect(args[1]).toBe('increment');
+            expect(args[2]).toEqual([2]);
+        });
+
+        it('should proxy $on() to on()', () => {
+            let livue = createComponent();
+
+            let unsubscribe = livue.$on('item-saved', vi.fn());
+
+            expect(typeof unsubscribe).toBe('function');
+            expect(mockOn).toHaveBeenCalledTimes(1);
+            let args = mockOn.mock.calls[0];
+            expect(args[0]).toBe('item-saved');
+            expect(args[1]).toBe('test-component');
+            expect(args[2]).toBe(livue.$id);
+            expect(typeof args[3]).toBe('function');
+        });
     });
 
     describe('Proxy: existing properties pass through', () => {
@@ -265,6 +306,7 @@ describe('Magic Methods', () => {
             let livue = createComponent();
 
             expect(typeof livue.call).toBe('function');
+            expect(typeof livue.on).toBe('function');
             expect(typeof livue.sync).toBe('function');
             expect(livue.loading).toBe(false);
             expect(livue.processing).toBeNull();
@@ -373,6 +415,14 @@ describe('Magic Methods', () => {
             let livue = createComponent();
 
             expect('$refresh' in livue).toBe(true);
+        });
+
+        it('should report $dispatch and $call aliases as existing', () => {
+            let livue = createComponent();
+
+            expect('$dispatch' in livue).toBe(true);
+            expect('$call' in livue).toBe(true);
+            expect('$on' in livue).toBe(true);
         });
 
         it('should not report unknown magic methods as existing', () => {

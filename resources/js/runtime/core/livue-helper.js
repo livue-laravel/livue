@@ -1019,6 +1019,28 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         },
 
         /**
+         * Register a client-side event listener on the LiVue event bus.
+         * Returns an unsubscribe function.
+         *
+         * @param {string} eventName
+         * @param {Function} handler - function(data)
+         * @returns {Function}
+         */
+        on: function (eventName, handler) {
+            if (typeof eventName !== 'string' || eventName.length === 0) {
+                console.warn('[LiVue] on() requires a non-empty event name');
+                return function () {};
+            }
+
+            if (typeof handler !== 'function') {
+                console.warn('[LiVue] on() handler must be a function');
+                return function () {};
+            }
+
+            return on(eventName, name, componentId, handler);
+        },
+
+        /**
          * Watch a property for changes.
          * Executes callback when the property value changes.
          *
@@ -1312,11 +1334,25 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             if (typeof prop === 'symbol') {
                 return Reflect.get(target, prop, receiver);
             }
-            if (typeof prop === 'string' && prop.startsWith('$') && magicMethods[prop]) {
-                return function () {
-                    var args = Array.prototype.slice.call(arguments);
-                    return magicMethods[prop](livue, args);
-                };
+            if (typeof prop === 'string' && prop.startsWith('$')) {
+                if (magicMethods[prop]) {
+                    return function () {
+                        var args = Array.prototype.slice.call(arguments);
+                        return magicMethods[prop](livue, args);
+                    };
+                }
+
+                // $alias proxy: livue.$dispatch(...) -> livue.dispatch(...)
+                var alias = prop.slice(1);
+                if (alias) {
+                    var aliasTarget = Reflect.get(target, alias, receiver);
+                    if (typeof aliasTarget === 'function') {
+                        return function () {
+                            var args = Array.prototype.slice.call(arguments);
+                            return aliasTarget.apply(target, args);
+                        };
+                    }
+                }
             }
             // Server method proxy: livue.increment(2) -> livue.call('increment', [2])
             if (typeof prop === 'string' && !prop.startsWith('$') && !proxyBlacklist[prop]) {
@@ -1331,8 +1367,18 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             return Reflect.set(target, prop, value, receiver);
         },
         has: function (target, prop) {
-            if (typeof prop === 'string' && prop.startsWith('$') && magicMethods[prop]) {
-                return true;
+            if (typeof prop === 'string' && prop.startsWith('$')) {
+                if (magicMethods[prop]) {
+                    return true;
+                }
+
+                var alias = prop.slice(1);
+                if (alias) {
+                    var aliasTarget = Reflect.get(target, alias, target);
+                    if (typeof aliasTarget === 'function') {
+                        return true;
+                    }
+                }
             }
             return Reflect.has(target, prop);
         },
