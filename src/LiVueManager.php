@@ -63,7 +63,7 @@ class LiVueManager
 
         // Delegate mount lifecycle to LifecycleManager
         $lifecycle = app(LifecycleManager::class);
-        $lifecycle->mount($component);
+        $lifecycle->mount($component, $props);
 
         $renderer = new ComponentRenderer();
 

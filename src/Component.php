@@ -64,6 +64,35 @@ abstract class Component
      */
     protected static array $globalComposables = [];
 
+    /**
+     * Lifecycle hook names that cannot be called from the client.
+     * Mirrors LifecycleManager security checks.
+     */
+    private const CLIENT_BLOCKED_LIFECYCLE_METHODS = [
+        'boot',
+        'mount',
+        'hydrate',
+        'dehydrate',
+        'updating',
+        'updated',
+        'rendering',
+        'rendered',
+    ];
+
+    /**
+     * Utility macro names that cannot be called from the client.
+     * Mirrors LifecycleManager security checks for macros.
+     */
+    private const CLIENT_BLOCKED_MACRO_METHODS = [
+        'macro',
+        'mixin',
+        'hasMacro',
+        'flushMacros',
+        'use',
+        'getGlobalComposables',
+        'flushGlobalComposables',
+    ];
+
     // ---------------------------------------------------------------
     //  Abstract methods
     // ---------------------------------------------------------------
@@ -153,6 +182,69 @@ abstract class Component
         $class = (new ReflectionClass($this))->getShortName();
 
         return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $class));
+    }
+
+    /**
+     * Get method names callable from client templates/actions.
+     *
+     * This list is sent in snapshot memo so the JS runtime can distinguish
+     * real callable methods from undefined template identifiers.
+     *
+     * @return array<int, string>
+     */
+    public function getClientCallableMethods(): array
+    {
+        $reflection = new ReflectionClass($this);
+        $methods = [];
+
+        // Real methods declared outside the base Component class.
+        foreach ($reflection->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            $methodName = $method->getName();
+
+            if (str_starts_with($methodName, '__')) {
+                continue;
+            }
+
+            if (in_array($methodName, self::CLIENT_BLOCKED_LIFECYCLE_METHODS, true)) {
+                continue;
+            }
+
+            if ($method->getDeclaringClass()->getName() === self::class) {
+                continue;
+            }
+
+            $methods[$methodName] = true;
+        }
+
+        // Macro methods allowed by LifecycleManager security gates.
+        foreach (array_keys(static::$macros) as $macroName) {
+            if (! is_string($macroName) || $macroName === '') {
+                continue;
+            }
+
+            if (isset($methods[$macroName])) {
+                continue;
+            }
+
+            if (str_starts_with($macroName, '__')) {
+                continue;
+            }
+
+            if (in_array($macroName, self::CLIENT_BLOCKED_LIFECYCLE_METHODS, true)) {
+                continue;
+            }
+
+            if (in_array($macroName, self::CLIENT_BLOCKED_MACRO_METHODS, true)) {
+                continue;
+            }
+
+            $methods[$macroName] = true;
+        }
+
+        $names = array_keys($methods);
+        sort($names);
+
+        return $names;
     }
 
     // ---------------------------------------------------------------

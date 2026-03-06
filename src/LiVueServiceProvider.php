@@ -16,6 +16,7 @@ use LiVue\Features\SupportAssets\SupportAssets;
 use LiVue\Features\SupportBroadcast\SupportBroadcast;
 use LiVue\Features\SupportAttributes\SupportAttributes;
 use LiVue\Features\SupportComposables\SupportComposables;
+use LiVue\Features\SupportCallableMethods\SupportCallableMethods;
 use LiVue\Features\SupportConsoleCommands\SupportConsoleCommands;
 use LiVue\Features\SupportDirtyTracking\SupportDirtyTracking;
 use LiVue\Features\SupportDownloads\SupportDownloads;
@@ -173,6 +174,7 @@ class LiVueServiceProvider extends ServiceProvider
         $registry->register(SupportReactiveProps::class);
         $registry->register(SupportAttributes::class);
         $registry->register(SupportComposables::class);
+        $registry->register(SupportCallableMethods::class);
         $registry->register(SupportStores::class);
         $registry->register(SupportValidation::class);
         $registry->register(SupportRendering::class);

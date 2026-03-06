@@ -230,6 +230,31 @@ describe('Setup Proxy', () => {
         });
     });
 
+    describe('method whitelist from snapshot memo', () => {
+        it('should proxy only methods listed in memo.methods', () => {
+            let component = createComponent({ count: 0 }, { methods: ['increment'] });
+            let proxy = getSetupProxy(component);
+
+            expect(typeof proxy.increment).toBe('function');
+            expect(proxy.notDeclared).toBeUndefined();
+
+            expect('increment' in proxy).toBe(true);
+            expect('notDeclared' in proxy).toBe(false);
+
+            expect(Object.hasOwn(proxy, 'increment')).toBe(true);
+            expect(Object.hasOwn(proxy, 'notDeclared')).toBe(false);
+        });
+
+        it('should disable server-method proxying when memo.methods is empty', () => {
+            let component = createComponent({ count: 0 }, { methods: [] });
+            let proxy = getSetupProxy(component);
+
+            expect(proxy.increment).toBeUndefined();
+            expect('increment' in proxy).toBe(false);
+            expect(Object.hasOwn(proxy, 'increment')).toBe(false);
+        });
+    });
+
     describe('existing properties pass through', () => {
         it('should not intercept state refs', () => {
             let component = createComponent({ count: 42 });

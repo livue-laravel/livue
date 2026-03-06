@@ -238,7 +238,17 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
 
             var serverMethodPattern = /^[a-zA-Z][a-zA-Z0-9_]*$/;
             function isServerMethod(prop) {
-                return typeof prop === 'string' && !setupBlacklist[prop] && serverMethodPattern.test(prop);
+                if (typeof prop !== 'string' || setupBlacklist[prop] || !serverMethodPattern.test(prop)) {
+                    return false;
+                }
+
+                // Snapshot-provided callable method list (new behavior).
+                // If absent (legacy snapshots), keep permissive fallback.
+                if (Array.isArray(livue._callableMethods)) {
+                    return livue._callableMethods.indexOf(prop) !== -1;
+                }
+
+                return true;
             }
 
             return new Proxy(base, {

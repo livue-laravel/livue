@@ -72,6 +72,10 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     // #[Confirm] methods: require user confirmation before execution
     let confirms = memo.confirms || {};
 
+    // Client-callable method whitelist (snapshot memo).
+    // Null means "legacy snapshot without method list" -> fallback to permissive proxying.
+    let callableMethods = Array.isArray(memo.methods) ? memo.methods.slice() : null;
+
     // #[Isolate]: send requests independently, bypassing the pool
     let isolate = memo.isolate || false;
 
@@ -302,6 +306,13 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                     confirms = parsed.memo.confirms;
                 }
 
+                // Update callable method whitelist from new memo.
+                // Keep null only for legacy snapshots that omit the key entirely.
+                if (Object.prototype.hasOwnProperty.call(parsed.memo, 'methods')) {
+                    callableMethods = Array.isArray(parsed.memo.methods) ? parsed.memo.methods.slice() : null;
+                    livue._callableMethods = callableMethods;
+                }
+
                 // Update composable data from new memo
                 if (parsed.memo.composables || parsed.memo.composableActions) {
                     updateComposables(composables, parsed.memo);
@@ -440,6 +451,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         refs: {},
         stores: stores,
         _pinia: pinia,
+        _callableMethods: callableMethods,
 
         /**
          * Check if any property (or a specific property) has changed since last sync.

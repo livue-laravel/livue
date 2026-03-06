@@ -86,12 +86,14 @@ class LifecycleManager
                 $method = 'mount' . class_basename($trait);
 
                 if (method_exists($component, $method)) {
-                    $component->{$method}(...$params);
+                    $filteredParams = $this->resolveMethodParams($component, $method, $params);
+                    $component->{$method}(...$filteredParams);
                 }
             }
 
             if (method_exists($component, 'mount')) {
-                $component->mount(...$params);
+                $filteredParams = $this->resolveMethodParams($component, 'mount', $params);
+                $component->mount(...$filteredParams);
             }
 
             // Initialize Form objects with component reference
@@ -104,6 +106,30 @@ class LifecycleManager
         } catch (\Throwable $e) {
             throw new ComponentMountException($component->getName(), $e);
         }
+    }
+
+    /**
+     * Filter an array of named params to only those accepted by the given method.
+     * Uses reflection so that calling mount(...$props) never throws
+     * "Unknown named argument" when mount() has no matching parameters.
+     */
+    protected function resolveMethodParams(Component $component, string $method, array $params): array
+    {
+        if (empty($params)) {
+            return [];
+        }
+
+        $reflection = new \ReflectionMethod($component, $method);
+        $resolved = [];
+
+        foreach ($reflection->getParameters() as $param) {
+            $name = $param->getName();
+            if (array_key_exists($name, $params)) {
+                $resolved[$name] = $params[$name];
+            }
+        }
+
+        return $resolved;
     }
 
     // -----------------------------------------------------------------
