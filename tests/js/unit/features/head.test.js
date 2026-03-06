@@ -205,4 +205,55 @@ describe('Head Elements Update', () => {
             '@type': 'Article',
         });
     });
+
+    it('should sync static SEO tags without data-livue-head on SPA navigation', async () => {
+        document.head.innerHTML = `
+            <title>Old Title</title>
+            <meta name="csrf-token" content="test-token">
+            <link rel="canonical" href="https://example.com/old">
+            <meta name="description" content="Old description">
+            <meta property="og:title" content="Old OG">
+            <meta name="twitter:title" content="Old Twitter">
+        `;
+
+        const newPageHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Docs</title>
+                <meta name="csrf-token" content="new-token">
+                <link rel="canonical" href="https://example.com/docs">
+                <meta name="description" content="Docs description">
+                <meta name="robots" content="index,follow">
+                <meta property="og:title" content="Docs OG">
+                <meta name="twitter:title" content="Docs Twitter">
+            </head>
+            <body></body>
+            </html>
+        `;
+
+        mockFetch.mockResolvedValue(createMockResponse(newPageHtml));
+
+        await navigation.navigateTo('/docs', true, false);
+
+        const canonical = document.querySelector('link[rel="canonical"]');
+        expect(canonical).not.toBeNull();
+        expect(canonical.getAttribute('href')).toBe('https://example.com/docs');
+
+        const description = document.querySelector('meta[name="description"]');
+        expect(description).not.toBeNull();
+        expect(description.getAttribute('content')).toBe('Docs description');
+
+        const robots = document.querySelector('meta[name="robots"]');
+        expect(robots).not.toBeNull();
+        expect(robots.getAttribute('content')).toBe('index,follow');
+
+        const ogTitle = document.querySelector('meta[property="og:title"]');
+        expect(ogTitle).not.toBeNull();
+        expect(ogTitle.getAttribute('content')).toBe('Docs OG');
+
+        const twitterTitle = document.querySelector('meta[name="twitter:title"]');
+        expect(twitterTitle).not.toBeNull();
+        expect(twitterTitle.getAttribute('content')).toBe('Docs Twitter');
+    });
 });

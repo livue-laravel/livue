@@ -15,7 +15,8 @@
     <!-- livue-assets -->
 
     {{-- Your application assets go AFTER the livue-assets marker --}}
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    {{-- Uncomment if your app uses Vite --}}
+    {{-- @vite(['resources/css/app.css', 'resources/js/app.js']) --}}
 </head>
 <body>
     {!! $slot !!}

@@ -685,7 +685,11 @@ export async function navigateTo(url, pushState, isPopstate) {
             clearToken();
         }
 
-        // 10b. Update LiVue-managed <head> elements (meta, canonical, JSON-LD)
+        // 10b. Update static SEO <head> elements rendered by Blade layouts
+        //     (description, canonical, robots, OG, Twitter, keywords)
+        updateStaticSeoHeadElements(doc);
+
+        // 10c. Update LiVue-managed <head> elements (meta, canonical, JSON-LD)
         updateHeadElements(doc);
 
         // 11. Handle <head> scripts with data-navigate-track
@@ -841,6 +845,44 @@ function updateHeadElements(doc) {
     var newElements = doc.querySelectorAll('[data-livue-head]');
     newElements.forEach(function (el) {
         document.head.appendChild(el.cloneNode(true));
+    });
+}
+
+/**
+ * Update static SEO head tags during SPA navigation.
+ * This keeps canonical/description/OG/Twitter tags in sync when navigating
+ * between regular Blade pages that do not use data-livue-head.
+ *
+ * @param {Document} doc - The new document
+ */
+function updateStaticSeoHeadElements(doc) {
+    if (!doc || !doc.head || !document.head) {
+        return;
+    }
+
+    var selector = [
+        'link[rel="canonical"]',
+        'meta[name="description"]',
+        'meta[name="robots"]',
+        'meta[name="keywords"]',
+        'meta[property^="og:"]',
+        'meta[name^="twitter:"]',
+    ].join(', ');
+
+    // Remove current static SEO tags (keep LiVue-managed ones for updateHeadElements)
+    var currentElements = document.head.querySelectorAll(selector);
+    currentElements.forEach(function (el) {
+        if (!el.hasAttribute('data-livue-head')) {
+            el.remove();
+        }
+    });
+
+    // Append static SEO tags from new document (skip LiVue-managed ones)
+    var incomingElements = doc.head.querySelectorAll(selector);
+    incomingElements.forEach(function (el) {
+        if (!el.hasAttribute('data-livue-head')) {
+            document.head.appendChild(el.cloneNode(true));
+        }
     });
 }
 
