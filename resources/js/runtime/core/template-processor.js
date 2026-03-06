@@ -254,6 +254,16 @@ export function processTemplate(html, rootComponent) {
             };
 
             rootComponent._childRegistry[id] = existing;
+
+            // Mark this newly-created entry as matched so that subsequent
+            // iterations in the same processTemplate() pass cannot claim it
+            // via the name-based fallback. Without this, when a parent renders
+            // multiple children of the same component type (e.g. a @foreach
+            // over name-wrapper), the 2nd child would find the 1st child's
+            // freshly-registered entry by name and reuse its tagName, causing
+            // both to render the same template (e.g. "John John Nuno Nuno"
+            // instead of "Claudio John Taylor Nuno").
+            matchedIds[id] = true;
         }
 
         let tagName = existing.tagName;

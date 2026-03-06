@@ -2791,7 +2791,7 @@ function dn(e, t) {
           let W = t.el.querySelector('[data-livue-id="' + u + '"]');
           W && Qi(W);
         });
-      }, t._childRegistry[u] = A;
+      }, t._childRegistry[u] = A, o[u] = !0;
     }
     let L = A.tagName, I = s.dataset.livueRef;
     I && t._rootLivue && (t._rootLivue.refs[I] = {
