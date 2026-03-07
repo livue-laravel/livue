@@ -528,6 +528,9 @@ export function clearCache() {
  * Handle a redirect response from the server.
  * Decides between classic redirect and SPA navigate.
  *
+ * Server-triggered redirects (after write operations) always bypass the
+ * page cache to ensure fresh data is loaded at the destination.
+ *
  * @param {object} redirect - { url: string, navigate: boolean }
  */
 export function handleRedirect(redirect) {
@@ -536,6 +539,9 @@ export function handleRedirect(redirect) {
     }
 
     if (redirect.navigate) {
+        // Clear entire page cache: a server redirect indicates a write operation
+        // occurred, so any cached page could be stale.
+        _pageCache.clear();
         navigateTo(redirect.url, true, false);
     } else {
         _navigating = true;

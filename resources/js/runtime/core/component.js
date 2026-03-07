@@ -56,7 +56,13 @@ export default class LiVueComponent {
         // Parse snapshot from DOM. The raw JSON string is stored as the
         // opaque server snapshot for sending back to the server.
         let snapshotJson = el.dataset.livueSnapshot || '{}';
-        let snapshot = JSON.parse(snapshotJson);
+        let snapshot;
+        try {
+            snapshot = JSON.parse(snapshotJson);
+        } catch (e) {
+            console.error('[LiVue] Failed to parse component snapshot:', e);
+            snapshot = {};
+        }
         this.name = snapshot.memo ? snapshot.memo.name : '';
         // Unwrap inline tuples for Vue reactivity
         this.state = createReactiveState(unwrapState(snapshot.state || {}));
@@ -94,7 +100,11 @@ export default class LiVueComponent {
             createReactiveState: createReactiveState,
         };
 
-        this._mount(snapshot, snapshotJson);
+        try {
+            this._mount(snapshot, snapshotJson);
+        } catch (e) {
+            console.error('[LiVue] Component mount failed for element:', this.el, e);
+        }
     }
 
     /**
@@ -137,7 +147,13 @@ export default class LiVueComponent {
                 captureIgnoredContent(self.el);
 
                 // Process the new HTML (may discover new children)
-                let rootProcessed = processTemplate(newInnerHtml, self);
+                let rootProcessed;
+                try {
+                    rootProcessed = processTemplate(newInnerHtml, self);
+                } catch (e) {
+                    console.error('[LiVue] Error processing updated template:', e);
+                    return;
+                }
 
                 // Guard: abort if the Vue app was destroyed (e.g. SPA navigation)
                 if (!self.vueApp) return;
@@ -221,7 +237,13 @@ export default class LiVueComponent {
 
         // Extract nested children and transform the template
         // Now _rootLivue is set, so child refs will be properly registered
-        let processed = processTemplate(this.el.innerHTML, this);
+        let processed;
+        try {
+            processed = processTemplate(this.el.innerHTML, this);
+        } catch (e) {
+            console.error('[LiVue] Error processing initial template:', e);
+            processed = { template: this.el.innerHTML, childDefs: {} };
+        }
 
         // Populate initial validation errors from snapshot memo (e.g., after SPA navigate)
         let initialErrors = (snapshot.memo && snapshot.memo.errors) || null;
@@ -333,7 +355,11 @@ export default class LiVueComponent {
 
         // 4. Mount the Vue app
         self.el.innerHTML = '';
-        self.vueApp.mount(self.el);
+        try {
+            self.vueApp.mount(self.el);
+        } catch (e) {
+            console.error('[LiVue] Vue app mount failed:', e);
+        }
     }
 
     /**

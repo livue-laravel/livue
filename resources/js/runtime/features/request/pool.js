@@ -6,7 +6,7 @@
  */
 
 import { getToken } from '../../helpers/csrf.js';
-import { handleRedirect } from '../navigation.js';
+import { handleRedirect, clearCache } from '../navigation.js';
 import progress, { isRequestProgressEnabled } from '../../helpers/progress.js';
 import { trigger } from '../../helpers/hooks.js';
 
@@ -179,6 +179,10 @@ async function flush() {
             }
         }
 
+        // After any successful server call, invalidate the navigation page cache.
+        // Cached HTML may be stale (e.g. after save/create/delete without redirect).
+        clearCache();
+
         // Distribute update responses
         for (var i = 0; i < updateBatch.length; i++) {
             var result = responses[i];
@@ -318,6 +322,9 @@ async function sendIsolated(payload) {
             // Return a never-resolving promise — page is navigating away
             return new Promise(function () {});
         }
+
+        // Invalidate navigation cache after any successful isolated server call.
+        clearCache();
 
         if (result.error) {
             var err = new Error(result.error);

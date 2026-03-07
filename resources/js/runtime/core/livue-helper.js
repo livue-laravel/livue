@@ -262,18 +262,26 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
 
         if (response.snapshot) {
             // Parse the opaque snapshot string to extract state and memo
-            let parsed = JSON.parse(response.snapshot);
+            let parsed;
+            try {
+                parsed = JSON.parse(response.snapshot);
+            } catch (e) {
+                console.error('[LiVue] Failed to parse server snapshot:', e);
+                parsed = null;
+            }
 
-            if (parsed.state) {
+            if (parsed && parsed.state) {
                 let newState = unwrapState(parsed.state);
                 updateState(state, newState);
                 serverState = JSON.parse(JSON.stringify(newState));
             }
 
             // Store the raw snapshot string for next request
-            serverSnapshot = response.snapshot;
+            if (parsed) {
+                serverSnapshot = response.snapshot;
+            }
 
-            if (parsed.memo) {
+            if (parsed && parsed.memo) {
                 // Sync validation errors from memo
                 if (parsed.memo.errors) {
                     setErrors(livue.errors, parsed.memo.errors);
@@ -333,8 +341,13 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             // Extract transition options from memo (#[Transition])
             let transitionOpts = {};
             if (response.snapshot) {
-                let parsedSnap = JSON.parse(response.snapshot);
-                if (parsedSnap.memo) {
+                let parsedSnap;
+                try {
+                    parsedSnap = JSON.parse(response.snapshot);
+                } catch (e) {
+                    parsedSnap = null;
+                }
+                if (parsedSnap && parsedSnap.memo) {
                     if (parsedSnap.memo.transitionType) {
                         transitionOpts.transitionType = parsedSnap.memo.transitionType;
                     }

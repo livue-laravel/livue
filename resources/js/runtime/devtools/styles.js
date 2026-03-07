@@ -165,16 +165,17 @@ var CSS = `
     color: #fff;
 }
 
-/* Tabs */
+/* Top-level tabs */
 .livue-devtools__tabs {
     display: flex;
     background: #2d2d2d;
     border-bottom: 1px solid #333;
     flex-shrink: 0;
+    overflow-x: auto;
 }
 
 .livue-devtools__tab {
-    padding: 8px 16px;
+    padding: 8px 14px;
     background: transparent;
     border: none;
     color: #858585;
@@ -182,6 +183,8 @@ var CSS = `
     font-size: 12px;
     font-family: inherit;
     border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .livue-devtools__tab:hover {
@@ -197,36 +200,89 @@ var CSS = `
 /* Content */
 .livue-devtools__content {
     flex: 1;
-    overflow: auto;
-    padding: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
+/* Generic panel (all tabs) */
 .livue-devtools__panel {
     display: none;
-    height: 100%;
+    flex: 1;
+    overflow: auto;
+    flex-direction: column;
+    padding: 8px;
 }
 
 .livue-devtools__panel--active {
     display: flex;
 }
 
-/* Components Tab */
-.livue-devtools__panel--active.livue-devtools__components {
-    display: flex;
-    width: 100%;
+/* Timeline and Events manage their own internal scrolling list */
+.livue-devtools__panel[data-tab="timeline"],
+.livue-devtools__panel[data-tab="events"] {
+    overflow: hidden;
+    padding: 0;
 }
 
+/* Components panel: split layout (no padding — tree/right-pane handle it) */
+.livue-devtools__panel--components {
+    padding: 0;
+    overflow: hidden;
+    flex-direction: row;
+}
+
+/* Tree sidebar */
 .livue-devtools__tree {
-    width: 50%;
+    width: 220px;
+    flex-shrink: 0;
     border-right: 1px solid #333;
     overflow: auto;
     padding: 8px;
 }
 
-.livue-devtools__state {
-    width: 50%;
+/* Right pane */
+.livue-devtools__right-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Sub-tabs (State | Benchmark) */
+.livue-devtools__sub-tabs {
+    display: flex;
+    background: #2d2d2d;
+    border-bottom: 1px solid #333;
+    flex-shrink: 0;
+}
+
+.livue-devtools__sub-tab {
+    padding: 6px 14px;
+    background: transparent;
+    border: none;
+    color: #858585;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+    border-bottom: 2px solid transparent;
+}
+
+.livue-devtools__sub-tab:hover {
+    color: #d4d4d4;
+    background: #333;
+}
+
+.livue-devtools__sub-tab--active {
+    color: #fff;
+    border-bottom-color: #007acc;
+}
+
+/* Sub-content area */
+.livue-devtools__sub-content {
+    flex: 1;
     overflow: auto;
-    padding: 8px;
 }
 
 /* Tree Node */
@@ -400,12 +456,7 @@ var CSS = `
     color: #d4d4d4;
 }
 
-/* Timeline Tab */
-.livue-devtools__panel--active.livue-devtools__timeline {
-    flex-direction: column;
-    width: 100%;
-}
-
+/* Timeline */
 .livue-devtools__timeline-header {
     display: flex;
     justify-content: space-between;
@@ -530,12 +581,7 @@ var CSS = `
     overflow-y: auto;
 }
 
-/* Events Tab */
-.livue-devtools__panel--active.livue-devtools__events {
-    flex-direction: column;
-    width: 100%;
-}
-
+/* Events */
 .livue-devtools__events-header {
     display: flex;
     justify-content: space-between;
@@ -605,29 +651,8 @@ var CSS = `
     white-space: nowrap;
 }
 
-/* Stores Tab */
-.livue-devtools__panel--active.livue-devtools__stores {
-    flex-direction: column;
-    width: 100%;
-    padding: 8px;
-    overflow: auto;
-}
 
-/* Echo Tab */
-.livue-devtools__panel--active.livue-devtools__echo {
-    flex-direction: column;
-    width: 100%;
-    padding: 8px;
-    overflow: auto;
-}
-
-/* Performance Tab */
-.livue-devtools__panel--active.livue-devtools__perf {
-    flex-direction: column;
-    width: 100%;
-    padding: 8px;
-}
-
+/* Performance */
 .livue-devtools__perf-section {
     margin-bottom: 16px;
 }
@@ -680,14 +705,7 @@ var CSS = `
     opacity: 0.5;
 }
 
-/* Settings Tab */
-.livue-devtools__panel--active.livue-devtools__settings {
-    flex-direction: column;
-    width: 100%;
-    padding: 8px;
-    overflow: auto;
-}
-
+/* Settings */
 .livue-devtools__settings-group {
     margin-bottom: 16px;
 }

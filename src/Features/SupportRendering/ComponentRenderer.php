@@ -237,6 +237,11 @@ class ComponentRenderer
 
         try {
             $html = $component->renderView($viewName, $viewData);
+            if (! is_string($html)) {
+                throw new \RuntimeException(
+                    'Component view "' . $viewName . '" did not return a string (got ' . gettype($html) . ')'
+                );
+            }
         } finally {
             RenderingStack::pop();
         }
@@ -352,6 +357,38 @@ class ComponentRenderer
         $snapshot = ['state' => $dehydratedState, 'memo' => $memo];
 
         return json_encode($snapshot);
+    }
+
+    /**
+     * Generate an HTML error placeholder for a render exception.
+     *
+     * In debug mode, shows the exception class, message, and stack trace.
+     * In production, shows a generic error message.
+     */
+    public static function renderErrorHtml(\Throwable $e, string $componentName = ''): string
+    {
+        $label = $componentName !== '' ? htmlspecialchars($componentName) : 'Component';
+
+        if (config('app.debug', false)) {
+            $class   = htmlspecialchars(get_class($e));
+            $message = htmlspecialchars($e->getMessage());
+            $trace   = htmlspecialchars($e->getTraceAsString());
+
+            return <<<HTML
+<div data-livue-render-error style="border:2px solid #e53e3e;border-radius:6px;padding:16px;margin:8px 0;background:#fff5f5;font-family:monospace;font-size:13px;color:#742a2a;">
+  <strong style="font-size:14px;">&#x26A0; LiVue Render Error</strong> &mdash; {$label}<br><br>
+  <strong>{$class}:</strong> {$message}<br><br>
+  <details><summary style="cursor:pointer;color:#c53030;">Stack trace</summary><pre style="margin-top:8px;overflow:auto;font-size:11px;">{$trace}</pre></details>
+</div>
+HTML;
+        }
+
+        return <<<HTML
+<div data-livue-render-error style="border:2px solid #e53e3e;border-radius:6px;padding:16px;margin:8px 0;background:#fff5f5;font-family:sans-serif;color:#742a2a;">
+  <strong>Something went wrong.</strong>
+  <p style="margin:4px 0 0;">This component could not be rendered. Please try again or contact support.</p>
+</div>
+HTML;
     }
 
     /**

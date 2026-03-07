@@ -54,6 +54,14 @@ var _state = {
 
     /** @type {Array<object>} Server benchmark timings */
     serverBenchmarks: [],
+
+    /**
+     * Running average benchmark stats per component.
+     * componentId -> { count, averages: {phase: avgUs}, latest: {time, timings} }
+     * Reset when the component is destroyed.
+     * @type {Map<string, object>}
+     */
+    componentBenchmarkStats: new Map(),
 };
 
 /**
@@ -133,6 +141,7 @@ export function start() {
     _unsubscribers.push(hook('component.destroy', function (payload) {
         var comp = payload.component;
         _state.components.delete(comp.id);
+        _state.componentBenchmarkStats.delete(comp.id);
         notifyListeners();
     }));
 
@@ -233,18 +242,33 @@ export function start() {
 
     // Hook: benchmark.received
     _unsubscribers.push(hook('benchmark.received', function (payload) {
+        var now = Date.now();
+
         var entry = {
-            time: Date.now(),
+            time: now,
             componentId: payload.componentId,
             componentName: payload.componentName,
             timings: payload.timings,
         };
 
         _state.serverBenchmarks.unshift(entry);
-
-        // Limit history
         if (_state.serverBenchmarks.length > MAX_REQUESTS) {
             _state.serverBenchmarks.pop();
+        }
+
+        // Update incremental running average for this component
+        var compId = payload.componentId;
+        var stats = _state.componentBenchmarkStats.get(compId);
+        if (!stats) {
+            stats = { count: 0, averages: {}, latest: null };
+            _state.componentBenchmarkStats.set(compId, stats);
+        }
+        stats.count++;
+        stats.latest = { time: now, timings: payload.timings };
+        for (var phase in payload.timings) {
+            var newVal = payload.timings[phase];
+            var oldAvg = stats.averages[phase] || 0;
+            stats.averages[phase] = oldAvg + (newVal - oldAvg) / stats.count;
         }
 
         notifyListeners();
@@ -383,6 +407,15 @@ export function getServerBenchmarks() {
 }
 
 /**
+ * Get incremental benchmark stats for a component.
+ * @param {string} componentId
+ * @returns {{ count: number, averages: object, latest: object }|null}
+ */
+export function getComponentBenchmarkStats(componentId) {
+    return _state.componentBenchmarkStats.get(componentId) || null;
+}
+
+/**
  * Clear request history.
  */
 export function clearRequests() {
@@ -430,6 +463,7 @@ export function clearAll() {
     };
     _state.pendingSwaps.clear();
     _state.serverBenchmarks = [];
+    _state.componentBenchmarkStats.clear();
     notifyListeners();
 }
 

@@ -163,8 +163,8 @@ class LiVueRuntime {
      * Starts a MutationObserver to automatically detect new components.
      */
     boot() {
-        // Initialize devtools only in development (lazy, doesn't open panel)
-        if (process.env.NODE_ENV !== 'production' && !this._devtoolsInitialized) {
+        // Initialize devtools (lazy - doesn't open panel, collector starts only on open)
+        if (!this._devtoolsInitialized) {
             devtools.init(this);
             this._devtoolsInitialized = true;
         }
@@ -191,10 +191,8 @@ class LiVueRuntime {
         // Start observing DOM for dynamic component changes
         this._startObserver();
 
-        // Setup keyboard shortcut for devtools (Ctrl+Shift+L) - only in development
-        if (process.env.NODE_ENV !== 'production') {
-            this._setupDevtoolsShortcut();
-        }
+        // Setup keyboard shortcut for devtools (Ctrl+Shift+L)
+        this._setupDevtoolsShortcut();
 
         // Setup HMR (Hot Module Replacement) in development
         hmr.setup(this);
@@ -817,28 +815,6 @@ class LiVueRuntime {
      * const components = LiVue.devtools.getComponents();
      */
     get devtools() {
-        if (process.env.NODE_ENV === 'production') {
-            // Return no-op API in production
-            return {
-                init: function() {},
-                open: function() {},
-                close: function() {},
-                toggle: function() {},
-                isOpen: function() { return false; },
-                getComponents: function() { return []; },
-                getTimeline: function() { return []; },
-                getEvents: function() { return []; },
-                getPerf: function() { return {}; },
-                clearTimeline: function() {},
-                clearEvents: function() {},
-                clear: function() {},
-                logEvent: function() {},
-                isInitialized: function() { return false; },
-                startCollecting: function() {},
-                stopCollecting: function() {},
-                isCollecting: function() { return false; },
-            };
-        }
         return devtools;
     }
 

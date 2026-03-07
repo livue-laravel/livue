@@ -164,7 +164,16 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     extracted.html = transformedHtml;
 
     // Compile template with Vue.compile() (has internal cache for template strings)
-    let compiledRender = Vue.compile(extracted.html);
+    let compiledRender;
+    try {
+        compiledRender = Vue.compile(extracted.html);
+    } catch (compileError) {
+        console.error('[LiVue] Template compilation error in "' + (name || 'unknown') + '":', compileError);
+        compiledRender = Vue.compile(
+            '<div style="padding:8px;border:2px solid #f00;color:#f00;font-family:monospace">' +
+            '[LiVue] Template error: ' + (compileError.message || 'compilation failed') + '</div>'
+        );
+    }
     let currentRenderRef = shallowRef(compiledRender);
     let renderCache = [];
     let isRendering = false;
@@ -325,13 +334,17 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     // Vue.compile() caches by template string, so identical strings return the
     // same function reference — the === check skips unnecessary reactive updates.
     def._updateRender = function (newHtml) {
-        let newExtracted = extractSetupScript(newHtml);
-        let newTransformed = transformVModelModifiers(newExtracted.html);
-        newTransformed = transformMagicVariables(newTransformed);
-        let newCompiled = Vue.compile(newTransformed);
-        if (newCompiled === currentRenderRef.value) return;
-        renderCache.length = 0;
-        currentRenderRef.value = newCompiled;
+        try {
+            let newExtracted = extractSetupScript(newHtml);
+            let newTransformed = transformVModelModifiers(newExtracted.html);
+            newTransformed = transformMagicVariables(newTransformed);
+            let newCompiled = Vue.compile(newTransformed);
+            if (newCompiled === currentRenderRef.value) return;
+            renderCache.length = 0;
+            currentRenderRef.value = newCompiled;
+        } catch (e) {
+            console.error('[LiVue] Template update compilation error in "' + (name || 'unknown') + '":', e);
+        }
     };
 
     return def;

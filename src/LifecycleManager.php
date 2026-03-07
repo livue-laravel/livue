@@ -104,7 +104,7 @@ class LifecycleManager
         } catch (LiVueException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new ComponentMountException($component->getName(), $e);
+            throw new ComponentMountException($component->getDisplayName(), $e);
         }
     }
 
@@ -219,7 +219,7 @@ class LifecycleManager
         } catch (LiVueException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new ComponentHydrationException($componentName, $e);
+            throw new ComponentHydrationException($component->getDisplayName(), $e);
         }
         if ($bench) {
             $benchTimings['hydrate_state'] = (int) ((hrtime(true) - $benchT) / 1000);
@@ -242,7 +242,12 @@ class LifecycleManager
             $benchT = hrtime(true);
         }
         $renderer = new ComponentRenderer();
-        $htmlBefore = $renderer->renderInnerHtml($component);
+        try {
+            $htmlBefore = $renderer->renderInnerHtml($component);
+        } catch (\Throwable $e) {
+            error_log('[LiVue] Baseline render failed for ' . $componentName . ': ' . $e->getMessage());
+            $htmlBefore = '';
+        }
         if ($bench) {
             $benchTimings['baseline_render'] = (int) ((hrtime(true) - $benchT) / 1000);
         }
@@ -503,12 +508,19 @@ class LifecycleManager
             $benchT = hrtime(true);
         }
         $htmlAfter = null;
+        $renderException = null;
 
         if (! $store->get('renderless', false)) {
             $component->fireLifecycleEvent('rendering', halt: true);
 
             $this->eventBus->dispatch('component.render', $component);
-            $htmlAfter = $renderer->renderInnerHtml($component);
+            try {
+                $htmlAfter = $renderer->renderInnerHtml($component);
+            } catch (\Throwable $e) {
+                error_log('[LiVue] Render failed for ' . $componentName . ': ' . $e->getMessage());
+                $renderException = $e;
+                $htmlAfter = \LiVue\Features\SupportRendering\ComponentRenderer::renderErrorHtml($e, $componentName);
+            }
 
             $component->fireLifecycleEvent('rendered');
         }
@@ -532,11 +544,23 @@ class LifecycleManager
             $benchTimings['total'] = (int) ((hrtime(true) - $benchTotal) / 1000);
         }
 
+        $snapshotJson = json_encode(['state' => $dehydratedState, 'memo' => $newMemo]);
+        if ($snapshotJson === false) {
+            error_log('[LiVue] json_encode failed for snapshot of ' . $componentName);
+            $snapshotJson = json_encode(['state' => [], 'memo' => $newMemo]);
+        }
+
         $result = [
-            'snapshot' => json_encode(['state' => $dehydratedState, 'memo' => $newMemo]),
+            'snapshot' => $snapshotJson,
         ];
 
-        if ($htmlAfter !== null && $htmlAfter !== $htmlBefore) {
+        if ($renderException !== null) {
+            // Render failed: send error placeholder directly, skip fragment extraction
+            $result['html'] = $htmlAfter;
+            $result['renderError'] = config('app.debug', false)
+                ? $renderException->getMessage()
+                : true;
+        } elseif ($htmlAfter !== null && $htmlAfter !== $htmlBefore) {
             $fragmentNames = $store->get('fragmentNames');
 
             if ($fragmentNames) {

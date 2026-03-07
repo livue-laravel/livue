@@ -28,6 +28,7 @@ beforeEach(async () => {
     // Mock navigation
     vi.doMock('@/features/navigation.js', () => ({
         handleRedirect: vi.fn(),
+        clearCache: vi.fn(),
     }));
 
     // Mock progress

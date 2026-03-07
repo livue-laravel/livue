@@ -44,7 +44,17 @@ class LiVuePageController extends Controller
         }
 
         $renderer = new ComponentRenderer();
-        $componentHtml = $renderer->render($component);
+        try {
+            $componentHtml = $renderer->render($component);
+        } catch (\Throwable $e) {
+            $componentName = $component->getName();
+            \Illuminate\Support\Facades\Log::error('LiVue render exception', [
+                'component' => $componentName,
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            $componentHtml = ComponentRenderer::renderErrorHtml($e, $componentName);
+        }
 
         $layout = $component->getLayout()
             ?? config('livue.layout', 'components.layouts.app');

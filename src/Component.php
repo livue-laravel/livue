@@ -185,6 +185,19 @@ abstract class Component
     }
 
     /**
+     * Get the human-readable display name for this component.
+     *
+     * Always returns the kebab-case class short name, regardless of any
+     * hash-based registered name. Used in error messages and logging.
+     */
+    public function getDisplayName(): string
+    {
+        $class = (new ReflectionClass($this))->getShortName();
+
+        return strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $class));
+    }
+
+    /**
      * Get method names callable from client templates/actions.
      *
      * This list is sent in snapshot memo so the JS runtime can distinguish

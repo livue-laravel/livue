@@ -61,12 +61,19 @@ export function processTemplate(html, rootComponent) {
     nested.forEach(function (nestedEl) {
         let id = nestedEl.dataset.livueId;
         let childSnapshotJson = nestedEl.dataset.livueSnapshot || '{}';
-        let childSnapshot = JSON.parse(childSnapshotJson);
-        let name = childSnapshot.memo ? childSnapshot.memo.name : '';
-        let initialState = unwrapState(childSnapshot.state || {});
-        let childMemo = childSnapshot.memo || {};
-        let childHtml = nestedEl.innerHTML;
-        let rootTag = nestedEl.tagName.toLowerCase();
+
+        let childSnapshot, name, initialState, childMemo, childHtml, rootTag;
+        try {
+            childSnapshot = JSON.parse(childSnapshotJson);
+            name = childSnapshot.memo ? childSnapshot.memo.name : '';
+            initialState = unwrapState(childSnapshot.state || {});
+            childMemo = childSnapshot.memo || {};
+            childHtml = nestedEl.innerHTML;
+            rootTag = nestedEl.tagName.toLowerCase();
+        } catch (e) {
+            console.error('[LiVue] Failed to parse child snapshot:', id, e);
+            return; // Skip this child
+        }
 
         // Absorb sibling <script type="application/livue-setup"> elements into
         // the child's HTML. @script blocks render after the child's root element,
@@ -138,7 +145,13 @@ export function processTemplate(html, rootComponent) {
 
             let childState = createReactiveState(initialState);
             // Plain unwrapped copy for diff tracking
-            let childServerState = JSON.parse(JSON.stringify(initialState));
+            let childServerState;
+            try {
+                childServerState = JSON.parse(JSON.stringify(initialState));
+            } catch (e) {
+                console.error('[LiVue] Failed to clone child server state:', e);
+                childServerState = {};
+            }
             // Pass full memo to the helper (includes vueMethods, urlParams, isolate, reactive, etc.)
             let memo = Object.assign({ name: childMemo.name || name }, childMemo);
             let childComponentRef = { _updateTemplate: null };

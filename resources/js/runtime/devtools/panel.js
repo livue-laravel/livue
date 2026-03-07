@@ -1,8 +1,10 @@
 /**
  * LiVue DevTools - Main Panel
  *
- * Assembles all devtools modules into a single panel
- * with tab navigation.
+ * Layout:
+ *   Top tabs: Components | Timeline | Events | Stores | Echo | Performance | Settings
+ *   Components tab: tree (left, fixed) + 2 sub-tabs on the right: State | Benchmark
+ *   All other tabs: full-width, global data
  */
 
 import { injectStyles, removeStyles } from './styles.js';
@@ -11,136 +13,82 @@ import * as tree from './tree.js';
 import * as stateInspector from './state.js';
 import * as timeline from './timeline.js';
 import * as eventsPanel from './events.js';
-import { getRegistrations, getEchoSubscriptions, getPiniaStores, getServerBenchmarks } from './collector.js';
+import { getRegistrations, getEchoSubscriptions, getPiniaStores, getServerBenchmarks, getComponentBenchmarkStats } from './collector.js';
 
-/**
- * LocalStorage key for persisting state.
- */
 var STORAGE_KEY = 'livue-devtools-state';
 
-/**
- * Panel DOM element.
- * @type {HTMLElement|null}
- */
+/** @type {HTMLElement|null} */
 var _panel = null;
 
-/**
- * Active tab.
- * @type {string}
- */
+/** Active top-level tab. @type {string} */
 var _activeTab = 'components';
 
-/**
- * Whether panel is minimized.
- * @type {boolean}
- */
+/** Active sub-tab within the Components tab: 'state' | 'benchmark' @type {string} */
+var _activeSubTab = 'state';
+
+/** Currently selected component node from the tree. @type {object|null} */
+var _selectedComponent = null;
+
+/** @type {boolean} */
 var _minimized = false;
 
-/**
- * Whether panel was open (for restore on page load).
- * @type {boolean}
- */
+/** @type {boolean} */
 var _wasOpen = false;
 
-/**
- * Panel position: 'right' | 'left' | 'bottom' | 'top'
- * @type {string}
- */
+/** Panel position: 'right' | 'left' | 'bottom' | 'top' @type {string} */
 var _position = 'right';
 
-/**
- * Load persisted state from localStorage.
- */
 function loadPersistedState() {
     try {
         var stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             var state = JSON.parse(stored);
             _activeTab = state.activeTab || 'components';
+            _activeSubTab = state.activeSubTab || 'state';
             _minimized = state.minimized || false;
             _wasOpen = state.isOpen || false;
             _position = state.position || 'right';
         }
-    } catch (e) {
-        // Ignore errors
-    }
+    } catch (e) {}
 }
 
-/**
- * Save state to localStorage.
- */
 function savePersistedState() {
     try {
-        var state = {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
             isOpen: _panel !== null,
             activeTab: _activeTab,
+            activeSubTab: _activeSubTab,
             minimized: _minimized,
             position: _position,
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-        // Ignore errors
-    }
+        }));
+    } catch (e) {}
 }
 
-/**
- * Check if DevTools should auto-open on page load.
- * @returns {boolean}
- */
 export function shouldAutoOpen() {
     loadPersistedState();
     return _wasOpen;
 }
 
-/**
- * LiVue runtime reference.
- * @type {object|null}
- */
+/** @type {object|null} */
 var _runtime = null;
-
-/**
- * Refresh interval ID.
- * @type {number|null}
- */
+/** @type {number|null} */
 var _refreshInterval = null;
-
-/**
- * Keyboard shortcut handler.
- * @type {Function|null}
- */
+/** @type {Function|null} */
 var _keyHandler = null;
-
-/**
- * Collector change listener unsubscribe.
- * @type {Function|null}
- */
+/** @type {Function|null} */
 var _collectorUnsub = null;
 
-/**
- * Set the LiVue runtime reference.
- * @param {object} runtime
- */
 export function setRuntime(runtime) {
     _runtime = runtime;
     tree.setRuntime(runtime);
 }
 
-/**
- * Check if panel is open.
- * @returns {boolean}
- */
 export function isOpen() {
     return _panel !== null;
 }
 
-/**
- * Open the devtools panel.
- */
 export function open() {
-    if (_panel) {
-        return;
-    }
-
+    if (_panel) return;
     loadPersistedState();
     injectStyles();
     collector.start();
@@ -150,24 +98,17 @@ export function open() {
     savePersistedState();
 }
 
-/**
- * Close the devtools panel.
- */
 export function close() {
-    if (!_panel) {
-        return;
-    }
+    if (!_panel) return;
 
     if (_keyHandler) {
         document.removeEventListener('keydown', _keyHandler);
         _keyHandler = null;
     }
-
     if (_refreshInterval) {
         clearInterval(_refreshInterval);
         _refreshInterval = null;
     }
-
     if (_collectorUnsub) {
         _collectorUnsub();
         _collectorUnsub = null;
@@ -175,53 +116,33 @@ export function close() {
 
     _panel.remove();
     _panel = null;
+    _selectedComponent = null;
     removeStyles();
     collector.stop();
     stateInspector.clear();
     savePersistedState();
 }
 
-/**
- * Toggle the devtools panel.
- */
 export function toggle() {
-    if (_panel) {
-        close();
-    } else {
-        open();
-    }
+    if (_panel) { close(); } else { open(); }
 }
 
-/**
- * Create the panel DOM structure.
- */
-/**
- * Get minimize button icons based on position.
- * @returns {object} { expanded, minimized }
- */
 function getMinimizeIcons() {
     switch (_position) {
-        case 'left':
-            return { expanded: '\u25C0', minimized: '\u25B6' }; // ◀ ▶
-        case 'right':
-            return { expanded: '\u25B6', minimized: '\u25C0' }; // ▶ ◀
-        case 'top':
-            return { expanded: '\u25B2', minimized: '\u25BC' }; // ▲ ▼
-        case 'bottom':
-            return { expanded: '\u25BC', minimized: '\u25B2' }; // ▼ ▲
-        default:
-            return { expanded: '\u25B6', minimized: '\u25C0' };
+        case 'left':   return { expanded: '\u25C0', minimized: '\u25B6' };
+        case 'right':  return { expanded: '\u25B6', minimized: '\u25C0' };
+        case 'top':    return { expanded: '\u25B2', minimized: '\u25BC' };
+        case 'bottom': return { expanded: '\u25BC', minimized: '\u25B2' };
+        default:       return { expanded: '\u25B6', minimized: '\u25C0' };
     }
 }
 
 function createPanel() {
     _panel = document.createElement('div');
     _panel.className = 'livue-devtools livue-devtools--' + _position;
-    if (_minimized) {
-        _panel.classList.add('livue-devtools--minimized');
-    }
+    if (_minimized) _panel.classList.add('livue-devtools--minimized');
 
-    // Header
+    // ── Header ────────────────────────────────────────────────────────────────
     var header = document.createElement('div');
     header.className = 'livue-devtools__header';
 
@@ -256,150 +177,121 @@ function createPanel() {
     header.appendChild(actions);
     _panel.appendChild(header);
 
-    // Tabs
+    // ── Top-level tabs ────────────────────────────────────────────────────────
     var tabs = document.createElement('div');
     tabs.className = 'livue-devtools__tabs';
 
-    var tabNames = ['components', 'timeline', 'events', 'stores', 'echo', 'perf', 'settings'];
-    var tabLabels = {
-        components: 'Components',
-        timeline: 'Timeline',
-        events: 'Events',
-        stores: 'Stores',
-        echo: 'Echo',
-        perf: 'Performance',
-        settings: 'Settings',
-    };
+    var tabDefs = [
+        { id: 'components', label: 'Components' },
+        { id: 'timeline',   label: 'Timeline' },
+        { id: 'events',     label: 'Events' },
+        { id: 'stores',     label: 'Stores' },
+        { id: 'echo',       label: 'Echo' },
+        { id: 'perf',       label: 'Performance' },
+        { id: 'settings',   label: 'Settings' },
+    ];
 
-    tabNames.forEach(function (name) {
-        var tab = document.createElement('button');
-        tab.className = 'livue-devtools__tab';
-        if (name === _activeTab) {
-            tab.classList.add('livue-devtools__tab--active');
-        }
-        tab.textContent = tabLabels[name];
-        tab.addEventListener('click', function () {
-            switchTab(name);
-        });
-        tabs.appendChild(tab);
+    tabDefs.forEach(function (def) {
+        var btn = document.createElement('button');
+        btn.className = 'livue-devtools__tab';
+        if (def.id === _activeTab) btn.classList.add('livue-devtools__tab--active');
+        btn.textContent = def.label;
+        btn.addEventListener('click', function () { switchTab(def.id); });
+        tabs.appendChild(btn);
     });
 
     _panel.appendChild(tabs);
 
-    // Content
+    // ── Content ───────────────────────────────────────────────────────────────
     var content = document.createElement('div');
     content.className = 'livue-devtools__content';
 
-    // Components panel
+    // ── Components panel: tree (left) + right pane with sub-tabs ─────────────
     var componentsPanel = document.createElement('div');
-    componentsPanel.className = 'livue-devtools__panel livue-devtools__components';
+    componentsPanel.className = 'livue-devtools__panel livue-devtools__panel--components';
     componentsPanel.dataset.tab = 'components';
-    if (_activeTab === 'components') {
-        componentsPanel.classList.add('livue-devtools__panel--active');
-    }
+    if (_activeTab === 'components') componentsPanel.classList.add('livue-devtools__panel--active');
 
     var treeContainer = document.createElement('div');
     treeContainer.className = 'livue-devtools__tree';
     componentsPanel.appendChild(treeContainer);
 
-    var stateContainer = document.createElement('div');
-    stateContainer.className = 'livue-devtools__state';
-    componentsPanel.appendChild(stateContainer);
+    var rightPane = document.createElement('div');
+    rightPane.className = 'livue-devtools__right-pane';
 
+    // Sub-tabs: State | Benchmark
+    var subTabs = document.createElement('div');
+    subTabs.className = 'livue-devtools__sub-tabs';
+
+    [{ id: 'state', label: 'State' }, { id: 'benchmark', label: 'Benchmark' }].forEach(function (def) {
+        var btn = document.createElement('button');
+        btn.className = 'livue-devtools__sub-tab';
+        if (def.id === _activeSubTab) btn.classList.add('livue-devtools__sub-tab--active');
+        btn.textContent = def.label;
+        btn.addEventListener('click', function () { switchSubTab(def.id); });
+        subTabs.appendChild(btn);
+    });
+
+    rightPane.appendChild(subTabs);
+
+    var subContent = document.createElement('div');
+    subContent.className = 'livue-devtools__sub-content';
+
+    ['state', 'benchmark'].forEach(function (id) {
+        var panel = document.createElement('div');
+        panel.className = 'livue-devtools__panel';
+        panel.dataset.subtab = id;
+        if (id === _activeSubTab) panel.classList.add('livue-devtools__panel--active');
+        subContent.appendChild(panel);
+    });
+
+    rightPane.appendChild(subContent);
+    componentsPanel.appendChild(rightPane);
     content.appendChild(componentsPanel);
 
-    // Timeline panel
-    var timelinePanel = document.createElement('div');
-    timelinePanel.className = 'livue-devtools__panel livue-devtools__timeline';
-    timelinePanel.dataset.tab = 'timeline';
-    if (_activeTab === 'timeline') {
-        timelinePanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(timelinePanel);
-
-    // Events panel
-    var eventsContainerPanel = document.createElement('div');
-    eventsContainerPanel.className = 'livue-devtools__panel livue-devtools__events';
-    eventsContainerPanel.dataset.tab = 'events';
-    if (_activeTab === 'events') {
-        eventsContainerPanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(eventsContainerPanel);
-
-    // Stores panel
-    var storesPanel = document.createElement('div');
-    storesPanel.className = 'livue-devtools__panel livue-devtools__stores';
-    storesPanel.dataset.tab = 'stores';
-    if (_activeTab === 'stores') {
-        storesPanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(storesPanel);
-
-    // Echo panel
-    var echoPanel = document.createElement('div');
-    echoPanel.className = 'livue-devtools__panel livue-devtools__echo';
-    echoPanel.dataset.tab = 'echo';
-    if (_activeTab === 'echo') {
-        echoPanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(echoPanel);
-
-    // Performance panel
-    var perfPanel = document.createElement('div');
-    perfPanel.className = 'livue-devtools__panel livue-devtools__perf';
-    perfPanel.dataset.tab = 'perf';
-    if (_activeTab === 'perf') {
-        perfPanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(perfPanel);
-
-    // Settings panel
-    var settingsPanel = document.createElement('div');
-    settingsPanel.className = 'livue-devtools__panel livue-devtools__settings';
-    settingsPanel.dataset.tab = 'settings';
-    if (_activeTab === 'settings') {
-        settingsPanel.classList.add('livue-devtools__panel--active');
-    }
-    content.appendChild(settingsPanel);
+    // ── Global tabs (full-width) ───────────────────────────────────────────────
+    ['timeline', 'events', 'stores', 'echo', 'perf', 'settings'].forEach(function (id) {
+        var panel = document.createElement('div');
+        panel.className = 'livue-devtools__panel';
+        panel.dataset.tab = id;
+        if (id === _activeTab) panel.classList.add('livue-devtools__panel--active');
+        content.appendChild(panel);
+    });
 
     _panel.appendChild(content);
     document.body.appendChild(_panel);
 
-    // Setup tree selection callback
+    // ── Tree selection callback ────────────────────────────────────────────────
     tree.onSelect(function (node) {
+        _selectedComponent = node;
         stateInspector.setComponent(node);
-        stateInspector.render(stateContainer);
+        renderComponentsRight();
     });
 
-    // Initial render
+    // ── Initial render ─────────────────────────────────────────────────────────
     renderActiveTab();
 
-    // Listen for collector changes
+    // ── Collector changes ──────────────────────────────────────────────────────
     _collectorUnsub = collector.onChange(function () {
         renderActiveTab();
     });
 }
 
 /**
- * Switch to a different tab.
+ * Switch the active top-level tab.
  * @param {string} tabName
  */
 function switchTab(tabName) {
-    if (tabName === _activeTab) {
-        return;
-    }
-
+    if (tabName === _activeTab) return;
     _activeTab = tabName;
 
-    // Update tab buttons
-    var tabs = _panel.querySelectorAll('.livue-devtools__tab');
-    var names = ['components', 'timeline', 'events', 'stores', 'echo', 'perf', 'settings'];
-    tabs.forEach(function (tab, index) {
-        tab.classList.toggle('livue-devtools__tab--active', names[index] === tabName);
+    var btns = _panel.querySelectorAll('.livue-devtools__tab');
+    var ids = ['components', 'timeline', 'events', 'stores', 'echo', 'perf', 'settings'];
+    btns.forEach(function (btn, i) {
+        btn.classList.toggle('livue-devtools__tab--active', ids[i] === tabName);
     });
 
-    // Update panels
-    var panels = _panel.querySelectorAll('.livue-devtools__panel');
+    var panels = _panel.querySelectorAll('.livue-devtools__panel[data-tab]');
     panels.forEach(function (panel) {
         panel.classList.toggle('livue-devtools__panel--active', panel.dataset.tab === tabName);
     });
@@ -409,66 +301,179 @@ function switchTab(tabName) {
 }
 
 /**
- * Render the active tab content.
+ * Switch the active sub-tab within the Components panel.
+ * @param {string} subTabName - 'state' | 'benchmark'
+ */
+function switchSubTab(subTabName) {
+    if (subTabName === _activeSubTab) return;
+    _activeSubTab = subTabName;
+
+    var btns = _panel.querySelectorAll('.livue-devtools__sub-tab');
+    var ids = ['state', 'benchmark'];
+    btns.forEach(function (btn, i) {
+        btn.classList.toggle('livue-devtools__sub-tab--active', ids[i] === subTabName);
+    });
+
+    var panels = _panel.querySelectorAll('.livue-devtools__panel[data-subtab]');
+    panels.forEach(function (panel) {
+        panel.classList.toggle('livue-devtools__panel--active', panel.dataset.subtab === subTabName);
+    });
+
+    renderComponentsRight();
+    savePersistedState();
+}
+
+/**
+ * Render the right-pane content of the Components tab (sub-tabs).
+ */
+function renderComponentsRight() {
+    if (!_panel) return;
+
+    if (_activeSubTab === 'state') {
+        var statePanel = _panel.querySelector('.livue-devtools__panel[data-subtab="state"]');
+        if (statePanel) stateInspector.render(statePanel);
+    } else {
+        var benchmarkPanel = _panel.querySelector('.livue-devtools__panel[data-subtab="benchmark"]');
+        if (benchmarkPanel) renderBenchmarkPanel(benchmarkPanel, _selectedComponent);
+    }
+}
+
+/**
+ * Render the active top-level tab content.
  */
 function renderActiveTab() {
-    if (!_panel) {
-        return;
-    }
+    if (!_panel) return;
 
     switch (_activeTab) {
         case 'components':
             var treeContainer = _panel.querySelector('.livue-devtools__tree');
-            var stateContainer = _panel.querySelector('.livue-devtools__state');
-            if (treeContainer) {
-                tree.render(treeContainer);
-            }
-            if (stateContainer) {
-                stateInspector.render(stateContainer);
-            }
+            if (treeContainer) tree.render(treeContainer);
+            renderComponentsRight();
             break;
 
         case 'timeline':
-            var timelineContainer = _panel.querySelector('.livue-devtools__timeline');
-            if (timelineContainer) {
-                timeline.render(timelineContainer);
-            }
+            var timelineContainer = _panel.querySelector('.livue-devtools__panel[data-tab="timeline"]');
+            if (timelineContainer) timeline.render(timelineContainer);
             break;
 
         case 'events':
-            var eventsContainer = _panel.querySelector('.livue-devtools__events');
-            if (eventsContainer) {
-                eventsPanel.render(eventsContainer);
-            }
+            var eventsContainer = _panel.querySelector('.livue-devtools__panel[data-tab="events"]');
+            if (eventsContainer) eventsPanel.render(eventsContainer);
             break;
 
         case 'stores':
-            var storesContainer = _panel.querySelector('.livue-devtools__stores');
-            if (storesContainer) {
-                renderStoresPanel(storesContainer);
-            }
+            var storesContainer = _panel.querySelector('.livue-devtools__panel[data-tab="stores"]');
+            if (storesContainer) renderStoresPanel(storesContainer);
             break;
 
         case 'echo':
-            var echoContainer = _panel.querySelector('.livue-devtools__echo');
-            if (echoContainer) {
-                renderEchoPanel(echoContainer);
-            }
+            var echoContainer = _panel.querySelector('.livue-devtools__panel[data-tab="echo"]');
+            if (echoContainer) renderEchoPanel(echoContainer);
             break;
 
         case 'perf':
-            var perfContainer = _panel.querySelector('.livue-devtools__perf');
-            if (perfContainer) {
-                renderPerfPanel(perfContainer);
-            }
+            var perfContainer = _panel.querySelector('.livue-devtools__panel[data-tab="perf"]');
+            if (perfContainer) renderPerfPanel(perfContainer);
             break;
 
         case 'settings':
-            var settingsContainer = _panel.querySelector('.livue-devtools__settings');
-            if (settingsContainer) {
-                renderSettingsPanel(settingsContainer);
-            }
+            var settingsContainer = _panel.querySelector('.livue-devtools__panel[data-tab="settings"]');
+            if (settingsContainer) renderSettingsPanel(settingsContainer);
             break;
+    }
+}
+
+/**
+ * Render the Benchmark sub-tab: Server Lifecycle Timing for the selected component.
+ * @param {HTMLElement} container
+ * @param {object|null} selectedComponent
+ */
+function renderBenchmarkPanel(container, selectedComponent) {
+    container.innerHTML = '';
+
+    var allBenchmarks = getServerBenchmarks();
+
+    if (allBenchmarks.length === 0) {
+        var noBench = document.createElement('div');
+        noBench.className = 'livue-devtools__empty';
+        noBench.innerHTML = '<div class="livue-devtools__empty-icon">&#9201;</div>' +
+            'No benchmark data.<br><br>' +
+            '<span style="font-size: 11px; color: #858585;">Set LIVUE_BENCHMARK=true in .env to enable.</span>';
+        container.appendChild(noBench);
+        return;
+    }
+
+    if (!selectedComponent) {
+        var noSelect = document.createElement('div');
+        noSelect.className = 'livue-devtools__empty';
+        noSelect.innerHTML = '<div class="livue-devtools__empty-icon">&#x1F4CA;</div>' +
+            'Select a component from the tree<br>to see its benchmark data.';
+        container.appendChild(noSelect);
+        return;
+    }
+
+    var benchmarks = allBenchmarks.filter(function (b) {
+        return b.componentId === selectedComponent.id;
+    });
+
+    if (benchmarks.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'livue-devtools__empty';
+        empty.innerHTML = '<div class="livue-devtools__empty-icon">&#9201;</div>' +
+            'No benchmark data for <strong style="color:#4ec9b0">' + selectedComponent.name + '</strong> yet.';
+        container.appendChild(empty);
+        return;
+    }
+
+    // Latest entry
+    var latest = benchmarks[0];
+
+    var latestSection = document.createElement('div');
+    latestSection.className = 'livue-devtools__perf-section';
+
+    var latestTitle = document.createElement('div');
+    latestTitle.className = 'livue-devtools__perf-title';
+    latestTitle.textContent = 'Latest — ' + selectedComponent.name;
+    latestSection.appendChild(latestTitle);
+
+    var latestTime = document.createElement('div');
+    latestTime.style.cssText = 'color: #858585; font-size: 11px; margin-bottom: 6px;';
+    latestTime.textContent = collector.formatTimestamp(latest.time);
+    latestSection.appendChild(latestTime);
+
+    var userPhases = ['mount', 'method_call', 'render', 'total'];
+    for (var phase in latest.timings) {
+        var us = latest.timings[phase];
+        var ms = us / 1000;
+        var isUserPhase = userPhases.indexOf(phase) !== -1;
+        var greenMax = isUserPhase ? 50 : 5;
+        var yellowMax = isUserPhase ? 200 : 20;
+        var colorClass = ms < greenMax ? 'good' : (ms < yellowMax ? 'warn' : 'bad');
+        latestSection.appendChild(createStat(phase, formatUs(us), colorClass));
+    }
+
+    container.appendChild(latestSection);
+
+    // Running averages (only if more than 1 request in this session)
+    var stats = getComponentBenchmarkStats(selectedComponent.id);
+    if (stats && stats.count > 1) {
+        var avgSection = document.createElement('div');
+        avgSection.className = 'livue-devtools__perf-section';
+
+        var avgTitle = document.createElement('div');
+        avgTitle.className = 'livue-devtools__perf-title';
+        avgTitle.textContent = 'Session Average (' + stats.count + ' requests)';
+        avgSection.appendChild(avgTitle);
+
+        for (var avgPhase in stats.averages) {
+            var avgUs = Math.round(stats.averages[avgPhase]);
+            var avgMs = avgUs / 1000;
+            var isUserAvg = userPhases.indexOf(avgPhase) !== -1;
+            var avgColor = avgMs < (isUserAvg ? 50 : 5) ? 'good' : (avgMs < (isUserAvg ? 200 : 20) ? 'warn' : 'bad');
+            avgSection.appendChild(createStat(avgPhase, formatUs(avgUs), avgColor));
+        }
+
+        container.appendChild(avgSection);
     }
 }
 
@@ -478,12 +483,10 @@ function renderActiveTab() {
  */
 function renderStoresPanel(container) {
     container.innerHTML = '';
-    container.style.cssText = 'flex-direction: column; width: 100%; padding: 8px;';
 
     var registrations = getRegistrations();
     var stores = registrations.stores;
 
-    // Title
     var title = document.createElement('div');
     title.className = 'livue-devtools__perf-title';
     title.textContent = 'Registered Pinia Stores';
@@ -518,7 +521,6 @@ function renderStoresPanel(container) {
         container.appendChild(storeEl);
     });
 
-    // Also show other registrations
     var otherTitle = document.createElement('div');
     otherTitle.className = 'livue-devtools__perf-title';
     otherTitle.style.marginTop = '16px';
@@ -526,7 +528,7 @@ function renderStoresPanel(container) {
     container.appendChild(otherTitle);
 
     var otherInfo = [
-        { label: 'Plugins', count: registrations.plugins.length, items: registrations.plugins.map(function (p) { return p.name; }) },
+        { label: 'Plugins',    count: registrations.plugins.length,    items: registrations.plugins.map(function (p) { return p.name; }) },
         { label: 'Components', count: registrations.components.length, items: registrations.components.map(function (c) { return c.name; }) },
         { label: 'Directives', count: registrations.directives.length, items: registrations.directives.map(function (d) { return d.name; }) },
     ];
@@ -555,11 +557,9 @@ function renderStoresPanel(container) {
  */
 function renderEchoPanel(container) {
     container.innerHTML = '';
-    container.style.cssText = 'flex-direction: column; width: 100%; padding: 8px;';
 
     var echoInfo = getEchoSubscriptions();
 
-    // Status
     var statusSection = document.createElement('div');
     statusSection.className = 'livue-devtools__perf-section';
 
@@ -592,7 +592,6 @@ function renderEchoPanel(container) {
         return;
     }
 
-    // Channels
     var channelsSection = document.createElement('div');
     channelsSection.className = 'livue-devtools__perf-section';
 
@@ -614,14 +613,11 @@ function renderEchoPanel(container) {
             var badge = document.createElement('span');
             badge.style.cssText = 'padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;';
             if (channel.type === 'private') {
-                badge.style.background = '#4d3a12';
-                badge.style.color = '#dcdcaa';
+                badge.style.background = '#4d3a12'; badge.style.color = '#dcdcaa';
             } else if (channel.type === 'presence') {
-                badge.style.background = '#264f78';
-                badge.style.color = '#9cdcfe';
+                badge.style.background = '#264f78'; badge.style.color = '#9cdcfe';
             } else {
-                badge.style.background = '#2d4a2d';
-                badge.style.color = '#6a9955';
+                badge.style.background = '#2d4a2d'; badge.style.color = '#6a9955';
             }
             badge.textContent = channel.type;
             channelRow.appendChild(badge);
@@ -636,7 +632,6 @@ function renderEchoPanel(container) {
     }
     container.appendChild(channelsSection);
 
-    // Subscriptions
     var subsSection = document.createElement('div');
     subsSection.className = 'livue-devtools__perf-section';
 
@@ -665,7 +660,7 @@ function renderEchoPanel(container) {
 }
 
 /**
- * Render the performance panel.
+ * Render the performance panel (global stats only).
  * @param {HTMLElement} container
  */
 function renderPerfPanel(container) {
@@ -673,7 +668,6 @@ function renderPerfPanel(container) {
 
     var perf = collector.getPerf();
 
-    // Requests section
     var requestsSection = document.createElement('div');
     requestsSection.className = 'livue-devtools__perf-section';
 
@@ -688,7 +682,6 @@ function renderPerfPanel(container) {
 
     container.appendChild(requestsSection);
 
-    // Timing section
     var timingSection = document.createElement('div');
     timingSection.className = 'livue-devtools__perf-section';
 
@@ -708,7 +701,6 @@ function renderPerfPanel(container) {
 
     container.appendChild(timingSection);
 
-    // Template swaps section
     var swapsSection = document.createElement('div');
     swapsSection.className = 'livue-devtools__perf-section';
 
@@ -724,7 +716,6 @@ function renderPerfPanel(container) {
 
     container.appendChild(swapsSection);
 
-    // Components section
     var componentsSection = document.createElement('div');
     componentsSection.className = 'livue-devtools__perf-section';
 
@@ -742,70 +733,6 @@ function renderPerfPanel(container) {
     componentsSection.appendChild(createStat('Total', components.length));
 
     container.appendChild(componentsSection);
-
-    // Server Lifecycle Timing section
-    var benchmarks = getServerBenchmarks();
-
-    var serverSection = document.createElement('div');
-    serverSection.className = 'livue-devtools__perf-section';
-
-    var serverTitle = document.createElement('div');
-    serverTitle.className = 'livue-devtools__perf-title';
-    serverTitle.textContent = 'Server Lifecycle Timing';
-    serverSection.appendChild(serverTitle);
-
-    if (benchmarks.length === 0) {
-        var noBench = document.createElement('div');
-        noBench.style.cssText = 'color: #858585; font-size: 11px;';
-        noBench.textContent = 'No benchmark data. Set LIVUE_BENCHMARK=true in .env to enable.';
-        serverSection.appendChild(noBench);
-    } else {
-        // Show the most recent benchmark
-        var latest = benchmarks[0];
-
-        var latestLabel = document.createElement('div');
-        latestLabel.style.cssText = 'color: #9cdcfe; font-size: 11px; margin-bottom: 6px;';
-        latestLabel.textContent = 'Latest: ' + latest.componentName + ' (' + collector.formatTimestamp(latest.time) + ')';
-        serverSection.appendChild(latestLabel);
-
-        var userPhases = ['mount', 'method_call', 'render', 'total'];
-        for (var phase in latest.timings) {
-            var us = latest.timings[phase];
-            var ms = us / 1000;
-            var isUserPhase = userPhases.indexOf(phase) !== -1;
-            var greenMax = isUserPhase ? 50 : 5;
-            var yellowMax = isUserPhase ? 200 : 20;
-            var colorClass = ms < greenMax ? 'good' : (ms < yellowMax ? 'warn' : 'bad');
-            serverSection.appendChild(createStat(phase, formatUs(us), colorClass));
-        }
-
-        // Show historical averages per component
-        var avgByComponent = {};
-        for (var bi = 0; bi < benchmarks.length; bi++) {
-            var b = benchmarks[bi];
-            if (!avgByComponent[b.componentName]) {
-                avgByComponent[b.componentName] = { count: 0, totalUs: 0 };
-            }
-            var total = b.timings.total || 0;
-            avgByComponent[b.componentName].count++;
-            avgByComponent[b.componentName].totalUs += total;
-        }
-
-        var avgTitle = document.createElement('div');
-        avgTitle.style.cssText = 'color: #858585; font-size: 11px; margin-top: 8px; margin-bottom: 4px;';
-        avgTitle.textContent = 'Averages (total per component):';
-        serverSection.appendChild(avgTitle);
-
-        for (var compName in avgByComponent) {
-            var info = avgByComponent[compName];
-            var avgUs = Math.round(info.totalUs / info.count);
-            var avgMs = avgUs / 1000;
-            var avgColor = avgMs < 50 ? 'good' : (avgMs < 200 ? 'warn' : 'bad');
-            serverSection.appendChild(createStat(compName + ' (' + info.count + 'x)', formatUs(avgUs), avgColor));
-        }
-    }
-
-    container.appendChild(serverSection);
 }
 
 /**
@@ -815,7 +742,6 @@ function renderPerfPanel(container) {
 function renderSettingsPanel(container) {
     container.innerHTML = '';
 
-    // Position setting
     var positionGroup = document.createElement('div');
     positionGroup.className = 'livue-devtools__settings-group';
 
@@ -828,18 +754,16 @@ function renderSettingsPanel(container) {
     positionOptions.className = 'livue-devtools__settings-options';
 
     var positions = [
-        { id: 'right', label: 'Right', icon: '\u25B6' },
-        { id: 'left', label: 'Left', icon: '\u25C0' },
+        { id: 'right',  label: 'Right',  icon: '\u25B6' },
+        { id: 'left',   label: 'Left',   icon: '\u25C0' },
         { id: 'bottom', label: 'Bottom', icon: '\u25BC' },
-        { id: 'top', label: 'Top', icon: '\u25B2' },
+        { id: 'top',    label: 'Top',    icon: '\u25B2' },
     ];
 
     positions.forEach(function (pos) {
         var btn = document.createElement('button');
         btn.className = 'livue-devtools__settings-btn';
-        if (_position === pos.id) {
-            btn.classList.add('livue-devtools__settings-btn--active');
-        }
+        if (_position === pos.id) btn.classList.add('livue-devtools__settings-btn--active');
 
         var icon = document.createElement('span');
         icon.className = 'livue-devtools__settings-btn-icon';
@@ -850,17 +774,13 @@ function renderSettingsPanel(container) {
         label.textContent = pos.label;
         btn.appendChild(label);
 
-        btn.addEventListener('click', function () {
-            setPosition(pos.id);
-        });
-
+        btn.addEventListener('click', function () { setPosition(pos.id); });
         positionOptions.appendChild(btn);
     });
 
     positionGroup.appendChild(positionOptions);
     container.appendChild(positionGroup);
 
-    // Info section
     var infoGroup = document.createElement('div');
     infoGroup.className = 'livue-devtools__settings-group';
 
@@ -869,68 +789,40 @@ function renderSettingsPanel(container) {
     infoLabel.textContent = 'Keyboard Shortcuts';
     infoGroup.appendChild(infoLabel);
 
-    var shortcuts = [
-        { key: 'Ctrl+Shift+L', desc: 'Toggle DevTools' },
-    ];
+    var row = document.createElement('div');
+    row.className = 'livue-devtools__perf-stat';
 
-    shortcuts.forEach(function (shortcut) {
-        var row = document.createElement('div');
-        row.className = 'livue-devtools__perf-stat';
+    var keySpan = document.createElement('span');
+    keySpan.style.cssText = 'color: #dcdcaa; font-family: monospace;';
+    keySpan.textContent = 'Ctrl+Shift+L';
+    row.appendChild(keySpan);
 
-        var keySpan = document.createElement('span');
-        keySpan.style.cssText = 'color: #dcdcaa; font-family: monospace;';
-        keySpan.textContent = shortcut.key;
-        row.appendChild(keySpan);
+    var descSpan = document.createElement('span');
+    descSpan.style.color = '#858585';
+    descSpan.textContent = 'Toggle DevTools';
+    row.appendChild(descSpan);
 
-        var descSpan = document.createElement('span');
-        descSpan.style.color = '#858585';
-        descSpan.textContent = shortcut.desc;
-        row.appendChild(descSpan);
-
-        infoGroup.appendChild(row);
-    });
-
+    infoGroup.appendChild(row);
     container.appendChild(infoGroup);
 }
 
-/**
- * Set the panel position and re-create the panel.
- * @param {string} position - 'right' | 'left' | 'bottom' | 'top'
- */
 function setPosition(position) {
-    if (_position === position) {
-        return;
-    }
-
+    if (_position === position) return;
     _position = position;
     savePersistedState();
 
-    // Update panel class
     if (_panel) {
         _panel.className = 'livue-devtools livue-devtools--' + _position;
-        if (_minimized) {
-            _panel.classList.add('livue-devtools--minimized');
-        }
+        if (_minimized) _panel.classList.add('livue-devtools--minimized');
 
-        // Update minimize button icon
         var icons = getMinimizeIcons();
         var minimizeBtn = _panel.querySelector('.livue-devtools__btn');
-        if (minimizeBtn) {
-            minimizeBtn.textContent = _minimized ? icons.minimized : icons.expanded;
-        }
+        if (minimizeBtn) minimizeBtn.textContent = _minimized ? icons.minimized : icons.expanded;
 
-        // Re-render settings to update active button
         renderActiveTab();
     }
 }
 
-/**
- * Create a stat row.
- * @param {string} label
- * @param {*} value
- * @param {string|null} valueClass
- * @returns {HTMLElement}
- */
 function createStat(label, value, valueClass) {
     var stat = document.createElement('div');
     stat.className = 'livue-devtools__perf-stat';
@@ -942,49 +834,25 @@ function createStat(label, value, valueClass) {
 
     var valueSpan = document.createElement('span');
     valueSpan.className = 'livue-devtools__perf-value';
-    if (valueClass) {
-        valueSpan.classList.add('livue-devtools__perf-value--' + valueClass);
-    }
+    if (valueClass) valueSpan.classList.add('livue-devtools__perf-value--' + valueClass);
     valueSpan.textContent = String(value);
     stat.appendChild(valueSpan);
 
     return stat;
 }
 
-/**
- * Format milliseconds for display.
- * @param {number} ms
- * @returns {string}
- */
 function formatMs(ms) {
-    if (ms === 0 || isNaN(ms) || !isFinite(ms)) {
-        return '-';
-    }
-    if (ms < 1) {
-        return '<1ms';
-    }
+    if (ms === 0 || isNaN(ms) || !isFinite(ms)) return '-';
+    if (ms < 1) return '<1ms';
     return Math.round(ms) + 'ms';
 }
 
-/**
- * Format microseconds for display.
- * Shows as microseconds if < 1000, otherwise as milliseconds.
- * @param {number} us
- * @returns {string}
- */
 function formatUs(us) {
-    if (us === 0 || isNaN(us) || !isFinite(us)) {
-        return '-';
-    }
-    if (us < 1000) {
-        return us + '\u00B5s';
-    }
+    if (us === 0 || isNaN(us) || !isFinite(us)) return '-';
+    if (us < 1000) return us + '\u00B5s';
     return (us / 1000).toFixed(2) + 'ms';
 }
 
-/**
- * Setup keyboard shortcut (Ctrl+Shift+L).
- */
 function setupKeyboardShortcut() {
     _keyHandler = function (e) {
         if (e.ctrlKey && e.shiftKey && e.key === 'L') {
@@ -995,22 +863,12 @@ function setupKeyboardShortcut() {
     document.addEventListener('keydown', _keyHandler);
 }
 
-/**
- * Setup auto-refresh for live updates.
- */
 function setupAutoRefresh() {
-    // Refresh components tab periodically to catch state changes
     _refreshInterval = setInterval(function () {
         if (_panel && _activeTab === 'components') {
             var treeContainer = _panel.querySelector('.livue-devtools__tree');
-            var stateContainer = _panel.querySelector('.livue-devtools__state');
-
-            if (treeContainer) {
-                tree.render(treeContainer);
-            }
-            if (stateContainer) {
-                stateInspector.render(stateContainer);
-            }
+            if (treeContainer) tree.render(treeContainer);
+            renderComponentsRight();
         }
     }, 500);
 }
