@@ -34,6 +34,10 @@ trait HandlesState
                 continue;
             }
 
+            if (! $property->isInitialized($this)) {
+                continue;
+            }
+
             $state[$name] = $property->getValue($this);
         }
 
@@ -76,7 +80,7 @@ trait HandlesState
             }
 
             // Capture old value for array key change detection
-            $oldValue = $this->{$key} ?? null;
+            $oldValue = $property->isInitialized($this) ? $this->{$key} : null;
 
             $casted = $this->castValue($property, $value);
 
