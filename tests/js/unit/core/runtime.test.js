@@ -62,6 +62,27 @@ beforeEach(async () => {
         },
     }));
 
+    // Mock plugin registry
+    vi.doMock('@/core/plugin-registry.js', () => ({
+        registerPlugin: vi.fn(),
+        disablePlugin: vi.fn(),
+        applyPlugins: vi.fn(),
+        getPluginComposables: vi.fn(() => ({})),
+        getPluginDirectives: vi.fn(() => []),
+        _reset: vi.fn(),
+    }));
+
+    // Mock built-in plugins
+    vi.doMock('@/features/plugins/progress-plugin.js', () => ({
+        ProgressPlugin: { name: 'livue:progress', install: vi.fn() },
+    }));
+    vi.doMock('@/features/plugins/devtools-plugin.js', () => ({
+        DevtoolsPlugin: { name: 'livue:devtools', install: vi.fn() },
+    }));
+    vi.doMock('@/features/plugins/debug-plugin.js', () => ({
+        DebugPlugin: { name: 'livue:debug', install: vi.fn() },
+    }));
+
     // Mock directives
     vi.doMock('@/directives/index.js', () => ({
         registerBuiltInDirectives: vi.fn(),

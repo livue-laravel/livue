@@ -13,6 +13,7 @@ use LiVue\LiVueManager;
  * @method static \LiVue\Component resolve(string $name)
  * @method static \LiVue\Component resolveByClass(string $class)
  * @method static \LiVue\Features\SupportTesting\Testable test(string $componentClass, array $params = [])
+ * @method static string|null installedVersion()
  * @method static string|null getNonce()
  * @method static string renderOnRequestStyle(string $id, string $package = 'app')
  * @method static string renderOnRequestScript(string $id, string $package = 'app', array $options = [])

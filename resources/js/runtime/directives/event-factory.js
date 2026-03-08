@@ -121,6 +121,44 @@ function matchesKeyModifiers(event, modifiers) {
 }
 
 /**
+ * Resolve method name, args, and optional direct function from a binding value.
+ *
+ * @param {*} value - binding.value
+ * @param {string|null} arg - binding.arg
+ * @param {boolean} allowArg - whether arg-based binding is supported
+ * @returns {{ methodName: string|null, args: Array, directFn: Function|null }}
+ */
+function resolveMethodCall(value, arg, allowArg) {
+    if (allowArg && arg) {
+        let args = (value !== undefined && value !== null)
+            ? (Array.isArray(value) ? value : [value])
+            : [];
+        return { methodName: arg, args: args, directFn: null };
+    }
+
+    if (typeof value === 'function') {
+        if (typeof value.__livueMethodName === 'string') {
+            return {
+                methodName: value.__livueMethodName,
+                args: Array.isArray(value.__livueMethodArgs) ? value.__livueMethodArgs.slice() : [],
+                directFn: null,
+            };
+        }
+        return { methodName: null, args: [], directFn: value };
+    }
+
+    if (typeof value === 'string') {
+        return { methodName: value, args: [], directFn: null };
+    }
+
+    if (Array.isArray(value) && value.length > 0) {
+        return { methodName: value[0], args: value.slice(1), directFn: null };
+    }
+
+    return { methodName: null, args: [], directFn: null };
+}
+
+/**
  * Create a Vue directive for a specific DOM event.
  *
  * @param {string} eventName - DOM event name (e.g., 'click', 'mouseenter', 'keydown')
@@ -180,80 +218,36 @@ export function createEventDirective(eventName, options = {}) {
             // Track if .once has fired
             let onceFired = false;
 
-            // Determine method name at mount time (for static values)
-            let staticMethod = null;
-            if (allowArg && arg) {
-                staticMethod = arg;
-            }
-
             /**
              * Core handler logic - extracted for reuse with .outside
              */
             const executeCall = function(event) {
-                let methodName = staticMethod;
-                let args = [];
+                let resolved = resolveMethodCall(binding.value, arg, allowArg);
 
-                if (allowArg && arg) {
-                    // v-event:methodName="args"
-                    methodName = arg;
-                    const currentValue = binding.value;
-                    if (currentValue !== undefined && currentValue !== null) {
-                        args = Array.isArray(currentValue) ? currentValue : [currentValue];
-                    }
-                } else {
-                    // v-event="'methodName'" or v-event="methodName"
-                    const currentValue = binding.value;
-                    if (typeof currentValue === 'function') {
-                        // Server method proxy from template-transform (v-click="resetItems")
-                        if (typeof currentValue.__livueMethodName === 'string') {
-                            methodName = currentValue.__livueMethodName;
-                            if (Array.isArray(currentValue.__livueMethodArgs)) {
-                                args = currentValue.__livueMethodArgs.slice();
-                            }
-                        } else {
-                            // Direct function call: v-click="livue.increment" or v-click="() => livue.increment(2)"
-                            const doCall = function() {
-                                currentValue();
-                            };
-
-                            if (debounced) {
-                                debounced(doCall);
-                            } else if (throttled) {
-                                throttled(doCall);
-                            } else {
-                                doCall();
-                            }
-                            return;
-                        }
-                    } else if (typeof currentValue === 'string') {
-                        methodName = currentValue;
-                    } else if (Array.isArray(currentValue) && currentValue.length > 0) {
-                        methodName = currentValue[0];
-                        args = currentValue.slice(1);
-                    }
+                if (resolved.directFn) {
+                    let fn = resolved.directFn;
+                    if (debounced) { debounced(fn); }
+                    else if (throttled) { throttled(fn); }
+                    else { fn(); }
+                    return;
                 }
 
-                if (!methodName) {
+                if (!resolved.methodName) {
                     console.warn('[LiVue] v-' + eventName + ': no method specified');
                     return;
                 }
 
-                // Execute call (with debounce/throttle if applicable)
                 const doCall = function() {
                     if (modifiers.confirm) {
-                        livue.callWithConfirm(methodName, 'Are you sure?', ...args);
+                        livue.callWithConfirm(resolved.methodName, 'Are you sure?', ...resolved.args);
                     } else {
-                        livue.call(methodName, ...args);
+                        livue.call(resolved.methodName, ...resolved.args);
                     }
                 };
 
-                if (debounced) {
-                    debounced(doCall);
-                } else if (throttled) {
-                    throttled(doCall);
-                } else {
-                    doCall();
-                }
+                if (debounced) { debounced(doCall); }
+                else if (throttled) { throttled(doCall); }
+                else { doCall(); }
             };
 
             /**

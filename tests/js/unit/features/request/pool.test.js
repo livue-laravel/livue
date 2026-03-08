@@ -326,36 +326,6 @@ describe('Request Pool', () => {
         });
     });
 
-    describe('progress bar integration', () => {
-        it('should start and complete progress bar', async () => {
-            const progress = (await import('@/helpers/progress.js')).default;
-
-            mockFetch.mockResolvedValue(createMockResponse({
-                responses: [{ snapshot: '{}', html: '<div>ok</div>' }],
-            }));
-
-            await pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'a', params: [] });
-
-            expect(progress.start).toHaveBeenCalled();
-            expect(progress.done).toHaveBeenCalled();
-        });
-
-        it('should complete progress bar on error', async () => {
-            const progress = (await import('@/helpers/progress.js')).default;
-
-            mockFetch.mockRejectedValue(new Error('Network error'));
-
-            try {
-                await pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'a', params: [] });
-            } catch (e) {
-                // Expected
-            }
-
-            expect(progress.start).toHaveBeenCalled();
-            expect(progress.done).toHaveBeenCalled();
-        });
-    });
-
     describe('hooks integration', () => {
         it('should trigger request.started hook', async () => {
             const { trigger } = await import('@/helpers/hooks.js');

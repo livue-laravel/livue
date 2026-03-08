@@ -21,21 +21,16 @@ import {
 import progress from '../helpers/progress.js';
 import { registerBuiltInDirectives } from '../directives/index.js';
 import { hook, getAvailableHooks } from '../helpers/hooks.js';
+import * as debugFeature from '../features/debug.js';
+import { processStandaloneLazy } from '../features/lazy-standalone.js';
 import { isEchoAvailable, getDebugInfo as getEchoDebugInfo, leaveAll as leaveAllEchoChannels } from '../features/echo.js';
 import * as devtools from '../devtools/index.js';
 import * as hmr from '../features/hmr/hmr.js';
+import { registerPlugin, disablePlugin, applyPlugins } from './plugin-registry.js';
+import { ProgressPlugin } from '../features/plugins/progress-plugin.js';
+import { DevtoolsPlugin } from '../features/plugins/devtools-plugin.js';
+import { DebugPlugin } from '../features/plugins/debug-plugin.js';
 
-/**
- * Debug mode flag.
- * @type {boolean}
- */
-var _debugMode = false;
-
-/**
- * Debug hook unsubscribers.
- * @type {Array<Function>}
- */
-var _debugUnsubscribers = [];
 
 class LiVueRuntime {
     constructor() {
@@ -44,9 +39,6 @@ class LiVueRuntime {
 
         /** @type {MutationObserver|null} */
         this._observer = null;
-
-        /** @type {boolean} */
-        this._devtoolsInitialized = false;
 
         /** @type {Array<Function>} Setup callbacks for configuring Vue apps */
         this._setupCallbacks = [];
@@ -163,11 +155,13 @@ class LiVueRuntime {
      * Starts a MutationObserver to automatically detect new components.
      */
     boot() {
-        // Initialize devtools (lazy - doesn't open panel, collector starts only on open)
-        if (!this._devtoolsInitialized) {
-            devtools.init(this);
-            this._devtoolsInitialized = true;
-        }
+        // Register built-in plugins (user plugins were registered before boot via LiVue.use())
+        registerPlugin(ProgressPlugin);
+        registerPlugin(DevtoolsPlugin);
+        registerPlugin(DebugPlugin);
+
+        // Apply all plugins (built-in + user-registered)
+        applyPlugins(this);
 
         // Register built-in directives before mounting components
         registerBuiltInDirectives();
@@ -183,7 +177,7 @@ class LiVueRuntime {
         // Also initialize standalone lazy placeholders present at first paint.
         // Without this pass, <livue-lazy> outside a LiVue root waits forever
         // because _processStandaloneLazy currently runs only on DOM mutations.
-        this._processStandaloneLazy(document.body);
+        processStandaloneLazy(document.body, this._initComponent.bind(this));
 
         // Initialize navigation module (sets history state, popstate listener)
         initNavigation(this);
@@ -191,29 +185,8 @@ class LiVueRuntime {
         // Start observing DOM for dynamic component changes
         this._startObserver();
 
-        // Setup keyboard shortcut for devtools (Ctrl+Shift+L)
-        this._setupDevtoolsShortcut();
-
         // Setup HMR (Hot Module Replacement) in development
         hmr.setup(this);
-    }
-
-    /**
-     * Setup keyboard shortcut for devtools.
-     * @private
-     */
-    _setupDevtoolsShortcut() {
-        if (this._devtoolsShortcutSetup) {
-            return;
-        }
-        this._devtoolsShortcutSetup = true;
-
-        document.addEventListener('keydown', function (e) {
-            if (e.ctrlKey && e.shiftKey && e.key === 'L') {
-                e.preventDefault();
-                devtools.toggle();
-            }
-        });
     }
 
     /**
@@ -237,7 +210,7 @@ class LiVueRuntime {
         }.bind(this));
 
         // Handle standalone lazy placeholders after navigation body swap.
-        this._processStandaloneLazy(document.body);
+        processStandaloneLazy(document.body, this._initComponent.bind(this));
 
         // Resume observing
         this._startObserver();
@@ -259,7 +232,7 @@ class LiVueRuntime {
 
         // Wrap and initialize any standalone lazy placeholders introduced
         // during preserved navigations.
-        this._processStandaloneLazy(document.body);
+        processStandaloneLazy(document.body, this._initComponent.bind(this));
 
         // Resume observing AFTER a frame to let Vue finish any pending DOM cleanup
         // from the destroyed components. Otherwise the observer sees the cleanup
@@ -642,97 +615,7 @@ class LiVueRuntime {
         }
 
         // Check for standalone <livue-lazy> elements (not inside a LiVue component)
-        this._processStandaloneLazy(node);
-    }
-
-    /**
-     * Find and wrap standalone <livue-lazy> elements.
-     * These are lazy components injected outside of any LiVue root.
-     *
-     * @param {HTMLElement} node
-     */
-    _processStandaloneLazy(node) {
-        let lazyElements = [];
-
-        // Check if the node itself is a livue-lazy
-        if (node.tagName && node.tagName.toLowerCase() === 'livue-lazy') {
-            if (this._isStandaloneLazy(node)) {
-                lazyElements.push(node);
-            }
-        }
-
-        // Check for livue-lazy elements within the added node
-        if (node.querySelectorAll) {
-            let found = node.querySelectorAll('livue-lazy');
-            found.forEach(function (el) {
-                if (this._isStandaloneLazy(el)) {
-                    lazyElements.push(el);
-                }
-            }.bind(this));
-        }
-
-        // Wrap each standalone lazy element
-        lazyElements.forEach(function (el) {
-            this._wrapStandaloneLazy(el);
-        }.bind(this));
-    }
-
-    /**
-     * Check if a <livue-lazy> element is standalone (not inside a LiVue component).
-     *
-     * @param {HTMLElement} el
-     * @returns {boolean}
-     */
-    _isStandaloneLazy(el) {
-        // Already wrapped?
-        if (el.dataset.livueLazyWrapped) {
-            return false;
-        }
-
-        // Walk up the DOM to see if there's a parent livue component
-        let parent = el.parentElement;
-
-        while (parent) {
-            if (parent.hasAttribute('data-livue-id')) {
-                return false; // Inside a LiVue component, Vue will handle it
-            }
-            parent = parent.parentElement;
-        }
-
-        return true; // Standalone
-    }
-
-    /**
-     * Wrap a standalone <livue-lazy> element in a minimal LiVue root component.
-     *
-     * @param {HTMLElement} el
-     */
-    _wrapStandaloneLazy(el) {
-        // Mark as wrapped to avoid double processing
-        el.dataset.livueLazyWrapped = 'true';
-
-        // Create a wrapper div that will become the LiVue root
-        let wrapper = document.createElement('div');
-        let id = 'livue-lazy-wrapper-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-
-        // Minimal snapshot for a wrapper component (empty state, no memo except name)
-        let snapshot = {
-            state: {},
-            memo: {
-                name: 'lazy-wrapper',
-                checksum: '',
-            },
-        };
-
-        wrapper.dataset.livueId = id;
-        wrapper.dataset.livueSnapshot = JSON.stringify(snapshot);
-
-        // Move the livue-lazy element inside the wrapper
-        el.parentNode.insertBefore(wrapper, el);
-        wrapper.appendChild(el);
-
-        // Initialize the wrapper as a LiVue component
-        this._initComponent(wrapper);
+        processStandaloneLazy(node, this._initComponent.bind(this));
     }
 
     /**
@@ -804,6 +687,38 @@ class LiVueRuntime {
     }
 
     /**
+     * Register a LiVue plugin.
+     * The plugin's install() method will be called during boot() with the plugin API.
+     * Plugins registered before boot() are queued and applied during boot().
+     *
+     * @param {object} plugin - Plugin object with install() method
+     * @param {*} [options] - Options passed to plugin.install()
+     * @returns {LiVueRuntime} this (chainable)
+     *
+     * @example
+     * LiVue.use(MyPlugin, { option: 'value' });
+     */
+    use(plugin, options) {
+        registerPlugin(plugin, options);
+        return this;
+    }
+
+    /**
+     * Disable a built-in plugin by name, preventing it from running during boot.
+     * Must be called before boot (before DOM ready).
+     *
+     * @param {string} name - Plugin name (e.g. 'livue:progress', 'livue:devtools')
+     * @returns {LiVueRuntime} this (chainable)
+     *
+     * @example
+     * LiVue.removePlugin('livue:progress'); // disable progress bar plugin
+     */
+    removePlugin(name) {
+        disablePlugin(name);
+        return this;
+    }
+
+    /**
      * Get the DevTools API.
      * Returns no-op functions in production to avoid errors.
      *
@@ -851,59 +766,12 @@ class LiVueRuntime {
      * LiVue.debug(false); // Disable logging
      */
     debug(enabled) {
-        if (enabled && !_debugMode) {
-            _debugMode = true;
-            console.log('[LiVue] Debug mode enabled');
-
-            // Subscribe to all hooks
-            var hookNames = getAvailableHooks();
-            hookNames.forEach(function (hookName) {
-                var unsub = hook(hookName, function (payload) {
-                    var logPayload = {};
-
-                    // Sanitize payload for logging (avoid circular refs)
-                    if (payload.component) {
-                        logPayload.componentId = payload.component.id;
-                        logPayload.componentName = payload.component.name;
-                    }
-                    if (payload.el) {
-                        logPayload.element = payload.el.tagName;
-                    }
-                    if (payload.url) {
-                        logPayload.url = payload.url;
-                    }
-                    if (payload.updateCount !== undefined) {
-                        logPayload.updateCount = payload.updateCount;
-                    }
-                    if (payload.lazyCount !== undefined) {
-                        logPayload.lazyCount = payload.lazyCount;
-                    }
-                    if (payload.success !== undefined) {
-                        logPayload.success = payload.success;
-                    }
-                    if (payload.error) {
-                        logPayload.error = payload.error.message || String(payload.error);
-                    }
-                    if (payload.isChild !== undefined) {
-                        logPayload.isChild = payload.isChild;
-                    }
-
-                    console.log('[LiVue] ' + hookName + ':', logPayload);
-                });
-                _debugUnsubscribers.push(unsub);
-            });
-        } else if (!enabled && _debugMode) {
-            _debugMode = false;
-            console.log('[LiVue] Debug mode disabled');
-
-            // Unsubscribe from all hooks
-            _debugUnsubscribers.forEach(function (unsub) {
-                unsub();
-            });
-            _debugUnsubscribers = [];
+        if (enabled) {
+            debugFeature.enable();
+        } else {
+            debugFeature.disable();
         }
-
-        return _debugMode;
+        return debugFeature.isEnabled();
     }
 
     /**
@@ -912,7 +780,7 @@ class LiVueRuntime {
      * @returns {boolean}
      */
     isDebugEnabled() {
-        return _debugMode;
+        return debugFeature.isEnabled();
     }
 }
 

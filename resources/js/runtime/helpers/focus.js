@@ -31,6 +31,58 @@ export function captureFocusState(container) {
 }
 
 /**
+ * Find the element matching a captured focus state.
+ * Uses a cascade of strategies from most to least reliable.
+ *
+ * @param {HTMLElement} container
+ * @param {object} focusState
+ * @returns {HTMLElement|null}
+ */
+function findFocusTarget(container, focusState) {
+    // 1. id (most reliable)
+    if (focusState.id) {
+        return container.querySelector('#' + CSS.escape(focusState.id));
+    }
+
+    // 2. name attribute
+    if (focusState.name) {
+        return container.querySelector('[name="' + CSS.escape(focusState.name) + '"]');
+    }
+
+    // 3-4. INPUT with qualifier (placeholder or aria-label)
+    if (focusState.tagName === 'INPUT') {
+        var typeSelector = focusState.type ? '[type="' + focusState.type + '"]' : '';
+
+        if (focusState.placeholder) {
+            return container.querySelector('input' + typeSelector + '[placeholder="' + CSS.escape(focusState.placeholder) + '"]');
+        }
+
+        if (focusState.ariaLabel) {
+            return container.querySelector('input' + typeSelector + '[aria-label="' + CSS.escape(focusState.ariaLabel) + '"]');
+        }
+    }
+
+    // 5-7. Single-match fallback by tag type
+    var fallbackSelector = null;
+    if (focusState.tagName === 'INPUT' && focusState.type) {
+        fallbackSelector = 'input[type="' + focusState.type + '"]';
+    } else if (focusState.tagName === 'TEXTAREA') {
+        fallbackSelector = 'textarea';
+    } else if (focusState.tagName === 'SELECT') {
+        fallbackSelector = 'select';
+    }
+
+    if (fallbackSelector) {
+        var candidates = container.querySelectorAll(fallbackSelector);
+        if (candidates.length === 1) {
+            return candidates[0];
+        }
+    }
+
+    return null;
+}
+
+/**
  * Restore focus state after a template swap.
  * Finds the matching element and re-applies focus + text selection.
  *
@@ -46,61 +98,7 @@ export function restoreFocusState(container, focusState) {
         return;
     }
 
-    var target = null;
-
-    // 1. Try id (most reliable)
-    if (focusState.id) {
-        target = container.querySelector('#' + CSS.escape(focusState.id));
-    }
-
-    // 2. Try name attribute
-    if (!target && focusState.name) {
-        target = container.querySelector('[name="' + focusState.name + '"]');
-    }
-
-    // 3. Try tag + type + placeholder (disambiguates multiple inputs of the same type)
-    if (!target && focusState.tagName === 'INPUT' && focusState.placeholder) {
-        var selector = 'input';
-        if (focusState.type) {
-            selector += '[type="' + focusState.type + '"]';
-        }
-        selector += '[placeholder="' + CSS.escape(focusState.placeholder) + '"]';
-        target = container.querySelector(selector);
-    }
-
-    // 4. Try tag + type + aria-label
-    if (!target && focusState.tagName === 'INPUT' && focusState.ariaLabel) {
-        var selector = 'input';
-        if (focusState.type) {
-            selector += '[type="' + focusState.type + '"]';
-        }
-        selector += '[aria-label="' + CSS.escape(focusState.ariaLabel) + '"]';
-        target = container.querySelector(selector);
-    }
-
-    // 5. Last resort: tag + type when there's exactly one match
-    if (!target && focusState.tagName === 'INPUT' && focusState.type) {
-        var candidates = container.querySelectorAll('input[type="' + focusState.type + '"]');
-        if (candidates.length === 1) {
-            target = candidates[0];
-        }
-    }
-
-    // 6. Textarea fallback (single match only)
-    if (!target && focusState.tagName === 'TEXTAREA') {
-        var candidates = container.querySelectorAll('textarea');
-        if (candidates.length === 1) {
-            target = candidates[0];
-        }
-    }
-
-    // 7. Select fallback (single match only)
-    if (!target && focusState.tagName === 'SELECT') {
-        var candidates = container.querySelectorAll('select');
-        if (candidates.length === 1) {
-            target = candidates[0];
-        }
-    }
+    var target = findFocusTarget(container, focusState);
 
     if (target && typeof target.focus === 'function') {
         target.focus();

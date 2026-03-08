@@ -209,6 +209,35 @@ function findInternalInput(el) {
     return el.querySelector('input, textarea, select');
 }
 
+/**
+ * Get value from state property, unwrapping Vue refs.
+ *
+ * @param {object} state
+ * @param {string} property
+ * @returns {*}
+ */
+function getStateValue(state, property) {
+    if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
+        return state[property].value;
+    }
+    return state[property];
+}
+
+/**
+ * Set value on state property, handling Vue refs.
+ *
+ * @param {object} state
+ * @param {string} property
+ * @param {*} value
+ */
+function setStateValue(state, property, value) {
+    if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
+        state[property].value = value;
+    } else {
+        state[property] = value;
+    }
+}
+
 export default {
     mounted(el, binding, vnode) {
         let context = getContextFromVnode(vnode);
@@ -264,12 +293,7 @@ export default {
                 value = Boolean(value) && value !== 'false' && value !== '0';
             }
 
-            // Update state (this is a Vue ref)
-            if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
-                state[property].value = value;
-            } else {
-                state[property] = value;
-            }
+            setStateValue(state, property, value);
         }
 
         /**
@@ -294,12 +318,7 @@ export default {
         }
 
         // Get initial value from state
-        let initialValue;
-        if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
-            initialValue = state[property].value;
-        } else {
-            initialValue = state[property];
-        }
+        let initialValue = getStateValue(state, property);
 
         // Check if this is a Vue component or native element
         let isComponent = isVueComponent(vnode);
@@ -339,10 +358,7 @@ export default {
                 // Watch our state and update component when it changes
                 stopWatcher = watch(
                     function () {
-                        if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
-                            return state[property].value;
-                        }
-                        return state[property];
+                        return getStateValue(state, property);
                     },
                     function (newVal) {
                         // Update the component's vnode props to trigger re-render
@@ -437,14 +453,7 @@ export default {
         // For native inputs, update element value from state
         if (!info.isComponent) {
             let { property, state } = info;
-            let currentValue;
-
-            if (state[property] && typeof state[property] === 'object' && 'value' in state[property]) {
-                currentValue = state[property].value;
-            } else {
-                currentValue = state[property];
-            }
-
+            let currentValue = getStateValue(state, property);
             setInputValue(el, currentValue);
         }
         // For Vue components, the watcher handles updates

@@ -86,6 +86,54 @@ function parseValue(value) {
 const bindings = new WeakMap();
 
 /**
+ * Handle local (client-side) sort: revert SortableJS DOM changes, then reorder the Vue array.
+ *
+ * @param {SortableEvent} evt
+ * @param {Array} value - The reactive Vue array
+ */
+function handleLocalSort(evt, value) {
+    let parent = evt.from;
+    if (evt.oldIndex < evt.newIndex) {
+        parent.insertBefore(evt.item, parent.children[evt.oldIndex]);
+    } else {
+        parent.insertBefore(evt.item, parent.children[evt.oldIndex + 1]);
+    }
+    let item = value.splice(evt.oldIndex, 1)[0];
+    value.splice(evt.newIndex, 0, item);
+}
+
+/**
+ * Handle server-side sort: resolve item ID and call the PHP method.
+ *
+ * @param {SortableEvent} evt
+ * @param {string} method - PHP method name
+ * @param {object} livue - LiVue helper
+ */
+function handleServerSort(evt, method, livue) {
+    let itemEl = evt.item;
+    let itemId = itemIds.get(itemEl);
+    if (itemId === undefined) {
+        itemId = itemEl.dataset.livueSortItem;
+    }
+    if (typeof itemId === 'string' && /^\d+$/.test(itemId)) {
+        itemId = parseInt(itemId, 10);
+    }
+
+    let params = [itemId, evt.newIndex];
+
+    if (evt.from !== evt.to) {
+        let destMethod = evt.to.dataset.livueSortMethod;
+        if (destMethod) {
+            method = destMethod;
+        }
+        let fromListId = evt.from.dataset.livueSortId || evt.from.dataset.livueSortGroup || null;
+        params.push(fromListId);
+    }
+
+    livue.call(method, params);
+}
+
+/**
  * v-sort: Main container directive.
  * Creates a SortableJS instance and calls PHP method on drop.
  */
@@ -131,80 +179,15 @@ export const sortDirective = {
 
             // Callback when item is dropped
             onEnd: function (evt) {
-                let newIndex = evt.newIndex;
-                let oldIndex = evt.oldIndex;
+                if (evt.oldIndex === evt.newIndex) return;
 
-                if (oldIndex === newIndex) {
-                    return;
-                }
-
-                // Get current binding value (may have changed since mount)
                 let currentBinding = bindings.get(el);
                 let value = currentBinding ? currentBinding.value : null;
 
-                // Determine mode based on current value type:
-                // - string: server-side (call PHP method)
-                // - array: client-side (reorder Vue array locally)
-                let isServerMode = typeof value === 'string';
-                let isLocalMode = Array.isArray(value);
-
-                // Local mode: reorder Vue array directly
-                if (isLocalMode) {
-                    // Revert DOM changes made by SortableJS - let Vue handle rendering
-                    let parent = evt.from;
-                    if (oldIndex < newIndex) {
-                        parent.insertBefore(evt.item, parent.children[oldIndex]);
-                    } else {
-                        parent.insertBefore(evt.item, parent.children[oldIndex + 1]);
-                    }
-
-                    // Now update the Vue array - Vue will re-render correctly
-                    let item = value.splice(oldIndex, 1)[0];
-                    value.splice(newIndex, 0, item);
-                    return;
-                }
-
-                // Server mode: call PHP method
-                if (isServerMode && livue) {
-                    let method = value;
-                    let extraParams = [];
-
-                    let itemEl = evt.item;
-
-                    // Get item ID from WeakMap or fallback to data attribute
-                    let itemId = itemIds.get(itemEl);
-                    if (itemId === undefined) {
-                        itemId = itemEl.dataset.livueSortItem;
-                    }
-
-                    // Try to convert to number if it looks like one
-                    if (typeof itemId === 'string' && /^\d+$/.test(itemId)) {
-                        itemId = parseInt(itemId, 10);
-                    }
-
-                    let fromList = evt.from;
-                    let toList = evt.to;
-
-                    // Build params: [itemId, newPosition, ...extraParams]
-                    let params = [itemId, newIndex].concat(extraParams);
-
-                    // If moved between lists, use destination list's method and add fromList info
-                    let isCrossList = fromList !== toList;
-                    if (isCrossList) {
-                        // Use the method from the DESTINATION list
-                        let destMethod = toList.dataset.livueSortMethod;
-                        if (destMethod) {
-                            method = destMethod;
-                        }
-
-                        // Use data-livue-sort-id for list identification (separate from group name)
-                        // Falls back to data-livue-sort-group if sort-id not set
-                        let fromListId = fromList.dataset.livueSortId || fromList.dataset.livueSortGroup || null;
-                        params.push(fromListId);
-                    }
-
-                    // Call the server - SortableJS has already updated the DOM optimistically
-                    livue.call(method, params);
+                if (Array.isArray(value)) {
+                    handleLocalSort(evt, value);
+                } else if (typeof value === 'string' && livue) {
+                    handleServerSort(evt, value, livue);
                 }
             },
         };

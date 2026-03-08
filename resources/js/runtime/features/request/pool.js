@@ -7,7 +7,6 @@
 
 import { getToken } from '../../helpers/csrf.js';
 import { handleRedirect, clearCache } from '../navigation.js';
-import progress, { isRequestProgressEnabled } from '../../helpers/progress.js';
 import { trigger } from '../../helpers/hooks.js';
 
 /**
@@ -96,11 +95,6 @@ async function flush() {
 
     if (updateBatch.length === 0 && lazyBatch.length === 0) {
         return;
-    }
-
-    // Start progress bar (if enabled for requests)
-    if (isRequestProgressEnabled()) {
-        progress.start();
     }
 
     var url = buildUrl();
@@ -253,11 +247,6 @@ async function flush() {
             updateCount: updateBatch.length,
             lazyCount: lazyBatch.length,
         });
-    } finally {
-        // Complete progress bar (if enabled for requests)
-        if (isRequestProgressEnabled()) {
-            progress.done();
-        }
     }
 }
 
@@ -269,11 +258,6 @@ async function flush() {
  * @returns {Promise<object>}
  */
 async function sendIsolated(payload) {
-    // Start progress bar (if enabled for requests)
-    if (isRequestProgressEnabled()) {
-        progress.start();
-    }
-
     var url = buildUrl();
     var token = getToken();
 
@@ -294,59 +278,52 @@ async function sendIsolated(payload) {
         params: payload.params,
     };
 
-    try {
-        var response = await fetch(url, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify({ updates: [serverPayload] }),
-            credentials: 'same-origin',
-        });
+    var response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ updates: [serverPayload] }),
+        credentials: 'same-origin',
+    });
 
-        var data = await response.json();
+    var data = await response.json();
 
-        if (!response.ok) {
-            var error = new Error(data.error || 'Request failed');
-            error.status = response.status;
-            error.data = data;
-            throw error;
-        }
-
-        var result = (data.responses || [])[0];
-
-        if (!result) {
-            throw new Error('No response for isolated component update');
-        }
-
-        if (result.redirect) {
-            handleRedirect(result.redirect);
-            // Return a never-resolving promise — page is navigating away
-            return new Promise(function () {});
-        }
-
-        // Invalidate navigation cache after any successful isolated server call.
-        clearCache();
-
-        if (result.error) {
-            var err = new Error(result.error);
-            err.status = result.status || 500;
-            err.data = result;
-            throw err;
-        }
-
-        if (result.errors) {
-            var err = new Error('Validation failed');
-            err.status = 422;
-            err.data = result;
-            throw err;
-        }
-
-        return result;
-    } finally {
-        // Complete progress bar (if enabled for requests)
-        if (isRequestProgressEnabled()) {
-            progress.done();
-        }
+    if (!response.ok) {
+        var error = new Error(data.error || 'Request failed');
+        error.status = response.status;
+        error.data = data;
+        throw error;
     }
+
+    var result = (data.responses || [])[0];
+
+    if (!result) {
+        throw new Error('No response for isolated component update');
+    }
+
+    if (result.redirect) {
+        handleRedirect(result.redirect);
+        // Return a never-resolving promise — page is navigating away
+        return new Promise(function () {});
+    }
+
+    // Invalidate navigation cache after any successful isolated server call.
+    clearCache();
+
+    if (result.error) {
+        var err = new Error(result.error);
+        err.status = result.status || 500;
+        err.data = result;
+        throw err;
+    }
+
+    if (result.errors) {
+        var err = new Error('Validation failed');
+        err.status = 422;
+        err.data = result;
+        throw err;
+    }
+
+    return result;
 }
 
 /**

@@ -222,10 +222,11 @@ function findTargetInput(el) {
  * Create a directive that modifies v-model behavior.
  *
  * @param {string} name - Directive name for error messages
- * @param {Function} createHandler - Factory function: (el, property, state, modifiers, uniqueId) => { handler, eventType, options }
+ * @param {Function} createHandler - Factory: (el, property, state, modifiers, uniqueId) => { handler, eventType }
+ * @param {Function} [extraCleanup] - Optional extra cleanup: (el, info) => void
  * @returns {object} Vue directive definition
  */
-function createModelModifierDirective(name, createHandler) {
+function createModelModifierDirective(name, createHandler, extraCleanup) {
     return {
         mounted(el, binding, vnode) {
             // Check for v-model only on native form elements (input, textarea, select)
@@ -281,6 +282,9 @@ function createModelModifierDirective(name, createHandler) {
         unmounted(el) {
             let info = _bindings.get(el);
             if (info) {
+                if (extraCleanup) {
+                    extraCleanup(el, info);
+                }
                 info.targetEl.removeEventListener(info.eventType, info.handler, { capture: true });
                 _bindings.delete(el);
             }
@@ -289,28 +293,36 @@ function createModelModifierDirective(name, createHandler) {
 }
 
 /**
+ * Create a timing (debounce/throttle) modifier directive.
+ *
+ * @param {string} name - Directive name
+ * @param {Function} getTimingFn - getDebounced or getThrottled
+ * @returns {object} Vue directive definition
+ */
+function createTimingDirective(name, getTimingFn) {
+    return createModelModifierDirective(name, function (el, property, state, modifiers, uniqueId) {
+        let ms = parseTimingMs(modifiers) || 150;
+        let timed = getTimingFn(uniqueId, ms);
+        return {
+            eventType: 'input',
+            handler: function (e) {
+                e.stopImmediatePropagation();
+                let value = getInputValue(e.target);
+                timed(function () {
+                    updateState(state, property, value);
+                });
+            },
+        };
+    });
+}
+
+/**
  * v-debounce directive
  * Debounces v-model updates.
  *
  * Usage: <input v-model="search" v-debounce:search.500ms>
  */
-export const debounceDirective = createModelModifierDirective('debounce', function (el, property, state, modifiers, uniqueId) {
-    let ms = parseTimingMs(modifiers) || 150;
-    let debounced = getDebounced(uniqueId, ms);
-
-    return {
-        eventType: 'input',
-        handler: function (e) {
-            // Stop v-model from handling this event
-            e.stopImmediatePropagation();
-
-            let value = getInputValue(e.target);
-            debounced(function () {
-                updateState(state, property, value);
-            });
-        },
-    };
-});
+export const debounceDirective = createTimingDirective('debounce', getDebounced);
 
 /**
  * v-throttle directive
@@ -318,22 +330,7 @@ export const debounceDirective = createModelModifierDirective('debounce', functi
  *
  * Usage: <input v-model="query" v-throttle:query.300ms>
  */
-export const throttleDirective = createModelModifierDirective('throttle', function (el, property, state, modifiers, uniqueId) {
-    let ms = parseTimingMs(modifiers) || 150;
-    let throttled = getThrottled(uniqueId, ms);
-
-    return {
-        eventType: 'input',
-        handler: function (e) {
-            e.stopImmediatePropagation();
-
-            let value = getInputValue(e.target);
-            throttled(function () {
-                updateState(state, property, value);
-            });
-        },
-    };
-});
+export const throttleDirective = createTimingDirective('throttle', getThrottled);
 
 /**
  * v-blur directive
@@ -341,40 +338,27 @@ export const throttleDirective = createModelModifierDirective('throttle', functi
  *
  * Usage: <input v-model="name" v-blur:name>
  */
-export const blurDirective = createModelModifierDirective('blur', function (el, property, state, modifiers, uniqueId) {
-    // We need to block input events AND listen for blur
-    let inputHandler = function (e) {
-        // Block v-model's input handler
-        e.stopImmediatePropagation();
-    };
-
-    let blurHandler = function (e) {
-        updateState(state, property, getInputValue(e.target));
-    };
-
-    // Add blur listener (not in capture, just normal)
-    el.addEventListener('blur', blurHandler);
-
-    // Store blur handler for cleanup
-    el._livueBlurHandler = blurHandler;
-
-    return {
-        eventType: 'input',
-        handler: inputHandler,
-    };
-});
-
-// Override unmounted for blur to also remove blur listener
-const originalBlurUnmounted = blurDirective.unmounted;
-blurDirective.unmounted = function (el) {
-    let info = _bindings.get(el);
-    let targetEl = info ? info.targetEl : el;
-    if (targetEl._livueBlurHandler) {
-        targetEl.removeEventListener('blur', targetEl._livueBlurHandler);
-        delete targetEl._livueBlurHandler;
+export const blurDirective = createModelModifierDirective(
+    'blur',
+    function (el, property, state, modifiers, uniqueId) {
+        let inputHandler = function (e) {
+            e.stopImmediatePropagation();
+        };
+        let blurHandler = function (e) {
+            updateState(state, property, getInputValue(e.target));
+        };
+        el.addEventListener('blur', blurHandler);
+        el._livueBlurHandler = blurHandler;
+        return { eventType: 'input', handler: inputHandler };
+    },
+    function (el, info) {
+        let targetEl = info ? info.targetEl : el;
+        if (targetEl._livueBlurHandler) {
+            targetEl.removeEventListener('blur', targetEl._livueBlurHandler);
+            delete targetEl._livueBlurHandler;
+        }
     }
-    originalBlurUnmounted(el);
-};
+);
 
 /**
  * v-enter directive
@@ -382,39 +366,29 @@ blurDirective.unmounted = function (el) {
  *
  * Usage: <input v-model="term" v-enter:term>
  */
-export const enterDirective = createModelModifierDirective('enter', function (el, property, state, modifiers, uniqueId) {
-    // Block input events
-    let inputHandler = function (e) {
-        e.stopImmediatePropagation();
-    };
-
-    // Listen for Enter key
-    let keyHandler = function (e) {
-        if (e.key === 'Enter') {
-            updateState(state, property, getInputValue(e.target));
+export const enterDirective = createModelModifierDirective(
+    'enter',
+    function (el, property, state, modifiers, uniqueId) {
+        let inputHandler = function (e) {
+            e.stopImmediatePropagation();
+        };
+        let keyHandler = function (e) {
+            if (e.key === 'Enter') {
+                updateState(state, property, getInputValue(e.target));
+            }
+        };
+        el.addEventListener('keyup', keyHandler);
+        el._livueEnterHandler = keyHandler;
+        return { eventType: 'input', handler: inputHandler };
+    },
+    function (el, info) {
+        let targetEl = info ? info.targetEl : el;
+        if (targetEl._livueEnterHandler) {
+            targetEl.removeEventListener('keyup', targetEl._livueEnterHandler);
+            delete targetEl._livueEnterHandler;
         }
-    };
-
-    el.addEventListener('keyup', keyHandler);
-    el._livueEnterHandler = keyHandler;
-
-    return {
-        eventType: 'input',
-        handler: inputHandler,
-    };
-});
-
-// Override unmounted for enter
-const originalEnterUnmounted = enterDirective.unmounted;
-enterDirective.unmounted = function (el) {
-    let info = _bindings.get(el);
-    let targetEl = info ? info.targetEl : el;
-    if (targetEl._livueEnterHandler) {
-        targetEl.removeEventListener('keyup', targetEl._livueEnterHandler);
-        delete targetEl._livueEnterHandler;
     }
-    originalEnterUnmounted(el);
-};
+);
 
 /**
  * v-boolean directive

@@ -26,6 +26,60 @@ export let streamingState = {
 };
 
 /**
+ * Process a single NDJSON line: apply stream chunk, capture final response, or log parse errors.
+ *
+ * @param {string} line
+ * @param {Function} onChunk
+ * @param {{ finalResponse: object|null }} state - Mutable object to capture finalResponse
+ */
+function processNdjsonLine(line, onChunk, state) {
+    if (!line.trim()) return;
+    try {
+        const data = JSON.parse(line);
+        if (data.stream) {
+            applyStreamChunk(data.stream);
+            onChunk(data.stream);
+        } else if (data.error) {
+            throw new Error(data.error);
+        } else if (data.snapshot) {
+            state.finalResponse = data;
+        }
+    } catch (parseError) {
+        console.error('[LiVue Stream] Parse error:', parseError, line);
+    }
+}
+
+/**
+ * Read an NDJSON response stream to completion.
+ *
+ * @param {ReadableStreamDefaultReader} reader
+ * @param {TextDecoder} decoder
+ * @param {Function} onChunk
+ * @returns {Promise<object|null>} Final snapshot response
+ */
+async function readNdjsonStream(reader, decoder, onChunk) {
+    let buffer = '';
+    const state = { finalResponse: null };
+
+    while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+            processNdjsonLine(line, onChunk, state);
+        }
+    }
+
+    if (buffer.trim()) {
+        processNdjsonLine(buffer, onChunk, state);
+    }
+
+    return state.finalResponse;
+}
+
+/**
  * Send a streaming request to the server.
  *
  * @param {Object} payload - Request payload
@@ -76,65 +130,8 @@ export async function streamRequest(payload, callbacks = {}) {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let buffer = '';
-        let finalResponse = null;
-
-        while (true) {
-            const { done, value } = await reader.read();
-
-            if (done) {
-                break;
-            }
-
-            // Decode and append to buffer
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process complete lines (NDJSON format)
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || ''; // Keep incomplete line in buffer
-
-            for (const line of lines) {
-                if (!line.trim()) {
-                    continue;
-                }
-
-                try {
-                    const data = JSON.parse(line);
-
-                    if (data.stream) {
-                        // Stream chunk - apply to DOM
-                        applyStreamChunk(data.stream);
-                        onChunk(data.stream);
-                    } else if (data.error) {
-                        // Error response
-                        throw new Error(data.error);
-                    } else if (data.snapshot) {
-                        // Final response
-                        finalResponse = data;
-                    }
-                } catch (parseError) {
-                    console.error('[LiVue Stream] Parse error:', parseError, line);
-                }
-            }
-        }
-
-        // Process any remaining data in buffer
-        if (buffer.trim()) {
-            try {
-                const data = JSON.parse(buffer);
-
-                if (data.snapshot) {
-                    finalResponse = data;
-                } else if (data.error) {
-                    throw new Error(data.error);
-                }
-            } catch (parseError) {
-                console.error('[LiVue Stream] Final parse error:', parseError, buffer);
-            }
-        }
-
+        const finalResponse = await readNdjsonStream(reader, decoder, onChunk);
         onComplete(finalResponse);
-
         return finalResponse;
     } catch (error) {
         onError(error);

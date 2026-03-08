@@ -226,6 +226,22 @@ export function unsubscribeComponent(componentId) {
 }
 
 /**
+ * Leave an Echo channel by type and name.
+ *
+ * @param {string} type - "public", "private", or "presence"
+ * @param {string} channelName - Channel name
+ */
+function leaveEchoChannel(type, channelName) {
+    if (type === 'presence') {
+        window.Echo.leave(channelName);
+    } else if (type === 'private') {
+        window.Echo.leaveChannel('private-' + channelName);
+    } else {
+        window.Echo.leaveChannel(channelName);
+    }
+}
+
+/**
  * Leave and remove a channel if it has no more subscriptions.
  *
  * @param {string} channelKey - Channel key (e.g., "private:orders.123")
@@ -250,13 +266,7 @@ function cleanupChannelIfEmpty(channelKey) {
         const channelName = parts.slice(1).join(':');
 
         try {
-            if (type === 'presence') {
-                window.Echo.leave(channelName);
-            } else if (type === 'private') {
-                window.Echo.leaveChannel('private-' + channelName);
-            } else {
-                window.Echo.leaveChannel(channelName);
-            }
+            leaveEchoChannel(type, channelName);
         } catch (e) {
             // Ignore errors during cleanup
         }
@@ -279,13 +289,7 @@ export function leaveAll() {
             const channelName = parts.slice(1).join(':');
 
             try {
-                if (type === 'presence') {
-                    window.Echo.leave(channelName);
-                } else if (type === 'private') {
-                    window.Echo.leaveChannel('private-' + channelName);
-                } else {
-                    window.Echo.leaveChannel(channelName);
-                }
+                leaveEchoChannel(type, channelName);
             } catch (e) {
                 // Ignore
             }

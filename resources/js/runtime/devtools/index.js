@@ -16,6 +16,12 @@ import * as tree from './tree.js';
 var _initialized = false;
 
 /**
+ * Whether the keyboard shortcut has been registered.
+ * @type {boolean}
+ */
+var _shortcutSetup = false;
+
+/**
  * LiVue runtime reference.
  * @type {object|null}
  */
@@ -36,6 +42,17 @@ export function init(runtime) {
     // Auto-open if was previously open (persisted in localStorage)
     if (shouldAutoOpen()) {
         panel.open();
+    }
+
+    // Setup keyboard shortcut (Ctrl+Shift+L) — devtools concern, not runtime's
+    if (!_shortcutSetup) {
+        _shortcutSetup = true;
+        document.addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+                e.preventDefault();
+                toggle();
+            }
+        });
     }
 }
 

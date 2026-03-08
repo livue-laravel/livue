@@ -224,6 +224,34 @@ JS;
     }
 
     /**
+     * Get the installed version of the LiVue package.
+     *
+     * Strategy:
+     * 1. Composer package version (livue/livue)
+     * 2. Configured asset version (livue.asset_version / app.asset_version)
+     *
+     * Returns null if no version can be determined.
+     * Useful for asset versioning, cache busting, and version checks.
+     */
+    public function installedVersion(): ?string
+    {
+        try {
+            $version = InstalledVersions::getVersion('livue/livue');
+            if (is_string($version) && $version !== '') {
+                return $version;
+            }
+        } catch (\Throwable) {
+        }
+
+        $configured = config('livue.asset_version', config('app.asset_version'));
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return null;
+    }
+
+    /**
      * Resolve version for the core LiVue bundle URL.
      *
      * Strategy:

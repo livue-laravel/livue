@@ -29,31 +29,30 @@ import { extractSetupScript, executeSetupCode } from './setup-script.js';
  * @returns {string} - Transformed HTML
  */
 export function transformVModelModifiers(html) {
-    // Transform v-model.debounce.Xms="prop" -> v-model="prop" v-debounce:prop.Xms
-    let debouncePattern = /v-model\.debounce(?:\.(\d+)(ms)?)?=["']([^"']+)["']/g;
-    html = html.replace(debouncePattern, function (match, timing, msUnit, propName) {
-        let modifiers = timing ? '.' + timing + (msUnit || 'ms') : '';
-        return 'v-model="' + propName + '" v-debounce:' + propName + modifiers;
-    });
+    // Modifiers with optional timing (debounce, throttle)
+    var timedModifiers = ['debounce', 'throttle'];
+    for (var i = 0; i < timedModifiers.length; i++) {
+        var modifier = timedModifiers[i];
+        var pattern = new RegExp('v-model\\.' + modifier + '(?:\\.(\\d+)(ms)?)?=["\']([^"\']+)["\']', 'g');
+        html = html.replace(pattern, function (mod) {
+            return function (match, timing, msUnit, propName) {
+                var suffix = timing ? '.' + timing + (msUnit || 'ms') : '';
+                return 'v-model="' + propName + '" v-' + mod + ':' + propName + suffix;
+            };
+        }(modifier));
+    }
 
-    // Transform v-model.throttle.Xms="prop" -> v-model="prop" v-throttle:prop.Xms
-    let throttlePattern = /v-model\.throttle(?:\.(\d+)(ms)?)?=["']([^"']+)["']/g;
-    html = html.replace(throttlePattern, function (match, timing, msUnit, propName) {
-        let modifiers = timing ? '.' + timing + (msUnit || 'ms') : '';
-        return 'v-model="' + propName + '" v-throttle:' + propName + modifiers;
-    });
-
-    // Transform v-model.blur="prop" -> v-model="prop" v-blur:prop
-    let blurPattern = /v-model\.blur=["']([^"']+)["']/g;
-    html = html.replace(blurPattern, function (match, propName) {
-        return 'v-model="' + propName + '" v-blur:' + propName;
-    });
-
-    // Transform v-model.enter="prop" -> v-model="prop" v-enter:prop
-    let enterPattern = /v-model\.enter=["']([^"']+)["']/g;
-    html = html.replace(enterPattern, function (match, propName) {
-        return 'v-model="' + propName + '" v-enter:' + propName;
-    });
+    // Simple modifiers (blur, enter)
+    var simpleModifiers = ['blur', 'enter'];
+    for (var j = 0; j < simpleModifiers.length; j++) {
+        var simpleModifier = simpleModifiers[j];
+        var simplePattern = new RegExp('v-model\\.' + simpleModifier + '=["\']([^"\']+)["\']', 'g');
+        html = html.replace(simplePattern, function (mod) {
+            return function (match, propName) {
+                return 'v-model="' + propName + '" v-' + mod + ':' + propName;
+            };
+        }(simpleModifier));
+    }
 
     return html;
 }
@@ -120,6 +119,16 @@ export function transformMagicVariables(html) {
 }
 
 /**
+ * Apply both v-model modifier and magic variable transformations to a template.
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+function transformTemplate(html) {
+    return transformMagicVariables(transformVModelModifiers(html));
+}
+
+/**
  * Recursively strip dynamicChildren from a VNode tree.
  * Called after a render function swap to disable Vue's block tree optimization
  * for one render cycle. Without this, Vue's patchBlockChildren would try to
@@ -140,6 +149,68 @@ function stripBlockTree(vnode) {
 }
 
 /**
+ * Attach livue method metadata to a function via non-enumerable properties.
+ *
+ * @param {Function} fn
+ * @param {string} methodName
+ * @param {Array} [args]
+ * @returns {Function}
+ */
+function attachMethodMeta(fn, methodName, args) {
+    Object.defineProperty(fn, '__livueMethodName', {
+        value: methodName,
+        configurable: false,
+        enumerable: false,
+        writable: false,
+    });
+    if (args !== undefined) {
+        Object.defineProperty(fn, '__livueMethodArgs', {
+            value: args,
+            configurable: false,
+            enumerable: false,
+            writable: false,
+        });
+    }
+    return fn;
+}
+
+/**
+ * Properties that should never be proxied as server methods.
+ */
+var setupBlacklist = {
+    // JS internals
+    then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1,
+    // Vue-allowed JS globals (avoids "should not start with _" warning in runtime-compiled templates)
+    Infinity: 1, undefined: 1, NaN: 1, isFinite: 1, isNaN: 1, parseFloat: 1, parseInt: 1,
+    decodeURI: 1, decodeURIComponent: 1, encodeURI: 1, encodeURIComponent: 1,
+    Math: 1, Number: 1, Date: 1, Array: 1, Object: 1, Boolean: 1, String: 1,
+    RegExp: 1, Map: 1, Set: 1, JSON: 1, Intl: 1, BigInt: 1, console: 1, Error: 1,
+};
+
+var serverMethodPattern = /^[a-zA-Z][a-zA-Z0-9_]*$/;
+
+/**
+ * Check if a property name should be treated as a callable server method.
+ *
+ * @param {string} prop
+ * @param {Array|null} callableMethods - Snapshot-provided list, or null for legacy permissive mode
+ * @returns {boolean}
+ */
+function isServerMethod(prop, callableMethods) {
+    if (typeof prop !== 'string' || setupBlacklist[prop] || !serverMethodPattern.test(prop)) {
+        return false;
+    }
+
+    // Snapshot-provided callable method list (new behavior).
+    // If absent (legacy snapshots), keep permissive fallback.
+    if (Array.isArray(callableMethods)) {
+        return callableMethods.indexOf(prop) !== -1;
+    }
+
+    return true;
+}
+
+/**
  * Build a Vue component definition with optional @script setup code.
  * Extracts the setup script from the template HTML, strips it, and
  * creates a definition whose setup() merges server state, livue helper,
@@ -156,12 +227,7 @@ function stripBlockTree(vnode) {
 export function buildComponentDef(templateHtml, state, livue, composables, versions, name) {
     // Extract @script first so template transforms never mutate user setup code.
     let extracted = extractSetupScript(templateHtml);
-
-    // Transform v-model.debounce etc. into v-model + v-debounce directive
-    // and rewrite magic template shortcuts.
-    let transformedHtml = transformVModelModifiers(extracted.html);
-    transformedHtml = transformMagicVariables(transformedHtml);
-    extracted.html = transformedHtml;
+    extracted.html = transformTemplate(extracted.html);
 
     // Compile template with Vue.compile() (has internal cache for template strings)
     let compiledRender;
@@ -210,7 +276,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
             Vue.provide('livue', livue);
 
             let refs = stateToRefs(state);
-            // Spread composables (auth, cart, etc.) at top level for template access
+
             // Proxy over livue.errors that auto-unwraps arrays to their first element.
             // Allows templates to use $errors.field instead of livue.errors.field[0].
             // Reactivity is preserved: accessing errorsProxy.field triggers Vue's
@@ -235,36 +301,11 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
             // Proxy that intercepts unknown properties and returns wrapper functions
             // calling livue.call(). This allows server methods to be called directly
             // in templates: @click="increment(2)" instead of @click="livue.increment(2)"
-            var setupBlacklist = {
-                // JS internals
-                then: 1, toJSON: 1, valueOf: 1, toString: 1, constructor: 1, __proto__: 1,
-                // Vue-allowed JS globals (avoids "should not start with _" warning in runtime-compiled templates)
-                Infinity: 1, undefined: 1, NaN: 1, isFinite: 1, isNaN: 1, parseFloat: 1, parseInt: 1,
-                decodeURI: 1, decodeURIComponent: 1, encodeURI: 1, encodeURIComponent: 1,
-                Math: 1, Number: 1, Date: 1, Array: 1, Object: 1, Boolean: 1, String: 1,
-                RegExp: 1, Map: 1, Set: 1, JSON: 1, Intl: 1, BigInt: 1, console: 1, Error: 1,
-            };
-
-            var serverMethodPattern = /^[a-zA-Z][a-zA-Z0-9_]*$/;
-            function isServerMethod(prop) {
-                if (typeof prop !== 'string' || setupBlacklist[prop] || !serverMethodPattern.test(prop)) {
-                    return false;
-                }
-
-                // Snapshot-provided callable method list (new behavior).
-                // If absent (legacy snapshots), keep permissive fallback.
-                if (Array.isArray(livue._callableMethods)) {
-                    return livue._callableMethods.indexOf(prop) !== -1;
-                }
-
-                return true;
-            }
-
             return new Proxy(base, {
                 get: function (target, prop, receiver) {
                     if (prop in target) return Reflect.get(target, prop, receiver);
                     if (typeof prop === 'symbol') return Reflect.get(target, prop, receiver);
-                    if (isServerMethod(prop)) {
+                    if (isServerMethod(prop, livue._callableMethods)) {
                         var serverMethod = function () {
                             var args = Array.prototype.slice.call(arguments);
 
@@ -275,48 +316,28 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
                                 var deferredCall = function () {
                                     return livue.call(prop, ...args);
                                 };
-
-                                Object.defineProperty(deferredCall, '__livueMethodName', {
-                                    value: prop,
-                                    configurable: false,
-                                    enumerable: false,
-                                    writable: false,
-                                });
-                                Object.defineProperty(deferredCall, '__livueMethodArgs', {
-                                    value: args,
-                                    configurable: false,
-                                    enumerable: false,
-                                    writable: false,
-                                });
-
-                                return deferredCall;
+                                return attachMethodMeta(deferredCall, prop, args);
                             }
 
                             return livue.call(prop, ...args);
                         };
                         // Allow directives to recover the original PHP method name
                         // when the template value is an identifier (e.g. v-click="resetItems").
-                        Object.defineProperty(serverMethod, '__livueMethodName', {
-                            value: prop,
-                            configurable: false,
-                            enumerable: false,
-                            writable: false,
-                        });
-                        return serverMethod;
+                        return attachMethodMeta(serverMethod, prop);
                     }
                     return undefined;
                 },
                 getOwnPropertyDescriptor: function (target, prop) {
                     var desc = Object.getOwnPropertyDescriptor(target, prop);
                     if (desc) return desc;
-                    if (isServerMethod(prop)) {
+                    if (isServerMethod(prop, livue._callableMethods)) {
                         return { configurable: true, enumerable: false };
                     }
                     return undefined;
                 },
                 has: function (target, prop) {
                     if (prop in target) return true;
-                    if (isServerMethod(prop)) return true;
+                    if (isServerMethod(prop, livue._callableMethods)) return true;
                     return false;
                 },
                 set: function (target, prop, value) {
@@ -336,9 +357,7 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     def._updateRender = function (newHtml) {
         try {
             let newExtracted = extractSetupScript(newHtml);
-            let newTransformed = transformVModelModifiers(newExtracted.html);
-            newTransformed = transformMagicVariables(newTransformed);
-            let newCompiled = Vue.compile(newTransformed);
+            let newCompiled = Vue.compile(transformTemplate(newExtracted.html));
             if (newCompiled === currentRenderRef.value) return;
             renderCache.length = 0;
             currentRenderRef.value = newCompiled;

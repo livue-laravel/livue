@@ -17,6 +17,7 @@ import { on } from '../features/events.js';
 import { subscribe as subscribeEcho } from '../features/echo.js';
 import { trigger, createCleanupCollector } from '../helpers/hooks.js';
 import { insertAttributesIntoHtmlRoot } from '../helpers/dom.js';
+import { getPluginComposables } from './plugin-registry.js';
 
 /**
  * Process an HTML string, extracting nested LiVue child components
@@ -355,9 +356,10 @@ export function processTemplate(html, rootComponent) {
                 '<' + rootTag + '>' + childHtml + '</' + rootTag + '>',
                 'data-livue-id="' + id + '"'
             );
+            let childComposables = Object.assign({}, getPluginComposables(), existing.composables || {});
             childDefs[tagName] = buildComponentDef(
                 childTemplate,
-                existing.state, existing.livue, existing.composables || {}, rootComponent._versions, existing.name
+                existing.state, existing.livue, childComposables, rootComponent._versions, existing.name
             );
         }
 

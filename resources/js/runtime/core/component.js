@@ -44,6 +44,7 @@ import { trigger, createCleanupCollector } from '../helpers/hooks.js';
 import { captureFocusState, restoreFocusState } from '../helpers/focus.js';
 import { createPinia } from 'pinia';
 import { createLazyComponent } from '../features/lazy.js';
+import { getPluginComposables, getPluginDirectives } from './plugin-registry.js';
 
 export default class LiVueComponent {
     /**
@@ -271,8 +272,9 @@ export default class LiVueComponent {
             });
         }
 
-        // Create root component definition
-        let rootDef = buildComponentDef(processed.template, self.state, livue, rootComposables, self._versions, self.name);
+        // Create root component definition (plugin composables merged, PHP composables take precedence)
+        let mergedComposables = Object.assign({}, getPluginComposables(), rootComposables);
+        let rootDef = buildComponentDef(processed.template, self.state, livue, mergedComposables, self._versions, self.name);
 
         this._currentRootDef = rootDef;
         this._rootDefRef = shallowRef(rootDef);
@@ -353,7 +355,13 @@ export default class LiVueComponent {
             app.directive(directives[i].name, directives[i].directive);
         }
 
-        // 4. Mount the Vue app
+        // 4. Register plugin directives
+        let pluginDirectives = getPluginDirectives();
+        for (let i = 0; i < pluginDirectives.length; i++) {
+            app.directive(pluginDirectives[i].name, pluginDirectives[i].directive);
+        }
+
+        // 5. Mount the Vue app
         self.el.innerHTML = '';
         try {
             self.vueApp.mount(self.el);

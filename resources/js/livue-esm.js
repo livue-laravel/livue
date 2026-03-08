@@ -78,3 +78,8 @@ if (document.readyState === 'loading') {
 window.LiVue = LiVueRuntime;
 
 export default LiVueRuntime;
+
+// Export built-in plugins for ESM users
+export { ProgressPlugin } from './runtime/features/plugins/progress-plugin.js';
+export { DevtoolsPlugin } from './runtime/features/plugins/devtools-plugin.js';
+export { DebugPlugin } from './runtime/features/plugins/debug-plugin.js';
