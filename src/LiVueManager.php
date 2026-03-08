@@ -236,9 +236,9 @@ JS;
     public function installedVersion(): ?string
     {
         try {
-            $version = InstalledVersions::getVersion('livue/livue');
+            $version = InstalledVersions::getPrettyVersion('livue/livue');
             if (is_string($version) && $version !== '') {
-                return $version;
+                return ltrim($version, 'v');
             }
         } catch (\Throwable) {
         }
@@ -262,9 +262,9 @@ JS;
     protected function getCoreBundleVersion(string $bundlePath): ?string
     {
         try {
-            $packageVersion = InstalledVersions::getVersion('livue/livue');
+            $packageVersion = InstalledVersions::getPrettyVersion('livue/livue');
             if (is_string($packageVersion) && $packageVersion !== '') {
-                return $packageVersion;
+                return ltrim($packageVersion, 'v');
             }
         } catch (\Throwable) {
             // Fall through to config/hash fallback.
