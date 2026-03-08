@@ -290,8 +290,6 @@ function handleGlobalClick(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    console.log('[v-navigate global] Navigating to:', href);
-
     // Navigate via LiVue SPA navigation
     navigateTo(href, true, false);
 }
