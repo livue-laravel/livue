@@ -7,7 +7,7 @@
  */
 
 import { nextTick } from 'vue';
-import { createReactiveState } from './state.js';
+import { createReactiveState, setByPath } from './state.js';
 import { unwrapState } from './tuples.js';
 import { nextChildCounter, captureIgnoredContent, restoreIgnoredContent } from './dom-preservation.js';
 import { buildComponentDef } from './template-transform.js';
@@ -342,8 +342,11 @@ export function processTemplate(html, rootComponent) {
             // Listen for $modelUpdate events from this child
             on('$modelUpdate', existing.name, id, function (data) {
                 // Update the parent's property with the new value
+                // Use setByPath to correctly handle dot-notation (e.g., 'data.fieldName'):
+                // setByPath clones and reassigns the top-level key, ensuring computeDiffs
+                // detects the change as {"data": {...}} rather than {"data.fieldName": [...]}
                 if (data && data.value !== undefined) {
-                    rootComponent._rootState[modelProp] = data.value;
+                    setByPath(rootComponent._rootState, modelProp, data.value);
                 }
             });
         }
