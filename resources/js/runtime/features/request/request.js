@@ -28,3 +28,21 @@ export async function sendAction(snapshot, method, params, diffs, isolate) {
         isolate: isolate || false,
     });
 }
+
+/**
+ * Send a commit: multiple calls for the same component in a single payload.
+ *
+ * @param {string} snapshot
+ * @param {Array}  calls    - [{ method, params }, ...]
+ * @param {object} diffs
+ * @param {boolean} [isolate]
+ * @returns {Promise<object>}
+ */
+export async function sendCommit(snapshot, calls, diffs, isolate) {
+    return poolRequest({
+        snapshot: snapshot,
+        diffs: diffs || {},
+        calls: calls,
+        isolate: isolate || false,
+    });
+}

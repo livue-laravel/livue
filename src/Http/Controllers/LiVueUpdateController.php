@@ -23,14 +23,19 @@ class LiVueUpdateController extends Controller
         LifecycleManager $lifecycle
     ): JsonResponse {
         $validated = $request->validate([
-            'updates' => 'nullable|array|max:20',
-            'updates.*.snapshot' => 'required|string',
-            'updates.*.diffs' => 'nullable|array',
-            'updates.*.method' => 'nullable|string',
-            'updates.*.params' => 'nullable|array',
-            'lazyLoads' => 'nullable|array|max:20',
-            'lazyLoads.*.component' => 'required|string',
-            'lazyLoads.*.props' => 'nullable|array',
+            'updates'                  => 'nullable|array|max:20',
+            'updates.*.snapshot'       => 'required|string',
+            'updates.*.diffs'          => 'nullable|array',
+            // New format: calls[]
+            'updates.*.calls'              => 'nullable|array|max:50',
+            'updates.*.calls.*.method'     => 'nullable|string',
+            'updates.*.calls.*.params'     => 'nullable|array',
+            // Legacy format: method/params (backward compat)
+            'updates.*.method'         => 'nullable|string',
+            'updates.*.params'         => 'nullable|array',
+            'lazyLoads'                => 'nullable|array|max:20',
+            'lazyLoads.*.component'    => 'required|string',
+            'lazyLoads.*.props'        => 'nullable|array',
         ]);
 
         $responses = [];
@@ -78,8 +83,14 @@ class LiVueUpdateController extends Controller
         $componentName = $memo['name'] ?? null;
         $checksum = $memo['checksum'] ?? null;
         $diffs = $update['diffs'] ?? [];
-        $method = $update['method'] ?? null;
-        $params = $update['params'] ?? [];
+
+        // Normalize: new format calls[] or legacy method/params
+        $calls = $update['calls'] ?? null;
+        if ($calls === null) {
+            $method = $update['method'] ?? null;
+            $params = $update['params'] ?? [];
+            $calls = $method !== null ? [['method' => $method, 'params' => $params]] : [];
+        }
 
         if (! $componentName || ! $checksum) {
             return ['error' => 'Missing component name or checksum.', 'status' => 400];
@@ -149,8 +160,7 @@ class LiVueUpdateController extends Controller
                 $state,
                 $memo,
                 $diffs,
-                $method,
-                $params
+                $calls
             );
         } catch (ValidationException $e) {
             return ['errors' => $e->errors(), 'status' => 422];

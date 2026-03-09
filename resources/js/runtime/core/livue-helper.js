@@ -7,7 +7,7 @@
  */
 
 import { reactive, watch } from 'vue';
-import { sendAction } from '../features/request/request.js';
+import { sendAction, sendCommit } from '../features/request/request.js';
 import { updateState, serializeState, getByPath, setByPath } from './state.js';
 import { computeDiffs, unwrapState } from './tuples.js';
 import { createErrors, setErrors, clearErrors, handleError, setComponentErrorHandler, removeComponentErrorHandler } from '../helpers/errors.js';
@@ -98,6 +98,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     // The full snapshot as an opaque JSON string. Sent back to the server as-is
     // for checksum verification. Updated after each server response.
     let serverSnapshot = initialServerSnapshot;
+
+    // Commit queue: accumulate calls before sending to server
+    let _pendingCommitCalls = [];   // [{method, params, resolve, reject}]
+    let _commitInProgress = false;
+    let _commitScheduled = false;
 
     // Last raw HTML from the server, used as base for fragment patching.
     // When the server sends only fragments, we patch this cached copy
@@ -199,6 +204,55 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    }
+
+    function scheduleCommit() {
+        if (_commitScheduled || _commitInProgress) return;
+        _commitScheduled = true;
+        queueMicrotask(executeCommit);
+    }
+
+    async function executeCommit() {
+        _commitScheduled = false;
+        if (_commitInProgress || _pendingCommitCalls.length === 0) return;
+
+        _commitInProgress = true;
+        let batch = _pendingCommitCalls;
+        _pendingCommitCalls = [];
+
+        livue.loading = true;
+        livue.processing = batch[0].method;
+        for (let i = 0; i < batch.length; i++) {
+            if (batch[i].method) loadingTargets[batch[i].method] = true;
+        }
+
+        try {
+            let payload = buildPayload();
+            let calls = batch.map(function(c) { return { method: c.method, params: c.params }; });
+            let response = await sendCommit(payload.snapshot, calls, payload.diffs, isolate);
+            let result = applyResponse(response, payload.diffs);
+            for (let i = 0; i < batch.length; i++) batch[i].resolve(result);
+        } catch (error) {
+            for (let i = 0; i < batch.length; i++) {
+                if (error.status === 422 && error.data && error.data.errors) {
+                    setErrors(livue.errors, error.data.errors);
+                    batch[i].reject(error);
+                } else {
+                    handleError(error, name);
+                    batch[i].reject(error);
+                }
+            }
+        } finally {
+            livue.loading = false;
+            livue.processing = null;
+            for (let i = 0; i < batch.length; i++) {
+                if (batch[i].method) delete loadingTargets[batch[i].method];
+            }
+            _commitInProgress = false;
+            if (_pendingCommitCalls.length > 0) {
+                scheduleCommit();
+            }
+        }
     }
 
     /**
@@ -612,41 +666,50 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             let isJsonMethod = jsonMethods.includes(method);
 
             // The actual AJAX call logic
-            let doCall = async function () {
-                // #[Confirm] methods: require user confirmation before execution
-                if (confirms[method]) {
-                    let confirmed = await livue._showConfirm(confirms[method]);
-                    if (!confirmed) {
-                        return;
+            let doCall;
+            if (isJsonMethod) {
+                doCall = async function () {
+                    if (confirms[method]) {
+                        let confirmed = await livue._showConfirm(confirms[method]);
+                        if (!confirmed) {
+                            return;
+                        }
                     }
-                }
 
-                livue.loading = true;
-                livue.processing = method;
-                loadingTargets[method] = true;
+                    livue.loading = true;
+                    livue.processing = method;
+                    loadingTargets[method] = true;
 
-                let result;
-                try {
-                    let payload = buildPayload();
-                    let response = await sendAction(payload.snapshot, method, params, payload.diffs, isolate || isJsonMethod);
-                    result = applyResponse(response, payload.diffs);
-                } catch (error) {
-                    if (isJsonMethod) {
+                    let result;
+                    try {
+                        let payload = buildPayload();
+                        let response = await sendAction(payload.snapshot, method, params, payload.diffs, true);
+                        result = applyResponse(response, payload.diffs);
+                    } catch (error) {
                         // #[Json]: don't pollute the error bag, reject with structured errors
                         throw { status: error.status, errors: error.data && error.data.errors, message: error.message };
+                    } finally {
+                        livue.loading = false;
+                        livue.processing = null;
+                        delete loadingTargets[method];
                     }
-                    if (error.status === 422 && error.data && error.data.errors) {
-                        setErrors(livue.errors, error.data.errors);
-                    } else {
-                        handleError(error, name);
+                    return result;
+                };
+            } else {
+                doCall = async function () {
+                    if (confirms[method]) {
+                        let confirmed = await livue._showConfirm(confirms[method]);
+                        if (!confirmed) {
+                            return;
+                        }
                     }
-                } finally {
-                    livue.loading = false;
-                    livue.processing = null;
-                    delete loadingTargets[method];
-                }
-                return result;
-            };
+
+                    return new Promise(function(resolve, reject) {
+                        _pendingCommitCalls.push({ method: method, params: params, resolve: resolve, reject: reject });
+                        scheduleCommit();
+                    });
+                };
+            }
 
             // Apply modifiers if present
             if (modifiers && modifiers.debounce) {

@@ -10,6 +10,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 let LiVueComponent;
 let mockSendAction;
+let mockSendCommit;
 let mockDefineStore;
 let mockOn;
 let mockEmit;
@@ -28,11 +29,14 @@ function makeResponse(overrides) {
 beforeEach(async () => {
     vi.resetModules();
 
-    // sendAction – the only mock we really need to inspect
+    // sendAction – used by sync(), #[Json] methods, $refresh
     mockSendAction = vi.fn(() => Promise.resolve(makeResponse()));
+    // sendCommit – used by normal method calls (commit queue)
+    mockSendCommit = vi.fn(() => Promise.resolve(makeResponse()));
 
     vi.doMock('@/features/request/request.js', () => ({
         sendAction: mockSendAction,
+        sendCommit: mockSendCommit,
     }));
 
     vi.doMock('@/helpers/errors.js', () => ({
@@ -251,10 +255,9 @@ describe('Magic Methods', () => {
 
             await livue.$call('increment', 2);
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('increment');
-            expect(args[2]).toEqual([2]);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'increment', params: [2] }]);
         });
 
         it('should proxy $on() to on()', () => {
@@ -330,37 +333,34 @@ describe('Magic Methods', () => {
             expect(typeof livue.increment).toBe('function');
         });
 
-        it('should call sendAction with correct method and params when invoked', async () => {
+        it('should call sendCommit with correct method and params when invoked', async () => {
             let livue = createComponent();
 
             await livue.increment(2);
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('increment');
-            expect(args[2]).toEqual([2]);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'increment', params: [2] }]);
         });
 
-        it('should call sendAction with no params when invoked without arguments', async () => {
+        it('should call sendCommit with no params when invoked without arguments', async () => {
             let livue = createComponent();
 
             await livue.increment();
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('increment');
-            expect(args[2]).toEqual([]);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'increment', params: [] }]);
         });
 
-        it('should call sendAction with multiple params', async () => {
+        it('should call sendCommit with multiple params', async () => {
             let livue = createComponent();
 
             await livue.update('name', 'John');
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('update');
-            expect(args[2]).toEqual(['name', 'John']);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'update', params: ['name', 'John'] }]);
         });
 
         it('should return undefined for blacklisted property "then"', () => {

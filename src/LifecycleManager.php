@@ -149,8 +149,7 @@ class LifecycleManager
      * @param  array        $state         The server-confirmed snapshot state (matches checksum)
      * @param  array        $memo          The full snapshot memo (name, checksum, errors, listeners)
      * @param  array        $diffs         Client-side property changes (v-model) to apply after verification
-     * @param  string|null  $method
-     * @param  array        $params
+     * @param  array        $calls         List of method calls to execute: [['method' => ..., 'params' => ...], ...]
      * @return array
      */
     public function processUpdate(
@@ -159,8 +158,7 @@ class LifecycleManager
         array $state,
         array $memo,
         array $diffs,
-        ?string $method,
-        array $params
+        array $calls
     ): array {
         $bench = app()->environment('local') && config('livue.benchmark_responses', false);
         $benchTimings = [];
@@ -292,33 +290,31 @@ class LifecycleManager
             $benchTimings['hydrate_hooks'] = (int) ((hrtime(true) - $benchT) / 1000);
         }
 
-        // 5. Execute method (if any)
+        // 5. Execute calls in sequence
         if ($bench) {
             $benchT = hrtime(true);
         }
         $methodReturnValue = null;
 
-        if ($method !== null) {
-            // Lifecycle event: calling (halting — can skip the call)
-            $callingCancelled = $component->fireLifecycleEvent('calling', true, $method, $params) === false;
+        foreach ($calls as $callSpec) {
+            $callMethod = $callSpec['method'] ?? null;
+            $callParams = $callSpec['params'] ?? [];
+
+            if ($callMethod === null) continue;
+
+            $callingCancelled = $component->fireLifecycleEvent('calling', true, $callMethod, $callParams) === false;
 
             if (! $callingCancelled) {
                 try {
-                    $this->hookRegistry->callHook('call', $component, $method, $params);
+                    $this->hookRegistry->callHook('call', $component, $callMethod, $callParams);
 
-                    // Check if a composable action handled the call (e.g., 'auth.logout')
                     $store = $this->hookRegistry->store($component);
                     if (! $store->get('composableActionHandled', false)) {
-                        $methodReturnValue = $this->callMethod($component, $method, $params);
-                    } else {
-                        // Retrieve return value from composable action (if any)
-                        $methodReturnValue = $store->get('composableActionReturnValue');
+                        $this->callMethod($component, $callMethod, $callParams);
                     }
 
-                    // Lifecycle event: called
-                    $component->fireLifecycleEvent('called', false, $method, $params);
+                    $component->fireLifecycleEvent('called', false, $callMethod, $callParams);
                 } catch (\Throwable $e) {
-                    // Lifecycle event: exception
                     $component->fireLifecycleEvent('exception', false, $e);
 
                     $handled = $this->hookRegistry->callExceptionHook($component, $e);
@@ -329,9 +325,14 @@ class LifecycleManager
                 }
             }
 
-            // Clear computed cache so values are recomputed with post-method state
             $component->clearComputedCache();
+
+            // Short-circuit if a redirect or download was set
+            if ($component->getRedirect() !== null || $component->getDownload() !== null) {
+                break;
+            }
         }
+
         if ($bench) {
             $benchTimings['method_call'] = (int) ((hrtime(true) - $benchT) / 1000);
         }

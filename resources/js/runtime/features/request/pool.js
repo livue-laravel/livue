@@ -271,12 +271,17 @@ async function sendIsolated(payload) {
     }
 
     // Strip the isolate flag from the payload sent to the server
+    // Supports both new format (calls[]) and legacy format (method/params)
     var serverPayload = {
         snapshot: payload.snapshot,
         diffs: payload.diffs,
-        method: payload.method,
-        params: payload.params,
     };
+    if (payload.calls) {
+        serverPayload.calls = payload.calls;
+    } else {
+        serverPayload.method = payload.method;
+        serverPayload.params = payload.params;
+    }
 
     var response = await fetch(url, {
         method: 'POST',

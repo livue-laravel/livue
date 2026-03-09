@@ -14,6 +14,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 let LiVueComponent;
 let mockSendAction;
+let mockSendCommit;
 
 function makeResponse(overrides) {
     return {
@@ -29,9 +30,11 @@ beforeEach(async () => {
     vi.resetModules();
 
     mockSendAction = vi.fn(() => Promise.resolve(makeResponse()));
+    mockSendCommit = vi.fn(() => Promise.resolve(makeResponse()));
 
     vi.doMock('@/features/request/request.js', () => ({
         sendAction: mockSendAction,
+        sendCommit: mockSendCommit,
     }));
 
     vi.doMock('@/helpers/errors.js', () => ({
@@ -188,10 +191,9 @@ describe('Setup Proxy', () => {
 
             await proxy.increment(2);
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('increment');
-            expect(args[2]).toEqual([2]);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'increment', params: [2] }]);
         });
 
         it('should call livue.call() with no params when invoked without arguments', async () => {
@@ -200,10 +202,9 @@ describe('Setup Proxy', () => {
 
             await proxy.reset();
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('reset');
-            expect(args[2]).toEqual([]);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'reset', params: [] }]);
         });
 
         it('should call livue.call() with multiple params', async () => {
@@ -212,10 +213,9 @@ describe('Setup Proxy', () => {
 
             await proxy.update('name', 'John');
 
-            expect(mockSendAction).toHaveBeenCalledTimes(1);
-            let args = mockSendAction.mock.calls[0];
-            expect(args[1]).toBe('update');
-            expect(args[2]).toEqual(['name', 'John']);
+            expect(mockSendCommit).toHaveBeenCalledTimes(1);
+            let args = mockSendCommit.mock.calls[0];
+            expect(args[1]).toEqual([{ method: 'update', params: ['name', 'John'] }]);
         });
 
         it('should not fire server calls during render for v-click call expressions', () => {
