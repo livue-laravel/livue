@@ -2,10 +2,14 @@
 
 namespace LiVue\Http\Controllers;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use LiVue\Component;
-use LiVue\Features\SupportRendering\ComponentRenderer;
+use Illuminate\Validation\ValidationException;
+use LiVue\Exceptions\ComponentNotFoundException;
+use LiVue\Features\SupportPersistentMiddleware\SupportPersistentMiddleware;
 use LiVue\Features\SupportStreaming\WithStreaming;
 use LiVue\LifecycleManager;
 use LiVue\LiVueManager;
@@ -24,22 +28,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class LiVueStreamController extends Controller
 {
-    private const LIFECYCLE_HOOKS = [
-        'boot',
-        'mount',
-        'hydrate',
-        'dehydrate',
-        'updating',
-        'updated',
-        'rendering',
-        'rendered',
-    ];
-
     public function __invoke(
         Request $request,
         LiVueManager $manager,
         LifecycleManager $lifecycle
-    ): StreamedResponse {
+    ): StreamedResponse|JsonResponse {
         $validated = $request->validate([
             'snapshot' => 'required|string',
             'diffs' => 'nullable|array',
@@ -51,7 +44,7 @@ class LiVueStreamController extends Controller
         $snapshot = json_decode($validated['snapshot'], true);
 
         if (! is_array($snapshot) || ! isset($snapshot['state'], $snapshot['memo'])) {
-            return $this->errorResponse('Invalid snapshot format.', 400);
+            return response()->json(['error' => 'Invalid snapshot format.'], 400);
         }
 
         $state = $snapshot['state'];
@@ -63,23 +56,60 @@ class LiVueStreamController extends Controller
         $params = $validated['params'] ?? [];
 
         if (! $componentName || ! $checksum) {
-            return $this->errorResponse('Missing component name or checksum.', 400);
+            return response()->json(['error' => 'Missing component name or checksum.'], 400);
         }
 
         // Verify state integrity
         if (! StateChecksum::verify($componentName, $state, $checksum)) {
-            return $this->errorResponse('State integrity check failed.', 403);
+            return response()->json(['error' => 'State integrity check failed.'], 403);
         }
 
-        if (! $manager->componentExists($componentName)) {
-            return $this->errorResponse('Component not found.', 404);
+        // Re-apply persistent middleware (auth, can, etc.) before processing
+        try {
+            SupportPersistentMiddleware::applyMiddleware($memo, request());
+        } catch (AuthenticationException) {
+            return response()->json(['error' => 'Unauthenticated.'], 401);
+        } catch (AuthorizationException) {
+            return response()->json(['error' => 'Unauthorized.'], 403);
         }
 
-        $component = $manager->resolve($componentName);
+        // Resolve component: prefer encrypted class (new system), fallback to name (legacy)
+        $encryptedClass = $memo['class'] ?? null;
+        $componentClass = null;
+
+        if ($encryptedClass) {
+            try {
+                $componentClass = decrypt($encryptedClass);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException) {
+                // Invalid encrypted class, fall through to name-based resolution
+            }
+        }
+
+        if ($componentClass && class_exists($componentClass)) {
+            try {
+                $component = $manager->resolveByClass($componentClass);
+            } catch (ComponentNotFoundException) {
+                return response()->json(['error' => 'Component not found.'], 404);
+            }
+        } elseif ($manager->componentExists($componentName)) {
+            $component = $manager->resolve($componentName);
+        } else {
+            return response()->json(['error' => 'Component not found.'], 404);
+        }
+
+        // Preserve component instance ID across requests
+        $snapshotId = $memo['id'] ?? null;
+        if (is_string($snapshotId) && $snapshotId !== '') {
+            if (! preg_match('/^[A-Za-z0-9._:-]+$/', $snapshotId)) {
+                return response()->json(['error' => 'Invalid component id.'], 400);
+            }
+
+            $component->setId($snapshotId);
+        }
 
         // Check if component supports streaming
         if (! in_array(WithStreaming::class, class_uses_recursive($component))) {
-            return $this->errorResponse('Component does not support streaming.', 400);
+            return response()->json(['error' => 'Component does not support streaming.'], 400);
         }
 
         return new StreamedResponse(function () use (
@@ -104,20 +134,23 @@ class LiVueStreamController extends Controller
             });
 
             try {
-                // Process the update with streaming enabled
-                $result = $this->processStreamingUpdate(
+                $result = $lifecycle->processUpdate(
                     $component,
                     $componentName,
                     $state,
                     $memo,
                     $diffs,
-                    $method,
-                    $params,
-                    $lifecycle
+                    [['method' => $method, 'params' => $params]]
                 );
 
-                // Send final response
                 echo json_encode($result) . "\n";
+                flush();
+            } catch (ValidationException $e) {
+                $error = $e->getMessage();
+                echo json_encode(['error' => $error, 'errors' => $e->errors(), 'status' => 422]) . "\n";
+                flush();
+            } catch (\BadMethodCallException $e) {
+                echo json_encode(['error' => $e->getMessage(), 'status' => 422]) . "\n";
                 flush();
             } catch (\Throwable $e) {
                 $error = config('app.debug') ? $e->getMessage() : 'Server error.';
@@ -130,265 +163,6 @@ class LiVueStreamController extends Controller
             'Content-Type' => 'application/x-ndjson',
             'Cache-Control' => 'no-cache',
             'X-Accel-Buffering' => 'no', // Disable nginx buffering
-        ]);
-    }
-
-    /**
-     * Process a streaming update.
-     * Similar to LifecycleManager::processUpdate but without the full lifecycle
-     * (we skip HTML diff optimization and always return HTML).
-     */
-    protected function processStreamingUpdate(
-        $component,
-        string $componentName,
-        array $state,
-        array $memo,
-        array $diffs,
-        string $method,
-        array $params,
-        LifecycleManager $lifecycle
-    ): array {
-        // Use reflection to access protected methods on LifecycleManager
-        // or duplicate minimal necessary logic here
-
-        $hookRegistry = app(\LiVue\Features\SupportHooks\HookRegistry::class);
-        $synthRegistry = app(\LiVue\Synthesizers\SynthesizerRegistry::class);
-        $eventBus = app(\LiVue\EventBus::class);
-
-        // Boot
-        $hookRegistry->callHook('boot', $component);
-        $eventBus->dispatch('component.boot', $component);
-
-        if (method_exists($component, 'boot')) {
-            $component->boot();
-        }
-
-        // Restore locked properties
-        $locked = $memo['locked'] ?? null;
-        if ($locked !== null) {
-            try {
-                $lockedValues = decrypt($locked);
-                $state = array_merge($state, $lockedValues);
-            } catch (\Throwable) {
-                throw new \RuntimeException('Invalid or tampered locked properties.');
-            }
-        }
-
-        // Strip computed properties
-        $computedKeys = $memo['computed'] ?? [];
-        foreach ($computedKeys as $computedKey) {
-            unset($state[$computedKey]);
-        }
-
-        // Hydrate state
-        [$hydratedState, $types] = $synthRegistry->hydrateState($state);
-        $component->setState($hydratedState);
-
-        // Apply diffs if any
-        if (! empty($diffs)) {
-            [$flatSnapshotState, $_] = $synthRegistry->unwrapState($state);
-
-            foreach ($diffs as $key => $diffValue) {
-                if (isset($types[$key]) && $types[$key]['s'] === 'mdl') {
-                    // Model diff handling - simplified
-                    continue;
-                }
-
-                if (isset($types[$key])) {
-                    $hydrated = $synthRegistry->hydrateValue($diffValue, $types[$key], $key);
-                    $component->{$key} = $hydrated;
-                } else {
-                    $component->{$key} = $diffValue;
-                }
-            }
-        }
-
-        // Distribute memo to features
-        $hookRegistry->distributeMemo($component, $memo);
-
-        // Hydrate hook
-        $hookRegistry->callHook('hydrate', $component);
-        $eventBus->dispatch('component.hydrate', $component);
-
-        if (method_exists($component, 'hydrate')) {
-            $component->hydrate();
-        }
-
-        // Execute method
-        $hookRegistry->callHook('call', $component, $method, $params);
-        $eventBus->dispatch('component.call', $component, $method, $params);
-        $this->invokeComponentMethod($component, $method, $params);
-
-        // Clear computed cache
-        $component->clearComputedCache();
-
-        // Check for redirect
-        $redirect = $component->getRedirect();
-        if ($redirect !== null) {
-            return $this->buildFinalResponse($component, $componentName, $synthRegistry, $hookRegistry, [
-                'redirect' => $redirect,
-            ]);
-        }
-
-        // Dehydrate
-        $hookRegistry->callHook('dehydrate', $component);
-        $eventBus->dispatch('component.dehydrate', $component);
-
-        if (method_exists($component, 'dehydrate')) {
-            $component->dehydrate();
-        }
-
-        // Flush events
-        $events = $component->flushDispatchedEvents();
-        foreach ($events as &$event) {
-            $event['source'] = $componentName;
-        }
-        unset($event);
-
-        // Build final response with HTML
-        $extras = [];
-
-        if (! empty($events)) {
-            $extras['events'] = $events;
-        }
-
-        $pendingJs = $component->flushJs();
-        if (! empty($pendingJs)) {
-            $extras['js'] = $pendingJs;
-        }
-
-        return $this->buildFinalResponse($component, $componentName, $synthRegistry, $hookRegistry, $extras, true);
-    }
-
-    /**
-     * Invoke a component method with the same security gates used by normal requests.
-     */
-    protected function invokeComponentMethod(Component $component, string $method, array $params): mixed
-    {
-        if (str_starts_with($method, '__')) {
-            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
-        }
-
-        if (in_array($method, self::LIFECYCLE_HOOKS, true)) {
-            throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
-        }
-
-        if (method_exists($component, $method)) {
-            $reflection = new \ReflectionClass($component);
-            $reflectionMethod = $reflection->getMethod($method);
-
-            if (! $reflectionMethod->isPublic()) {
-                throw new \BadMethodCallException("Method [{$method}] is not public on component [{$component->getName()}].");
-            }
-
-            if ($reflectionMethod->getDeclaringClass()->getName() === Component::class) {
-                throw new \BadMethodCallException("Method [{$method}] cannot be called from the client.");
-            }
-
-            return $component->{$method}(...$params);
-        }
-
-        if ($component::hasMacro($method)) {
-            return $component->{$method}(...$params);
-        }
-
-        throw new \BadMethodCallException("Method [{$method}] does not exist on component [{$component->getName()}].");
-    }
-
-    /**
-     * Build the final response with snapshot and optional HTML.
-     */
-    protected function buildFinalResponse(
-        $component,
-        string $componentName,
-        $synthRegistry,
-        $hookRegistry,
-        array $extras = [],
-        bool $includeHtml = false
-    ): array {
-        $rawState = $component->getState();
-        $dehydratedState = $synthRegistry->dehydrateState($rawState);
-
-        // Extract guarded properties
-        $guardedProps = $component->getGuardedProperties();
-        $lockedMemo = null;
-
-        if (! empty($guardedProps)) {
-            $lockedValues = [];
-
-            foreach ($guardedProps as $prop) {
-                if (array_key_exists($prop, $dehydratedState)) {
-                    $lockedValues[$prop] = $dehydratedState[$prop];
-                    unset($dehydratedState[$prop]);
-                }
-            }
-
-            if (! empty($lockedValues)) {
-                $lockedMemo = encrypt($lockedValues);
-            }
-        }
-
-        // Add computed values
-        $computed = $component->getComputedValues();
-        $newComputedKeys = array_keys($computed);
-
-        if (! empty($computed)) {
-            $dehydratedComputed = $synthRegistry->dehydrateState($computed);
-            $dehydratedState = array_merge($dehydratedState, $dehydratedComputed);
-        }
-
-        $newChecksum = \LiVue\Security\StateChecksum::generate($componentName, $dehydratedState);
-
-        $newMemo = ['name' => $componentName, 'checksum' => $newChecksum];
-
-        if ($lockedMemo !== null) {
-            $newMemo['locked'] = $lockedMemo;
-        }
-
-        if (! empty($newComputedKeys)) {
-            $newMemo['computed'] = $newComputedKeys;
-        }
-
-        $listeners = $component->getListeners();
-        if (! empty($listeners)) {
-            $newMemo['listeners'] = $listeners;
-        }
-
-        $vueMethods = $component->getVueMethods();
-        if (! empty($vueMethods)) {
-            $newMemo['vueMethods'] = $vueMethods;
-        }
-
-        // Collect feature memo
-        $featureMemo = $hookRegistry->collectMemo($component);
-        $newMemo = array_merge($newMemo, $featureMemo);
-
-        $result = array_merge([
-            'snapshot' => json_encode(['state' => $dehydratedState, 'memo' => $newMemo]),
-        ], $extras);
-
-        // Include HTML for streaming (always render after streaming completes)
-        if ($includeHtml) {
-            $renderer = app(ComponentRenderer::class);
-            $result['html'] = $renderer->renderInnerHtml($component);
-        }
-
-        // Cleanup
-        $hookRegistry->cleanup($component);
-
-        return $result;
-    }
-
-    /**
-     * Return an error as a streamed response.
-     */
-    protected function errorResponse(string $message, int $status): StreamedResponse
-    {
-        return new StreamedResponse(function () use ($message, $status) {
-            echo json_encode(['error' => $message, 'status' => $status]) . "\n";
-            flush();
-        }, 200, [
-            'Content-Type' => 'application/x-ndjson',
         ]);
     }
 }

@@ -91,6 +91,7 @@ async function readNdjsonStream(reader, decoder, onChunk) {
  * @param {Function} callbacks.onChunk - Called for each stream chunk
  * @param {Function} callbacks.onComplete - Called when streaming completes
  * @param {Function} callbacks.onError - Called on error
+ * @param {number} [callbacks.timeout=60000] - Timeout in ms (0 to disable)
  * @returns {Promise<Object>} Final response from server
  */
 export async function streamRequest(payload, callbacks = {}) {
@@ -98,6 +99,7 @@ export async function streamRequest(payload, callbacks = {}) {
         onChunk = () => {},
         onComplete = () => {},
         onError = () => {},
+        timeout = 60000,
     } = callbacks;
 
     // Update streaming state
@@ -107,7 +109,14 @@ export async function streamRequest(payload, callbacks = {}) {
         componentId: payload.componentId || null,
     };
 
+    const controller = new AbortController();
+    let timeoutId = null;
+
     try {
+        if (timeout > 0) {
+            timeoutId = setTimeout(() => controller.abort(), timeout);
+        }
+
         const response = await fetch('/livue/stream', {
             method: 'POST',
             headers: {
@@ -122,6 +131,7 @@ export async function streamRequest(payload, callbacks = {}) {
                 method: payload.method,
                 params: payload.params || [],
             }),
+            signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -134,9 +144,13 @@ export async function streamRequest(payload, callbacks = {}) {
         onComplete(finalResponse);
         return finalResponse;
     } catch (error) {
+        if (error.name === 'AbortError') {
+            throw new Error('[LiVue Stream] Request timed out');
+        }
         onError(error);
         throw error;
     } finally {
+        clearTimeout(timeoutId);
         // Reset streaming state
         streamingState = {
             active: false,
