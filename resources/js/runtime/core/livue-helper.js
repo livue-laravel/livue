@@ -1048,7 +1048,8 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          * @param {Array} [params] - Method parameters
          * @returns {Promise<*>} Final result after streaming completes
          */
-        stream: async function (method, params) {
+        stream: async function (method, params, options) {
+            options = options || {};
             params = params || [];
 
             livue.loading = true;
@@ -1077,7 +1078,18 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 });
 
                 if (response) {
-                    result = applyResponse(response, payload.diffs);
+                    if (options.background) {
+                        livue.$el.dispatchEvent(new CustomEvent('livue:stream-complete', {
+                            bubbles: true,
+                            detail: {
+                                method: method,
+                                response: response,
+                                componentId: componentId,
+                            },
+                        }));
+                    } else {
+                        result = applyResponse(response, payload.diffs);
+                    }
                 }
             } catch (error) {
                 if (error.status === 422 && error.data && error.data.errors) {
@@ -1094,6 +1106,19 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             }
 
             return result;
+        },
+
+        /**
+         * Manually apply a response captured from a background stream.
+         * Call this inside a livue:stream-complete event handler when you
+         * are ready to apply the final snapshot to the component.
+         *
+         * @param {object} response - The response object from event.detail.response
+         */
+        applyStreamResponse: function (response) {
+            if (response) {
+                applyResponse(response, {});
+            }
         },
 
         /**
