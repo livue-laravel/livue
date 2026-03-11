@@ -4445,6 +4445,7 @@ function ai(e, t, n, r, i, o, a) {
         let y = W();
         y.method = d, y.params = b, y.componentId = e;
         let R = await Zu(y, {
+          timeout: S.timeout !== void 0 ? S.timeout : 0,
           onChunk: function(U) {
           },
           onComplete: function(U) {
