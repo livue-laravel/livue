@@ -171,11 +171,18 @@ export async function streamRequest(payload, callbacks = {}) {
 export function applyStreamChunk(chunk) {
     const { to, content, replace } = chunk;
 
-    const target = streamTargets.get(to);
+    let target = streamTargets.get(to);
 
     if (!target) {
-        console.warn(`[LiVue Stream] Target not found: ${to}`);
-        return;
+        // Fallback: the Map may be temporarily stale during DOM morphing.
+        // Query the DOM directly using the data attribute set by the v-stream directive.
+        const fallbackEl = document.querySelector(`[data-stream-target="${to}"]`);
+        if (!fallbackEl) {
+            console.warn(`[LiVue Stream] Target not found: ${to}`);
+            return;
+        }
+        registerStreamTarget(to, fallbackEl);
+        target = { el: fallbackEl, replace: false };
     }
 
     const { el } = target;

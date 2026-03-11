@@ -43,6 +43,9 @@ export default {
         // Store state for cleanup
         elementState.set(el, { targetId });
 
+        // Set data attribute for fallback DOM lookup
+        el.setAttribute('data-stream-target', targetId);
+
         // Register this element as a stream target
         registerStreamTarget(targetId, el, replace);
     },
