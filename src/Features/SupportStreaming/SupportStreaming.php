@@ -37,7 +37,10 @@ class SupportStreaming extends ComponentHook
             return [];
         }
 
-        return ['streaming' => true];
+        return [
+            'streaming'     => true,
+            'streamTimeout' => $component->getStreamTimeout(),
+        ];
     }
 
     /**

@@ -13,6 +13,19 @@ namespace LiVue\Features\SupportStreaming;
 trait WithStreaming
 {
     /**
+     * Stream request timeout in milliseconds (0 = disabled).
+     * Override in your component to set a custom timeout:
+     *
+     *   protected int $streamTimeout = 120000; // 2 minutes
+     */
+    protected int $streamTimeout = 0;
+
+    public function getStreamTimeout(): int
+    {
+        return $this->streamTimeout;
+    }
+
+    /**
      * Whether this component is currently in streaming mode.
      */
     private bool $__streaming = false;

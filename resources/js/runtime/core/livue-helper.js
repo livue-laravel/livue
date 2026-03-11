@@ -1066,7 +1066,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 payload.componentId = componentId;
 
                 let response = await streamRequest(payload, {
-                    timeout: options.timeout !== undefined ? options.timeout : 0,
+                    timeout: options.timeout !== undefined ? options.timeout : (memo.streamTimeout || 0),
                     onChunk: function (chunk) {
                         // Chunks are applied automatically by stream.js
                     },
