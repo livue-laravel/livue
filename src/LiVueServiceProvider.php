@@ -106,6 +106,9 @@ class LiVueServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Component::setEventDispatcher($this->app['events']);
+        $this->app->make(LiVueManager::class)->registerNamespace(
+            config('livue.component_namespace', 'App\\LiVue')
+        );
 
         $this->registerCompilerEngine();
         $this->registerFeatures();

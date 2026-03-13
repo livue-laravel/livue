@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Event;
 use LiVue\Events\BenchmarkFinished;
 use LiVue\Events\BenchmarkStarting;
 use LiVue\LifecycleManager;
+use LiVue\LiVueManager;
 use LiVue\Security\StateChecksum;
 use LiVue\Synthesizers\SynthesizerRegistry;
 use LiVue\Tests\Fixtures\Counter;
@@ -241,6 +242,15 @@ describe('Benchmark', function () {
                     && count($event->mountResults) === 2
                     && count($event->updateResults) === 2;
             });
+        });
+
+        it('resolves components from additional registered namespaces', function () {
+            app(LiVueManager::class)->registerNamespace('LiVue\\Tests\\Fixtures\\Extra');
+
+            $this->artisan('livue:benchmark', [
+                'component' => 'extra-counter',
+                '--iterations' => 2,
+            ])->assertSuccessful();
         });
     });
 });

@@ -10,6 +10,7 @@ use LiVue\Events\BenchmarkFinished;
 use LiVue\Events\BenchmarkStarting;
 use LiVue\Facades\LiVue;
 use LiVue\LifecycleManager;
+use LiVue\LiVueManager;
 use LiVue\Security\StateChecksum;
 use LiVue\Synthesizers\SynthesizerRegistry;
 use Symfony\Component\Console\Helper\TableSeparator;
@@ -155,11 +156,15 @@ class BenchmarkCommand extends Command
             // Ignore resolution failures
         }
 
-        // Try discovery via configured namespace
-        $namespace = config('livue.component_namespace', 'App\\LiVue');
-        $className = $namespace . '\\' . Str::studly($arg);
-        if (class_exists($className) && is_subclass_of($className, Component::class)) {
-            return $className;
+        // Try discovery via all registered component namespaces
+        $manager = app(LiVueManager::class);
+        $className = Str::studly($arg);
+
+        foreach ($manager->getComponentNamespaces() as $namespace) {
+            $fullClass = $namespace . '\\' . $className;
+            if (class_exists($fullClass) && is_subclass_of($fullClass, Component::class)) {
+                return $fullClass;
+            }
         }
 
         return null;

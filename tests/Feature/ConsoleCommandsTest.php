@@ -17,6 +17,20 @@ describe('Console Commands', function () {
     });
 
     describe('make:livue', function () {
+        it('prompts for component name when not provided', function () {
+            $this->artisan('make:livue')
+                ->expectsQuestion('What is the component name?', 'PromptWidget')
+                ->assertSuccessful();
+
+            expect(File::exists(app_path('LiVue/PromptWidget.php')))->toBeTrue();
+            expect(File::exists(resource_path('views/livue/prompt-widget.blade.php')))->toBeTrue();
+        });
+
+        it('fails without name in non-interactive mode', function () {
+            $this->artisan('make:livue', ['--no-interaction' => true])
+                ->assertFailed();
+        });
+
         it('creates PHP class and Blade view', function () {
             $this->artisan('make:livue', ['name' => 'TestWidget'])
                 ->assertSuccessful();
@@ -72,6 +86,15 @@ describe('Console Commands', function () {
                 ->assertSuccessful();
 
             expect(File::exists(app_path('LiVue/TestAlias.php')))->toBeTrue();
+        });
+
+        it('creates class in explicit namespace path when FQCN is provided', function () {
+            $this->artisan('make:livue', ['name' => 'App\\LiVue\\Auth\\Login'])
+                ->assertSuccessful();
+
+            $filePath = app_path('LiVue/Auth/Login.php');
+            expect(File::exists($filePath))->toBeTrue();
+            expect(File::get($filePath))->toContain('namespace App\\LiVue\\Auth;');
         });
     });
 

@@ -9,7 +9,7 @@ use Illuminate\Support\Str;
 class MakeLiVueCommand extends Command
 {
     protected $signature = 'make:livue
-        {name : The name of the LiVue component}
+        {name? : The name of the LiVue component}
         {--single : Create a Single File Component}
         {--multi : Create a Multi File Component}';
 
@@ -29,8 +29,26 @@ class MakeLiVueCommand extends Command
     public function handle(): int
     {
         $name = $this->argument('name');
-        $className = Str::studly($name);
-        $viewName = Str::kebab($name);
+        if ($name === null) {
+            if (! $this->input->isInteractive()) {
+                $this->components->error('Component name is required in non-interactive mode.');
+
+                return self::FAILURE;
+            }
+
+            $name = $this->ask('What is the component name?');
+        }
+
+        $name = trim((string) $name);
+        if ($name === '') {
+            $this->components->error('Component name cannot be empty.');
+
+            return self::FAILURE;
+        }
+
+        $definition = $this->resolveClassDefinition($name);
+        $className = $definition['class'];
+        $viewName = Str::kebab($className);
 
         // Check for mutually exclusive options
         if ($this->option('single') && $this->option('multi')) {
@@ -48,7 +66,7 @@ class MakeLiVueCommand extends Command
         }
 
         // Default: class-based component
-        $this->createComponentClass($className);
+        $this->createComponentClass($className, $definition['namespace'], $definition['path']);
         $this->createBladeView($className, $viewName);
 
         $this->components->info("LiVue component [{$className}] created successfully.");
@@ -130,10 +148,8 @@ class MakeLiVueCommand extends Command
     /**
      * Create a class-based component (default behavior).
      */
-    protected function createComponentClass(string $className): void
+    protected function createComponentClass(string $className, string $namespace, string $path): void
     {
-        $namespace = config('livue.component_namespace', 'App\\LiVue');
-        $path = config('livue.component_path', app_path('LiVue'));
         $filePath = $path . '/' . $className . '.php';
 
         if ($this->files->exists($filePath)) {
@@ -153,6 +169,53 @@ class MakeLiVueCommand extends Command
         );
 
         $this->files->put($filePath, $stub);
+    }
+
+    /**
+     * Resolve class name, namespace, and destination path from input name.
+     *
+     * @return array{class: string, namespace: string, path: string}
+     */
+    protected function resolveClassDefinition(string $name): array
+    {
+        $normalized = ltrim(trim($name), '\\');
+
+        if (! str_contains($normalized, '\\')) {
+            return [
+                'class' => Str::studly($normalized),
+                'namespace' => config('livue.component_namespace', 'App\\LiVue'),
+                'path' => config('livue.component_path', app_path('LiVue')),
+            ];
+        }
+
+        $segments = array_values(array_filter(explode('\\', $normalized), fn ($segment) => $segment !== ''));
+        $classSegment = array_pop($segments) ?? '';
+
+        if ($classSegment === '') {
+            return [
+                'class' => Str::studly($normalized),
+                'namespace' => config('livue.component_namespace', 'App\\LiVue'),
+                'path' => config('livue.component_path', app_path('LiVue')),
+            ];
+        }
+
+        $namespace = implode('\\', $segments);
+        $className = Str::studly($classSegment);
+
+        $relativeSegments = $segments;
+        if ($relativeSegments !== [] && strcasecmp($relativeSegments[0], 'App') === 0) {
+            $relativeSegments = array_slice($relativeSegments, 1);
+        }
+
+        $path = $relativeSegments === []
+            ? app_path()
+            : app_path(implode('/', $relativeSegments));
+
+        return [
+            'class' => $className,
+            'namespace' => $namespace,
+            'path' => $path,
+        ];
     }
 
     /**

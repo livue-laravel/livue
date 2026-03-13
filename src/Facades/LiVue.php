@@ -9,6 +9,8 @@ use LiVue\LiVueManager;
  * @method static \Illuminate\Routing\Route route(string $uri, string $component)
  * @method static string renderComponent(string $name, array $props = [])
  * @method static void register(string $name, string $class)
+ * @method static void registerNamespace(string|array $namespace)
+ * @method static array<int, string> getComponentNamespaces()
  * @method static bool componentExists(string $name)
  * @method static \LiVue\Component resolve(string $name)
  * @method static \LiVue\Component resolveByClass(string $class)

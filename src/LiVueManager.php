@@ -35,6 +35,13 @@ class LiVueManager
     protected array $classToName = [];
 
     /**
+     * Component namespaces used for class-based auto-discovery.
+     *
+     * @var array<int, string>
+     */
+    protected array $componentNamespaces = [];
+
+    /**
      * Global store definitions available to all components.
      *
      * @var array<string, array<string, mixed>>
@@ -534,6 +541,45 @@ HTML;
     }
 
     /**
+     * Register one or more component namespaces for class-based discovery.
+     */
+    public function registerNamespace(string|array $namespace): void
+    {
+        $namespaces = is_array($namespace) ? $namespace : [$namespace];
+
+        foreach ($namespaces as $entry) {
+            if (! is_string($entry)) {
+                throw new \InvalidArgumentException('Component namespace entries must be strings.');
+            }
+
+            $normalized = trim($entry);
+            $normalized = trim($normalized, '\\');
+
+            if ($normalized === '') {
+                continue;
+            }
+
+            if (! in_array($normalized, $this->componentNamespaces, true)) {
+                $this->componentNamespaces[] = $normalized;
+            }
+        }
+    }
+
+    /**
+     * Get all namespaces used for class-based component discovery.
+     *
+     * @return array<int, string>
+     */
+    public function getComponentNamespaces(): array
+    {
+        if ($this->componentNamespaces === []) {
+            $this->registerNamespace(config('livue.component_namespace', 'App\\LiVue'));
+        }
+
+        return $this->componentNamespaces;
+    }
+
+    /**
      * Generate a hash-based name for a component class.
      * Used when components are resolved by class rather than by name.
      */
@@ -599,7 +645,7 @@ HTML;
      *
      * Resolution priority:
      * 1. Manually registered components
-     * 2. Class-based components (App\LiVue\Name)
+     * 2. Class-based components (registered namespaces)
      * 3. Single File Components (resources/views/livue/name.blade.php with <?php)
      * 4. Multi File Components (resources/views/livue/name/ folder)
      */
@@ -666,15 +712,19 @@ HTML;
     }
 
     /**
-     * Try to discover a component from the configured namespace.
+     * Try to discover a component from registered namespaces.
      */
     protected function discoverComponent(string $name): ?string
     {
-        $namespace = config('livue.component_namespace', 'App\\LiVue');
         $className = Str::studly($name);
-        $fullClass = $namespace . '\\' . $className;
 
-        if (class_exists($fullClass) && is_subclass_of($fullClass, Component::class)) {
+        foreach ($this->getComponentNamespaces() as $namespace) {
+            $fullClass = $namespace . '\\' . $className;
+
+            if (! class_exists($fullClass) || ! is_subclass_of($fullClass, Component::class)) {
+                continue;
+            }
+
             $this->register($name, $fullClass);
 
             return $fullClass;

@@ -3,6 +3,7 @@
 use LiVue\Exceptions\ComponentNotFoundException;
 use LiVue\LiVueManager;
 use LiVue\Tests\Fixtures\Counter;
+use LiVue\Tests\Fixtures\Extra\ExtraCounter;
 
 describe('Component Resolution', function () {
     it('resolves registered component by name', function () {
@@ -73,5 +74,22 @@ describe('Component Resolution', function () {
 
         expect($manager->getNameForClass(Counter::class))->toBe('test-counter');
         expect($manager->getComponentClass('test-counter'))->toBe(Counter::class);
+    });
+
+    it('discovers components in a manually registered namespace', function () {
+        $manager = app(LiVueManager::class);
+        $manager->registerNamespace('LiVue\\Tests\\Fixtures\\Extra');
+
+        expect($manager->getComponentClass('extra-counter'))->toBe(ExtraCounter::class);
+    });
+
+    it('discovers components using namespace registration order', function () {
+        $manager = app(LiVueManager::class);
+        $manager->registerNamespace([
+            'LiVue\\Tests\\Fixtures\\Missing',
+            'LiVue\\Tests\\Fixtures\\Extra',
+        ]);
+
+        expect($manager->getComponentClass('extra-counter'))->toBe(ExtraCounter::class);
     });
 });
