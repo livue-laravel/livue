@@ -32,6 +32,16 @@ trait HandlesNavigation
     }
 
     /**
+     * Check if a redirect intent is set without clearing it.
+     *
+     * @return array|null The redirect intent or null if none set
+     */
+    public function peekRedirect(): ?array
+    {
+        return $this->redirectIntent;
+    }
+
+    /**
      * Get and clear the redirect intent.
      *
      * @return array|null The redirect intent or null if none set

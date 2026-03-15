@@ -51,6 +51,16 @@ trait HandlesDownloads
     }
 
     /**
+     * Check if a download intent is set without clearing it.
+     *
+     * @return array|null The download intent or null if none set
+     */
+    public function peekDownload(): ?array
+    {
+        return $this->downloadIntent;
+    }
+
+    /**
      * Get and clear the download intent.
      *
      * @return array|null The download intent or null if none set

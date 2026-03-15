@@ -327,8 +327,8 @@ class LifecycleManager
 
             $component->clearComputedCache();
 
-            // Short-circuit if a redirect or download was set
-            if ($component->getRedirect() !== null || $component->getDownload() !== null) {
+            // Short-circuit if a redirect or download was set (peek without consuming)
+            if ($component->peekRedirect() !== null || $component->peekDownload() !== null) {
                 break;
             }
         }
