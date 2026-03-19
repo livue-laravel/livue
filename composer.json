@@ -30,22 +30,19 @@
     ],
     "require": {
         "php": "^8.2",
-        "illuminate/support": "^11.0|^12.0",
-        "illuminate/routing": "^11.0|^12.0",
-        "illuminate/view": "^11.0|^12.0",
-        "illuminate/http": "^11.0|^12.0",
-        "illuminate/encryption": "^11.0|^12.0",
-        "illuminate/validation": "^11.0|^12.0",
-        "illuminate/session": "^11.0|^12.0",
-        "illuminate/filesystem": "^11.0|^12.0"
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/routing": "^11.0|^12.0|^13.0",
+        "illuminate/view": "^11.0|^12.0|^13.0",
+        "illuminate/http": "^11.0|^12.0|^13.0",
+        "illuminate/encryption": "^11.0|^12.0|^13.0",
+        "illuminate/validation": "^11.0|^12.0|^13.0",
+        "illuminate/session": "^11.0|^12.0|^13.0",
+        "illuminate/filesystem": "^11.0|^12.0|^13.0"
     },
     "require-dev": {
-        "orchestra/testbench": "^9.0|^10.0",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
         "pestphp/pest": "^3.0",
         "pestphp/pest-plugin-laravel": "^3.0"
-    },
-    "conflict": {
-        "symfony/css-selector": ">=8.0"
     },
     "extra": {
         "laravel": {
