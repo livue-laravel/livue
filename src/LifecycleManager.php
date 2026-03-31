@@ -310,7 +310,7 @@ class LifecycleManager
 
                     $store = $this->hookRegistry->store($component);
                     if (! $store->get('composableActionHandled', false)) {
-                        $this->callMethod($component, $callMethod, $callParams);
+                        $methodReturnValue = $this->callMethod($component, $callMethod, $callParams);
                     }
 
                     $component->fireLifecycleEvent('called', false, $callMethod, $callParams);

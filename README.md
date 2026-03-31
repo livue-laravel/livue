@@ -9,7 +9,7 @@ Write reactive components with PHP on the server and Vue.js on the client, combi
 | Requirement | Version |
 |---|---|
 | PHP | 8.2+ |
-| Laravel | 11.x / 12.x |
+| Laravel | 11.x / 12.x / 13.x |
 | Vue | 3.5+ |
 
 ## Installation
