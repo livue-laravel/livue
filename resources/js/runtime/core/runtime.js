@@ -19,6 +19,7 @@ import {
     isNavigating,
 } from '../features/navigation.js';
 import progress from '../helpers/progress.js';
+import * as errorOverlay from '../helpers/error-overlay.js';
 import { registerBuiltInDirectives } from '../directives/index.js';
 import { hook, getAvailableHooks } from '../helpers/hooks.js';
 import * as debugFeature from '../features/debug.js';
@@ -306,6 +307,17 @@ class LiVueRuntime {
      */
     get progress() {
         return progress;
+    }
+
+    /**
+     * Get the error overlay API.
+     * Used internally by the request pool to display server HTML error pages
+     * (Ignition / Whoops / dd()) when APP_DEBUG is enabled server-side.
+     *
+     * @returns {object} { configure, show, close, isEnabled, maybeShowFromResponse }
+     */
+    get errorOverlay() {
+        return errorOverlay;
     }
 
     /**

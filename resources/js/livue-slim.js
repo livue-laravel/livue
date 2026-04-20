@@ -45,6 +45,11 @@ if (config.showProgressBar !== undefined ||
     LiVueRuntime.configureNavigation(config);
 }
 
+// Apply debug flag for the error overlay (gated on APP_DEBUG server-side)
+if (config.debug !== undefined) {
+    LiVueRuntime.errorOverlay.configure({ enabled: !!config.debug });
+}
+
 // Boot when DOM is ready
 document.addEventListener('DOMContentLoaded', function () {
     LiVueRuntime.boot();

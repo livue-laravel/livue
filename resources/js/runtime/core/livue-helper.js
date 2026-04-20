@@ -276,7 +276,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
      * @param {object} response - Server response
      * @param {object} [sentDiffs] - Diffs that were sent with this request (client changes to exclude from broadcast)
      */
-    function applyResponse(response, sentDiffs) {
+    function applyResponse(response, sentDiffs, shouldClearErrors = true) {
         // Handle redirect if present (defense-in-depth; primary handling is in pool.js)
         if (response.redirect) {
             handleRedirect(response.redirect);
@@ -326,7 +326,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
 
             if (parsed && parsed.state) {
                 let newState = unwrapState(parsed.state);
-                updateState(state, newState);
+                updateState(state, newState, sentDiffs);
                 serverState = JSON.parse(JSON.stringify(newState));
             }
 
@@ -339,7 +339,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 // Sync validation errors from memo
                 if (parsed.memo.errors) {
                     setErrors(livue.errors, parsed.memo.errors);
-                } else {
+                } else if (shouldClearErrors) {
                     clearErrors(livue.errors);
                 }
 
@@ -832,7 +832,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             try {
                 let payload = buildPayload();
                 let response = await sendAction(payload.snapshot, null, [], payload.diffs, isolate);
-                applyResponse(response, payload.diffs);
+                applyResponse(response, payload.diffs, false);
             } catch (error) {
                 if (error.status === 422 && error.data && error.data.errors) {
                     setErrors(livue.errors, error.data.errors);

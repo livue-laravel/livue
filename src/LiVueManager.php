@@ -171,6 +171,11 @@ class LiVueManager
         $progressConfig = config('livue.progress', []);
         $jsConfig['showProgressOnRequest'] = $progressConfig['show_on_request'] ?? false;
 
+        // Debug flag: when true, the runtime intercepts HTML 5xx responses
+        // (e.g. Ignition/Whoops pages triggered by dd() or exceptions) and
+        // renders them in a fullscreen overlay instead of silently failing.
+        $jsConfig['debug'] = (bool) config('app.debug', false);
+
         $configScript = '<script' . $nonceAttr . '>window.LiVueConfig = ' . json_encode($jsConfig) . ';</script>';
 
         // Smart loader: checks if LiVue.setup() was called (ESM mode)

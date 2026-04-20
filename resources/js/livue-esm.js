@@ -32,52 +32,66 @@ if (typeof document !== 'undefined' && !document.getElementById('livue-styles'))
 
 import LiVueRuntime from './runtime/index.js';
 
-// Read config from server-injected script (window.LiVueConfig)
-var config = window.LiVueConfig || {};
+// Singleton guard: livue.esm.js can be loaded from two different URLs in the
+// same page — once by Vite (via resolve.alias) and once by the browser's
+// import map (e.g. /livue/livue.js?module). Two separate module records mean
+// two separate Vue instances, which causes the "Cannot read properties of null
+// (reading 'ce')" crash.
+//
+// When a second load is detected (window.LiVue is already set), skip
+// initialisation entirely and re-export the existing instance so that all
+// callers — Vite-bundled code and import-map-loaded Primix scripts alike —
+// share the exact same LiVue (and therefore the same Vue runtime).
+if (!window.LiVue) {
+    // Read config from server-injected script (window.LiVueConfig)
+    var config = window.LiVueConfig || {};
 
-// Apply navigation config if present
-if (config.showProgressBar !== undefined ||
-    config.progressBarColor !== undefined ||
-    config.prefetch !== undefined ||
-    config.prefetchOnHover !== undefined ||
-    config.hoverDelay !== undefined ||
-    config.cachePages !== undefined ||
-    config.maxCacheSize !== undefined ||
-    config.restoreScroll !== undefined) {
-    LiVueRuntime.configureNavigation(config);
-}
-
-// Apply progress config if present
-if (config.showProgressOnRequest !== undefined) {
-    LiVueRuntime.progress.configure({ showOnRequest: config.showProgressOnRequest });
-}
-
-// Boot when DOM is ready.
-// In "interactive" state, wait for DOMContentLoaded/load to ensure deferred
-// module scripts had time to register LiVue.setup() callbacks.
-let _booted = false;
-function bootLiVue() {
-    if (_booted) {
-        return;
+    // Apply navigation config if present
+    if (config.showProgressBar !== undefined ||
+        config.progressBarColor !== undefined ||
+        config.prefetch !== undefined ||
+        config.prefetchOnHover !== undefined ||
+        config.hoverDelay !== undefined ||
+        config.cachePages !== undefined ||
+        config.maxCacheSize !== undefined ||
+        config.restoreScroll !== undefined) {
+        LiVueRuntime.configureNavigation(config);
     }
 
-    _booted = true;
-    LiVueRuntime.boot();
+    // Apply progress config if present
+    if (config.showProgressOnRequest !== undefined) {
+        LiVueRuntime.progress.configure({ showOnRequest: config.showProgressOnRequest });
+    }
+
+    // Apply debug flag for the error overlay (gated on APP_DEBUG server-side)
+    if (config.debug !== undefined) {
+        LiVueRuntime.errorOverlay.configure({ enabled: !!config.debug });
+    }
+
+    // Boot when DOM is ready.
+    // In "interactive" state, wait for DOMContentLoaded/load to ensure deferred
+    // module scripts had time to register LiVue.setup() callbacks.
+    let _booted = false;
+    const bootLiVue = () => {
+        if (_booted) return;
+        _booted = true;
+        LiVueRuntime.boot();
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
+    } else if (document.readyState === 'interactive') {
+        document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
+        window.addEventListener('load', bootLiVue, { once: true });
+    } else {
+        queueMicrotask(bootLiVue);
+    }
+
+    // Register as the canonical instance.
+    window.LiVue = LiVueRuntime;
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
-} else if (document.readyState === 'interactive') {
-    document.addEventListener('DOMContentLoaded', bootLiVue, { once: true });
-    window.addEventListener('load', bootLiVue, { once: true });
-} else {
-    queueMicrotask(bootLiVue);
-}
-
-// Expose globally
-window.LiVue = LiVueRuntime;
-
-export default LiVueRuntime;
+export default window.LiVue;
 
 // Export built-in plugins for ESM users
 export { ProgressPlugin } from './runtime/features/plugins/progress-plugin.js';

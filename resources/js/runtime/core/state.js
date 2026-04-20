@@ -57,20 +57,55 @@ export function createReactiveState(initialState) {
  * Adds new keys, updates existing ones, and removes stale keys.
  * Only updates values that have actually changed to avoid unnecessary re-renders.
  *
+ * When sentDiffs is provided, performs a smart field-level merge for object keys:
+ * sub-fields the server simply echoed back (value unchanged from what was sent)
+ * are preserved from the client's current state, protecting in-flight edits from
+ * being overwritten by stale server echoes (watch race condition).
+ *
  * @param {object} reactiveState
  * @param {object} newState
+ * @param {object} [sentDiffs] - Diffs that were sent with the request (from computeDiffs)
  */
-export function updateState(reactiveState, newState) {
+export function updateState(reactiveState, newState, sentDiffs) {
     let key;
 
     for (key in newState) {
-        // Only update if the value has actually changed
-        // This prevents unnecessary Vue re-renders for identical values
-        let oldJson = safeStringify(reactiveState[key]);
-        let newJson = safeStringify(newState[key]);
+        // Smart merge: if sentDiffs has this key and both values are plain objects,
+        // only apply sub-fields the server actually changed, preserving in-flight
+        // client edits for sub-fields the server just echoed back.
+        if (
+            sentDiffs &&
+            key in sentDiffs &&
+            newState[key] !== null && typeof newState[key] === 'object' && !Array.isArray(newState[key]) &&
+            reactiveState[key] !== null && typeof reactiveState[key] === 'object' && !Array.isArray(reactiveState[key])
+        ) {
+            let sent = sentDiffs[key];
+            let server = newState[key];
+            let client = reactiveState[key];
 
-        if (oldJson !== newJson) {
-            reactiveState[key] = newState[key];
+            // Start with server's full object, then restore client values where server didn't change anything
+            let merged = Object.assign({}, server);
+            for (let subKey in sent) {
+                if (safeStringify(sent[subKey]) === safeStringify(server[subKey])) {
+                    // Server echoed back what we sent → preserve client's newer in-flight value
+                    if (subKey in client) {
+                        merged[subKey] = client[subKey];
+                    }
+                }
+                // else: server changed this sub-field → keep server value (already in merged)
+            }
+
+            if (safeStringify(reactiveState[key]) !== safeStringify(merged)) {
+                reactiveState[key] = merged;
+            }
+        } else {
+            // Default: replace entire key if changed
+            let oldJson = safeStringify(reactiveState[key]);
+            let newJson = safeStringify(newState[key]);
+
+            if (oldJson !== newJson) {
+                reactiveState[key] = newState[key];
+            }
         }
     }
 

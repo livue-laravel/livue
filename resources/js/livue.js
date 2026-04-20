@@ -45,6 +45,11 @@ if (config.showProgressOnRequest !== undefined) {
     LiVueRuntime.progress.configure({ showOnRequest: config.showProgressOnRequest });
 }
 
+// Apply debug flag for the error overlay (gated on APP_DEBUG server-side)
+if (config.debug !== undefined) {
+    LiVueRuntime.errorOverlay.configure({ enabled: !!config.debug });
+}
+
 // Boot when DOM is ready.
 // In "interactive" state, wait for DOMContentLoaded/load to ensure deferred
 // module scripts had time to register LiVue.setup() callbacks.

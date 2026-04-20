@@ -8,6 +8,7 @@
 import { getToken } from '../../helpers/csrf.js';
 import { handleRedirect, clearCache } from '../navigation.js';
 import { trigger } from '../../helpers/hooks.js';
+import { maybeShowFromResponse } from '../../helpers/error-overlay.js';
 
 /**
  * Pending update request entries.
@@ -141,6 +142,29 @@ async function flush() {
             body: JSON.stringify(body),
             credentials: 'same-origin',
         });
+
+        // If the server returned an HTML error page (Ignition / Whoops / dd())
+        // and debug mode is on, show it in the overlay and reject the batch.
+        // response.json() below would throw on HTML, so handle this first.
+        if (await maybeShowFromResponse(response, url)) {
+            var overlayError = new Error('LiVue debug overlay: server returned HTML error page');
+            overlayError.status = response.status;
+            overlayError.overlay = true;
+            for (var i = 0; i < updateBatch.length; i++) {
+                updateBatch[i].reject(overlayError);
+            }
+            for (var i = 0; i < lazyBatch.length; i++) {
+                lazyBatch[i].reject(overlayError);
+            }
+            trigger('request.finished', {
+                url: url,
+                success: false,
+                error: overlayError,
+                updateCount: updateBatch.length,
+                lazyCount: lazyBatch.length,
+            });
+            return;
+        }
 
         var data = await response.json();
 
@@ -289,6 +313,14 @@ async function sendIsolated(payload) {
         body: JSON.stringify({ updates: [serverPayload] }),
         credentials: 'same-origin',
     });
+
+    // Debug: intercept HTML error pages (Ignition / Whoops / dd()).
+    if (await maybeShowFromResponse(response, url)) {
+        var overlayError = new Error('LiVue debug overlay: server returned HTML error page');
+        overlayError.status = response.status;
+        overlayError.overlay = true;
+        throw overlayError;
+    }
 
     var data = await response.json();
 
