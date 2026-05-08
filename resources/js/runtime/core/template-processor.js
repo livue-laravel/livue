@@ -20,6 +20,46 @@ import { insertAttributesIntoHtmlRoot } from '../helpers/dom.js';
 import { getPluginComposables } from './plugin-registry.js';
 
 /**
+ * Serialize the attributes of a child wrapper element into an HTML
+ * attribute string suitable for being concatenated inside an opening tag.
+ *
+ * Skips:
+ *   - data-livue-id, data-livue-snapshot — re-injected separately and not
+ *     meant to live inside the Vue template
+ *   - v-cloak — already consumed before mount
+ *   - v-pre — applied to islands as a separate step
+ *
+ * Quotes use HTML entity escaping for the value so the rebuilt opening
+ * tag is always valid.
+ *
+ * @param {HTMLElement} el
+ * @returns {string} Leading-space attribute string (empty when no attrs)
+ */
+function serializeWrapperAttrs(el) {
+    if (!el || !el.attributes) return '';
+
+    let out = '';
+    let attrs = el.attributes;
+    for (let i = 0; i < attrs.length; i++) {
+        let attr = attrs[i];
+        let name = attr.name;
+        if (
+            name === 'data-livue-id' ||
+            name === 'data-livue-snapshot' ||
+            name === 'v-cloak' ||
+            name === 'v-pre'
+        ) {
+            continue;
+        }
+        out += ' ' + name;
+        if (attr.value !== '') {
+            out += '="' + attr.value.replace(/"/g, '&quot;') + '"';
+        }
+    }
+    return out;
+}
+
+/**
  * Process an HTML string, extracting nested LiVue child components
  * and replacing them with Vue component tags.
  *
@@ -63,7 +103,7 @@ export function processTemplate(html, rootComponent) {
         let id = nestedEl.dataset.livueId;
         let childSnapshotJson = nestedEl.dataset.livueSnapshot || '{}';
 
-        let childSnapshot, name, initialState, childMemo, childHtml, rootTag;
+        let childSnapshot, name, initialState, childMemo, childHtml, rootTag, rootAttrs;
         try {
             childSnapshot = JSON.parse(childSnapshotJson);
             name = childSnapshot.memo ? childSnapshot.memo.name : '';
@@ -71,6 +111,11 @@ export function processTemplate(html, rootComponent) {
             childMemo = childSnapshot.memo || {};
             childHtml = nestedEl.innerHTML;
             rootTag = nestedEl.tagName.toLowerCase();
+            // Capture wrapper attributes (class, style, id, data-*, aria-*, etc.)
+            // so they survive the rebuild below. Skip livue/Vue-managed ones to
+            // avoid leaking the snapshot into the Vue template or duplicating
+            // data-livue-id (which is injected separately via insertAttributesIntoHtmlRoot).
+            rootAttrs = serializeWrapperAttrs(nestedEl);
         } catch (e) {
             console.error('[LiVue] Failed to parse child snapshot:', id, e);
             return; // Skip this child
@@ -195,6 +240,7 @@ export function processTemplate(html, rootComponent) {
                 name: name,
                 id: id,
                 rootTag: rootTag,
+                rootAttrs: rootAttrs,
             };
 
             // Register event listeners declared via $listeners on the PHP component
@@ -238,8 +284,10 @@ export function processTemplate(html, rootComponent) {
                 // Without this, the initial template has an outer wrapper div but the
                 // update template injects data-livue-id directly into the content root,
                 // causing a structural mismatch -> Vue recreates all DOM elements -> flicker.
+                // Reuse the captured wrapper attrs (class, style, etc.) so they
+                // don't get dropped on AJAX template swaps.
                 let newTemplate = insertAttributesIntoHtmlRoot(
-                    '<' + existing.rootTag + '>' + childProcessed.template + '</' + existing.rootTag + '>',
+                    '<' + existing.rootTag + (existing.rootAttrs || '') + '>' + childProcessed.template + '</' + existing.rootTag + '>',
                     'data-livue-id="' + id + '"'
                 );
 
@@ -354,9 +402,12 @@ export function processTemplate(html, rootComponent) {
         // Only add to childDefs if this is a new child (needs initial registration)
         if (isNew) {
             // Use the actual root tag from the server-rendered HTML (e.g., <section>, <header>)
-            // and inject data-livue-id into it, instead of wrapping in a spurious <div>
+            // and inject data-livue-id into it, instead of wrapping in a spurious <div>.
+            // Preserve the captured wrapper attributes (class, style, id, data-*, aria-*, ...)
+            // so they survive the rebuild — otherwise hardcoded classes set on the
+            // component template's first element would be lost.
             let childTemplate = insertAttributesIntoHtmlRoot(
-                '<' + rootTag + '>' + childHtml + '</' + rootTag + '>',
+                '<' + rootTag + (rootAttrs || '') + '>' + childHtml + '</' + rootTag + '>',
                 'data-livue-id="' + id + '"'
             );
             let childComposables = Object.assign({}, getPluginComposables(), existing.composables || {});

@@ -30,6 +30,55 @@ afterEach(() => {
 
 describe('Root element class preservation', () => {
 
+    it('preserves wrapper attributes when extracting nested children via processTemplate', async () => {
+        const { processTemplate } = await import('@/core/template-processor.js');
+
+        const childSnapshot = {
+            state: { count: 0 },
+            memo: { id: 'livue-child-1', name: 'widget', checksum: 'x' },
+        };
+
+        // Parent root with one nested child whose wrapper has hardcoded class+style
+        const html = '<div data-livue-id="livue-child-1"' +
+            ' data-livue-snapshot=\'' + JSON.stringify(childSnapshot) + '\'' +
+            ' class="primix-widget primix-widget-boxed"' +
+            ' style="--px-widget-border: red;"' +
+            ' data-test="abc">' +
+            '<span>inner</span>' +
+            '</div>';
+
+        // Minimal rootComponent stub
+        const rootComponent = {
+            _childRegistry: {},
+            _versions: {},
+            _rootLivue: null,
+            _rootState: null,
+            _pinia: null,
+            el: document.createElement('div'),
+        };
+
+        const processed = processTemplate(html, rootComponent);
+
+        // The processed template should contain a child placeholder tag — the
+        // template stored on the child def must include the original wrapper
+        // class/style/data-* attributes.
+        const childTag = Object.keys(processed.childDefs)[0];
+        expect(childTag).toBeTruthy();
+
+        const def = processed.childDefs[childTag];
+        // Inspect by re-rendering the captured template; processTemplate stores
+        // the rebuilt HTML inside the def via buildComponentDef — easiest check
+        // is to look at the child registry which we kept rootAttrs on.
+        const registered = rootComponent._childRegistry['livue-child-1'];
+        expect(registered).toBeTruthy();
+        expect(registered.rootAttrs).toContain('class="primix-widget primix-widget-boxed"');
+        expect(registered.rootAttrs).toContain('style="--px-widget-border: red;"');
+        expect(registered.rootAttrs).toContain('data-test="abc"');
+        // Must NOT include the snapshot or v-cloak in the rebuilt template
+        expect(registered.rootAttrs).not.toContain('data-livue-snapshot');
+        expect(registered.rootAttrs).not.toContain('v-cloak');
+    });
+
     it('preserves hardcoded class on the wrapper after Vue mount', async () => {
         const snapshot = {
             state: { count: 0 },
