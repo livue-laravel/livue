@@ -29,8 +29,8 @@ function Ll(e, t, n) {
   for (r in t)
     if (n && r in n && t[r] !== null && typeof t[r] == "object" && !Array.isArray(t[r]) && e[r] !== null && typeof e[r] == "object" && !Array.isArray(e[r])) {
       let i = n[r], o = t[r], a = e[r], l = Object.assign({}, o);
-      for (let u in i)
-        mt(i[u]) === mt(o[u]) && u in a && (l[u] = a[u]);
+      for (let s in i)
+        mt(i[s]) === mt(o[s]) && s in a && (l[s] = a[s]);
       mt(e[r]) !== mt(l) && (e[r] = l);
     } else {
       let i = mt(e[r]), o = mt(t[r]);
@@ -67,12 +67,12 @@ function Wt(e, t, n) {
   let i = r[0], o = e[i], a = JSON.parse(JSON.stringify(o ?? {}));
   Array.isArray(a) && isNaN(Number(r[1])) && (a = Object.assign({}, a));
   let l = a;
-  for (let s = 1; s < r.length - 1; s++) {
-    let c = r[s];
-    (l[c] === null || l[c] === void 0) && (l[c] = {}), Array.isArray(l[c]) && s + 1 < r.length && isNaN(Number(r[s + 1])) && (l[c] = Object.assign({}, l[c])), l = l[c];
+  for (let u = 1; u < r.length - 1; u++) {
+    let c = r[u];
+    (l[c] === null || l[c] === void 0) && (l[c] = {}), Array.isArray(l[c]) && u + 1 < r.length && isNaN(Number(r[u + 1])) && (l[c] = Object.assign({}, l[c])), l = l[c];
   }
-  let u = r[r.length - 1];
-  l[u] = n, e[i] = a;
+  let s = r[r.length - 1];
+  l[s] = n, e[i] = a;
 }
 function xn(e, t) {
   let n = {}, r = Qo(t);
@@ -211,8 +211,8 @@ function Vl(e) {
 }
 function zl(e, t, n, r) {
   const { state: i, actions: o, getters: a } = t, l = n.state.value[e];
-  let u;
-  function s() {
+  let s;
+  function u() {
     l || (n.state.value[e] = i ? i() : {});
     const c = Bo(n.state.value[e]);
     return Je(c, o, Object.keys(a || {}).reduce((f, p) => (f[p] = Uo(Ko(() => {
@@ -221,18 +221,18 @@ function zl(e, t, n, r) {
       return a[p].call(h, h);
     })), f), {}));
   }
-  return u = aa(e, s, t, n, r, !0), u;
+  return s = aa(e, u, t, n, r, !0), s;
 }
 function aa(e, t, n = {}, r, i, o) {
   let a;
-  const l = Je({ actions: {} }, n), u = { deep: !0 };
-  let s, c, f = /* @__PURE__ */ new Set(), p = /* @__PURE__ */ new Set(), h;
+  const l = Je({ actions: {} }, n), s = { deep: !0 };
+  let u, c, f = /* @__PURE__ */ new Set(), p = /* @__PURE__ */ new Set(), h;
   const m = r.state.value[e];
   !o && !m && (r.state.value[e] = {}), fn({});
   let v;
   function g(R) {
     let k;
-    s = c = !1, typeof R == "function" ? (R(r.state.value[e]), k = {
+    u = c = !1, typeof R == "function" ? (R(r.state.value[e]), k = {
       type: Qt.patchFunction,
       storeId: e,
       events: h
@@ -244,7 +244,7 @@ function aa(e, t, n = {}, r, i, o) {
     });
     const I = v = /* @__PURE__ */ Symbol();
     fr().then(() => {
-      v === I && (s = !0);
+      v === I && (u = !0);
     }), c = !0, ht(f, k, r.state.value[e]);
   }
   const y = o ? function() {
@@ -296,12 +296,12 @@ function aa(e, t, n = {}, r, i, o) {
     $reset: y,
     $subscribe(R, k = {}) {
       const I = $i(f, R, k.detached, () => H()), H = a.run(() => ke(() => r.state.value[e], (re) => {
-        (k.flush === "sync" ? c : s) && R({
+        (k.flush === "sync" ? c : u) && R({
           storeId: e,
           type: Qt.direct,
           events: h
         }, re);
-      }, Je({}, u, k)));
+      }, Je({}, s, k)));
       return I;
     },
     $dispose: _
@@ -331,7 +331,7 @@ function aa(e, t, n = {}, r, i, o) {
       pinia: r,
       options: l
     })));
-  }), m && o && n.hydrate && n.hydrate(w.$state, m), s = !0, c = !0, w;
+  }), m && o && n.hydrate && n.hydrate(w.$state, m), u = !0, c = !0, w;
 }
 // @__NO_SIDE_EFFECTS__
 function Hl(e, t, n) {
@@ -339,10 +339,10 @@ function Hl(e, t, n) {
   const i = typeof t == "function";
   r = i ? n : t;
   function o(a, l) {
-    const u = bl();
+    const s = bl();
     return a = // in test mode, ignore the argument provided as we can always retrieve a
     // pinia instance with getActivePinia()
-    a || (u ? Jo(ia, null) : null), a && pr(a), a = ra, a._s.has(e) || (i ? aa(e, t, r, a) : zl(e, r, a)), a._s.get(e);
+    a || (s ? Jo(ia, null) : null), a && pr(a), a = ra, a._s.has(e) || (i ? aa(e, t, r, a) : zl(e, r, a)), a._s.get(e);
   }
   return o.$id = e, o;
 }
@@ -391,16 +391,16 @@ function Bl(e, t, n) {
   for (let i = 0; i < t.length; i++) {
     let o = t[i];
     if (!o || typeof o != "object" || typeof o.name != "string" || o.name.trim() === "") continue;
-    let a = o.scope === "global" ? "global" : "component", l = Dt(o.state || {}), u = ct(e, o.name, { scope: a }, n);
-    if (u) {
-      Fl(u, l), r[o.name] = u;
+    let a = o.scope === "global" ? "global" : "component", l = Dt(o.state || {}), s = ct(e, o.name, { scope: a }, n);
+    if (s) {
+      Fl(s, l), r[o.name] = s;
       continue;
     }
-    let s = {
+    let u = {
       state: function() {
         return la(l);
       }
-    }, c = bi(e, o.name, s, { scope: a }, n);
+    }, c = bi(e, o.name, u, { scope: a }, n);
     r[o.name] = c;
   }
   return r;
@@ -431,8 +431,8 @@ function Bi(e) {
   let t = /<script\s+type="application\/livue-setup"[^>]*>([\s\S]*?)<\/script>/g, n = Array.from(e.matchAll(t));
   if (n.length === 0)
     return { html: e, setupCode: null };
-  function r(u) {
-    return u = u.replace(/^<script[^>]*>\s*/i, ""), u = u.replace(/\s*<\/script>$/i, ""), u.trim();
+  function r(s) {
+    return s = s.replace(/^<script[^>]*>\s*/i, ""), s = s.replace(/\s*<\/script>$/i, ""), s.trim();
   }
   let i = e;
   for (var o = n.length - 1; o >= 0; o--)
@@ -442,12 +442,12 @@ function Bi(e) {
       html: i,
       setupCode: r(n[0][1].trim())
     };
-  var a = n.map(function(u) {
-    return r(u[1].trim());
+  var a = n.map(function(s) {
+    return r(s[1].trim());
   }), l = `var __setupResult = {};
-` + a.map(function(u) {
+` + a.map(function(s) {
     return `Object.assign(__setupResult, (function() {
-` + u + `
+` + s + `
 })() || {});`;
   }).join(`
 `) + `
@@ -460,10 +460,10 @@ return __setupResult;`;
 function Jl(e, t, n, r) {
   let i = Object.keys(t), o = i.map(function(v) {
     return t[v];
-  }), a = r || {}, l = Object.keys(a), u = l.map(function(v) {
+  }), a = r || {}, l = Object.keys(a), s = l.map(function(v) {
     return a[v];
   });
-  function s(v) {
+  function u(v) {
     return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(v);
   }
   function c(v, g, y) {
@@ -484,7 +484,7 @@ function Jl(e, t, n, r) {
   }
   let p = [], h = [];
   function m(v, g) {
-    if (!s(v))
+    if (!u(v))
       return;
     let y = p.indexOf(v);
     if (y === -1) {
@@ -498,7 +498,7 @@ function Jl(e, t, n, r) {
   for (let v = 0; v < i.length; v++)
     m(i[v], o[v]);
   for (let v = 0; v < l.length; v++)
-    m(l[v], u[v]);
+    m(l[v], s[v]);
   m("livue", n), m("store", c), m("useStore", f);
   try {
     let g = new (Function.prototype.bind.apply(
@@ -513,18 +513,18 @@ function Jl(e, t, n, r) {
 function Xl(e) {
   for (var t = ["debounce", "throttle"], n = 0; n < t.length; n++) {
     var r = t[n], i = new RegExp("v-model\\." + r + `(?:\\.(\\d+)(ms)?)?=["']([^"']+)["']`, "g");
-    e = e.replace(i, /* @__PURE__ */ (function(s) {
+    e = e.replace(i, /* @__PURE__ */ (function(u) {
       return function(c, f, p, h) {
         var m = f ? "." + f + (p || "ms") : "";
-        return 'v-model="' + h + '" v-' + s + ":" + h + m;
+        return 'v-model="' + h + '" v-' + u + ":" + h + m;
       };
     })(r));
   }
   for (var o = ["blur", "enter"], a = 0; a < o.length; a++) {
-    var l = o[a], u = new RegExp("v-model\\." + l + `=["']([^"']+)["']`, "g");
-    e = e.replace(u, /* @__PURE__ */ (function(s) {
+    var l = o[a], s = new RegExp("v-model\\." + l + `=["']([^"']+)["']`, "g");
+    e = e.replace(s, /* @__PURE__ */ (function(u) {
       return function(c, f) {
-        return 'v-model="' + f + '" v-' + s + ":" + f;
+        return 'v-model="' + f + '" v-' + u + ":" + f;
       };
     })(l));
   }
@@ -641,13 +641,13 @@ function Yr(e, t, n, r, i, o) {
       '<div style="padding:8px;border:2px solid #f00;color:#f00;font-family:monospace">[LiVue] Template error: ' + (h.message || "compilation failed") + "</div>"
     );
   }
-  let u = gi(l), s = [], c = !1;
+  let s = gi(l), u = [], c = !1;
   function f(h, m) {
-    let v = u.value;
+    let v = s.value;
     c = !0;
     let g;
     try {
-      g = v(h, s);
+      g = v(h, u);
     } finally {
       c = !1;
     }
@@ -709,8 +709,8 @@ function Yr(e, t, n, r, i, o) {
   return p._updateRender = function(h) {
     try {
       let m = Bi(h), v = Sn.compile(Ui(m.html));
-      if (v === u.value) return;
-      s.length = 0, u.value = v;
+      if (v === s.value) return;
+      u.length = 0, s.value = v;
     } catch (m) {
       console.error('[LiVue] Template update compilation error in "' + (o || "unknown") + '":', m);
     }
@@ -1031,12 +1031,12 @@ async function _n(e, t, n) {
             throw new Error("HTTP " + l.status);
           o = await l.text(), Se.cachePages && ma(r, o);
         }
-        var u = new DOMParser(), s = u.parseFromString(o, "text/html"), c = new CustomEvent("livue:navigating", {
+        var s = new DOMParser(), u = s.parseFromString(o, "text/html"), c = new CustomEvent("livue:navigating", {
           detail: {
             url: r,
-            doc: s,
+            doc: u,
             onSwap: function(y) {
-              typeof y == "function" && y(s);
+              typeof y == "function" && y(u);
             }
           }
         });
@@ -1049,14 +1049,14 @@ async function _n(e, t, n) {
         }), Jt._stopObserver(), Jt.destroyExcept(p), f.forEach(function(y) {
           y.element.parentNode && y.element.parentNode.removeChild(y.element);
         });
-        var h = s.querySelector("title");
-        h && (document.title = h.textContent), document.body.innerHTML = s.body.innerHTML, ys(f);
-        var m = s.querySelector('meta[name="csrf-token"]'), v = document.querySelector('meta[name="csrf-token"]');
-        if (m && v && (v.setAttribute("content", m.getAttribute("content")), Ql()), ws(s), _s(s), Es(s), t && (Qe = pa(), history.pushState(
+        var h = u.querySelector("title");
+        h && (document.title = h.textContent), document.body.innerHTML = u.body.innerHTML, ys(f);
+        var m = u.querySelector('meta[name="csrf-token"]'), v = document.querySelector('meta[name="csrf-token"]');
+        if (m && v && (v.setAttribute("content", m.getAttribute("content")), Ql()), ws(u), _s(u), Es(u), t && (Qe = pa(), history.pushState(
           { livueNavigate: !0, url: r, pageKey: Qe },
           "",
           r
-        )), Ss(s), Jt.rebootPreserving(), n)
+        )), Ss(u), Jt.rebootPreserving(), n)
           cs(Qe);
         else if (location.hash) {
           var g = document.querySelector(location.hash);
@@ -1080,15 +1080,15 @@ function bs() {
     var r = n.dataset.livuePersist;
     if (r) {
       var i = [], o = n.querySelectorAll("[data-livue-id]");
-      o.forEach(function(u) {
-        i.push(u.dataset.livueId);
+      o.forEach(function(s) {
+        i.push(s.dataset.livueId);
       }), n.dataset.livueId && i.push(n.dataset.livueId);
       var a = {}, l = n.querySelectorAll("[data-livue-scroll]");
-      l.forEach(function(u) {
-        var s = u.dataset.livueScroll;
-        s && (a[s] = {
-          scrollTop: u.scrollTop,
-          scrollLeft: u.scrollLeft
+      l.forEach(function(s) {
+        var u = s.dataset.livueScroll;
+        u && (a[u] = {
+          scrollTop: s.scrollTop,
+          scrollLeft: s.scrollLeft
         });
       }), e.set(r, {
         element: n,
@@ -1321,10 +1321,10 @@ function ba(e, t, n) {
   )), i.appendChild(o);
   const l = document.createElement("div");
   l.style.display = "flex", l.style.alignItems = "center", l.style.gap = "12px";
-  const u = document.createElement("span");
-  u.className = "livue-error-overlay__hint", u.textContent = "Press ESC to close", l.appendChild(u);
-  const s = document.createElement("button");
-  s.type = "button", s.className = "livue-error-overlay__close", s.textContent = "Close", s.addEventListener("click", Xt), l.appendChild(s), i.appendChild(l), r.appendChild(i);
+  const s = document.createElement("span");
+  s.className = "livue-error-overlay__hint", s.textContent = "Press ESC to close", l.appendChild(s);
+  const u = document.createElement("button");
+  u.type = "button", u.className = "livue-error-overlay__close", u.textContent = "Close", u.addEventListener("click", Xt), l.appendChild(u), i.appendChild(l), r.appendChild(i);
   const c = document.createElement("iframe");
   c.className = "livue-error-overlay__frame", c.setAttribute("srcdoc", e), c.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups"), r.appendChild(c), r.addEventListener("click", function(f) {
     f.target === r && Xt();
@@ -1394,32 +1394,32 @@ async function _a() {
       lazyCount: t.length
     });
     try {
-      var u = await fetch(n, {
+      var s = await fetch(n, {
         method: "POST",
         headers: i,
         body: JSON.stringify(l),
         credentials: "same-origin"
       });
-      if (await Si(u, n)) {
-        var s = new Error("LiVue debug overlay: server returned HTML error page");
-        s.status = u.status, s.overlay = !0;
+      if (await Si(s, n)) {
+        var u = new Error("LiVue debug overlay: server returned HTML error page");
+        u.status = s.status, u.overlay = !0;
         for (var c = 0; c < e.length; c++)
-          e[c].reject(s);
+          e[c].reject(u);
         for (var c = 0; c < t.length; c++)
-          t[c].reject(s);
+          t[c].reject(u);
         we("request.finished", {
           url: n,
           success: !1,
-          error: s,
+          error: u,
           updateCount: e.length,
           lazyCount: t.length
         });
         return;
       }
-      var f = await u.json();
-      if (!u.ok) {
+      var f = await s.json();
+      if (!s.ok) {
         var p = new Error(f.error || "Request failed");
-        p.status = u.status, p.data = f;
+        p.status = s.status, p.data = f;
         for (var c = 0; c < e.length; c++)
           e[c].reject(p);
         for (var c = 0; c < t.length; c++)
@@ -1505,24 +1505,24 @@ async function Ds(e) {
   }
   var l = await o.json();
   if (!o.ok) {
-    var u = new Error(l.error || "Request failed");
-    throw u.status = o.status, u.data = l, u;
+    var s = new Error(l.error || "Request failed");
+    throw s.status = o.status, s.data = l, s;
   }
-  var s = (l.responses || [])[0];
-  if (!s)
+  var u = (l.responses || [])[0];
+  if (!u)
     throw new Error("No response for isolated component update");
-  if (s.redirect)
-    return wi(s.redirect), new Promise(function() {
+  if (u.redirect)
+    return wi(u.redirect), new Promise(function() {
     });
-  if (_i(), s.error) {
-    var c = new Error(s.error);
-    throw c.status = s.status || 500, c.data = s, c;
+  if (_i(), u.error) {
+    var c = new Error(u.error);
+    throw c.status = u.status || 500, c.data = u, c;
   }
-  if (s.errors) {
+  if (u.errors) {
     var c = new Error("Validation failed");
-    throw c.status = 422, c.data = s, c;
+    throw c.status = 422, c.data = u, c;
   }
-  return s;
+  return u;
 }
 function wa() {
   var e = document.querySelector('meta[name="livue-prefix"]')?.getAttribute("content") || "livue";
@@ -2402,30 +2402,30 @@ function Sa(e, t, n) {
     };
   const r = [];
   for (let i = 0; i < t.length; i++) {
-    const o = t[i], { channel: a, type: l, event: u, method: s, isPresenceEvent: c, isCustomEvent: f } = o, p = $s(a, l);
+    const o = t[i], { channel: a, type: l, event: s, method: u, isPresenceEvent: c, isCustomEvent: f } = o, p = $s(a, l);
     if (!p) continue;
-    const h = l + ":" + a + ":" + u + ":" + e;
+    const h = l + ":" + a + ":" + s + ":" + e;
     if (Fe.has(h)) {
       r.push(h);
       continue;
     }
     const m = function(v) {
       try {
-        n(s, v);
+        n(u, v);
       } catch (g) {
-        console.error('[LiVue Echo] Error calling method "' + s + '":', g);
+        console.error('[LiVue Echo] Error calling method "' + u + '":', g);
       }
     };
     if (l === "presence" && c)
-      Fs(p, u, m);
+      Fs(p, s, m);
     else {
-      const v = f ? "." + u : u;
+      const v = f ? "." + s : s;
       p.listen(v, m);
     }
     Fe.set(h, {
       channel: p,
       channelKey: l + ":" + a,
-      event: u,
+      event: s,
       handler: m,
       isPresenceEvent: c,
       isCustomEvent: f
@@ -2773,9 +2773,9 @@ function Ia(e, t) {
     children: []
   };
   if (!t && e._childRegistry)
-    for (var u in e._childRegistry) {
-      var s = e._childRegistry[u];
-      l.children.push(Ia(s, !0));
+    for (var s in e._childRegistry) {
+      var u = e._childRegistry[s];
+      l.children.push(Ia(u, !0));
     }
   return l;
 }
@@ -2800,22 +2800,22 @@ function Pa(e, t) {
   a.className = "livue-devtools__node-icon", e.isIsland ? (a.classList.add("livue-devtools__node-icon--island"), a.textContent = "◆") : e.isChild ? (a.classList.add("livue-devtools__node-icon--child"), a.textContent = "○") : (a.classList.add("livue-devtools__node-icon--root"), a.textContent = "■"), i.appendChild(a);
   var l = document.createElement("span");
   l.className = "livue-devtools__node-name", l.textContent = "<" + e.name + ">", i.appendChild(l);
-  var u = document.createElement("span");
-  u.className = "livue-devtools__node-id", u.textContent = "#" + e.id.substring(0, 8), u.title = e.id, i.appendChild(u);
   var s = document.createElement("span");
-  if (s.className = "livue-devtools__node-badges", e.loading) {
+  s.className = "livue-devtools__node-id", s.textContent = "#" + e.id.substring(0, 8), s.title = e.id, i.appendChild(s);
+  var u = document.createElement("span");
+  if (u.className = "livue-devtools__node-badges", e.loading) {
     var c = document.createElement("span");
-    c.className = "livue-devtools__badge livue-devtools__badge--loading", c.textContent = "loading", s.appendChild(c);
+    c.className = "livue-devtools__badge livue-devtools__badge--loading", c.textContent = "loading", u.appendChild(c);
   }
   if (e.dirty) {
     var f = document.createElement("span");
-    f.className = "livue-devtools__badge livue-devtools__badge--dirty", f.textContent = "dirty", s.appendChild(f);
+    f.className = "livue-devtools__badge livue-devtools__badge--dirty", f.textContent = "dirty", u.appendChild(f);
   }
   if (e.errorCount > 0) {
     var p = document.createElement("span");
-    p.className = "livue-devtools__badge livue-devtools__badge--error", p.textContent = e.errorCount + " error" + (e.errorCount > 1 ? "s" : ""), s.appendChild(p);
+    p.className = "livue-devtools__badge livue-devtools__badge--error", p.textContent = e.errorCount + " error" + (e.errorCount > 1 ? "s" : ""), u.appendChild(p);
   }
-  if (i.appendChild(s), i.addEventListener("click", function(m) {
+  if (i.appendChild(u), i.addEventListener("click", function(m) {
     if (m.target === o && r) {
       var v = n.querySelector(".livue-devtools__node-children");
       if (v) {
@@ -2850,10 +2850,10 @@ function hr(e) {
   o.className = "livue-devtools__state-title", o.textContent = "<" + ut.name + ">", e.appendChild(o);
   var a = document.createElement("div");
   a.style.cssText = "display: flex; gap: 4px; margin-bottom: 8px;", ["state", "diff", "info"].forEach(function(l) {
-    var u = document.createElement("button");
-    u.style.cssText = "padding: 2px 8px; font-size: 10px; background: " + (qt === l ? "#007acc" : "#3c3c3c") + "; border: none; color: #fff; border-radius: 3px; cursor: pointer;", u.textContent = l.charAt(0).toUpperCase() + l.slice(1), u.addEventListener("click", function() {
+    var s = document.createElement("button");
+    s.style.cssText = "padding: 2px 8px; font-size: 10px; background: " + (qt === l ? "#007acc" : "#3c3c3c") + "; border: none; color: #fff; border-radius: 3px; cursor: pointer;", s.textContent = l.charAt(0).toUpperCase() + l.slice(1), s.addEventListener("click", function() {
       qt = l, hr(e);
-    }), a.appendChild(u);
+    }), a.appendChild(s);
   }), e.appendChild(a), qt === "state" ? du(e, t, r, n) : qt === "diff" ? fu(e, i) : qt === "info" && pu(e, i);
 }
 function du(e, t, n, r) {
@@ -2864,21 +2864,21 @@ function du(e, t, n, r) {
       o.className = "livue-devtools__state-empty", o.textContent = "No state properties", e.appendChild(o);
     } else
       i.forEach(function(l) {
-        var u = n.has(l);
-        e.appendChild(Ti(l, t[l], u, l));
+        var s = n.has(l);
+        e.appendChild(Ti(l, t[l], s, l));
       });
   }
   if (r && r.errors && Object.keys(r.errors).length > 0) {
     var a = document.createElement("div");
     a.className = "livue-devtools__state-title", a.style.marginTop = "12px", a.textContent = "Validation Errors", e.appendChild(a), Object.keys(r.errors).forEach(function(l) {
-      var u = document.createElement("div");
-      u.className = "livue-devtools__prop";
-      var s = document.createElement("span");
-      s.className = "livue-devtools__prop-key", s.style.color = "#f48771", s.textContent = l, u.appendChild(s);
+      var s = document.createElement("div");
+      s.className = "livue-devtools__prop";
+      var u = document.createElement("span");
+      u.className = "livue-devtools__prop-key", u.style.color = "#f48771", u.textContent = l, s.appendChild(u);
       var c = document.createElement("span");
-      c.className = "livue-devtools__prop-colon", c.textContent = ": ", u.appendChild(c);
+      c.className = "livue-devtools__prop-colon", c.textContent = ": ", s.appendChild(c);
       var f = document.createElement("span");
-      f.className = "livue-devtools__prop-value", f.style.color = "#f48771", f.textContent = r.errors[l].join(", "), u.appendChild(f), e.appendChild(u);
+      f.className = "livue-devtools__prop-value", f.style.color = "#f48771", f.textContent = r.errors[l].join(", "), s.appendChild(f), e.appendChild(s);
     });
   }
 }
@@ -2895,14 +2895,14 @@ function fu(e, t) {
   }
   var i = document.createElement("div");
   i.style.cssText = "color: #dcdcaa; margin-bottom: 8px; font-size: 11px;", i.textContent = n.length + " unsync'd field(s):", e.appendChild(i), n.forEach(function(o) {
-    var a = t.serverState[o], l = t.clientState[o], u = document.createElement("div");
-    u.style.cssText = "margin-bottom: 8px; padding: 6px; background: #2a2d2e; border-radius: 3px;";
-    var s = document.createElement("div");
-    s.style.cssText = "color: #dcdcaa; font-weight: 600; margin-bottom: 4px;", s.textContent = o, u.appendChild(s);
+    var a = t.serverState[o], l = t.clientState[o], s = document.createElement("div");
+    s.style.cssText = "margin-bottom: 8px; padding: 6px; background: #2a2d2e; border-radius: 3px;";
+    var u = document.createElement("div");
+    u.style.cssText = "color: #dcdcaa; font-weight: 600; margin-bottom: 4px;", u.textContent = o, s.appendChild(u);
     var c = document.createElement("div");
-    c.style.cssText = "font-size: 11px; color: #858585;", c.innerHTML = '<span style="color: #6a9955;">Server:</span> <span style="color: #ce9178;">' + JSON.stringify(a) + "</span>", u.appendChild(c);
+    c.style.cssText = "font-size: 11px; color: #858585;", c.innerHTML = '<span style="color: #6a9955;">Server:</span> <span style="color: #ce9178;">' + JSON.stringify(a) + "</span>", s.appendChild(c);
     var f = document.createElement("div");
-    f.style.cssText = "font-size: 11px; color: #858585;", f.innerHTML = '<span style="color: #9cdcfe;">Client:</span> <span style="color: #ce9178;">' + JSON.stringify(l) + "</span>", u.appendChild(f), e.appendChild(u);
+    f.style.cssText = "font-size: 11px; color: #858585;", f.innerHTML = '<span style="color: #9cdcfe;">Client:</span> <span style="color: #ce9178;">' + JSON.stringify(l) + "</span>", s.appendChild(f), e.appendChild(s);
   });
 }
 function pu(e, t) {
@@ -2920,15 +2920,15 @@ function pu(e, t) {
     { label: "Confirm Methods", value: n.confirmMethods.length > 0 ? n.confirmMethods.join(", ") : "-" },
     { label: "Composables", value: n.composableNames.length > 0 ? n.composableNames.join(", ") : "-" }
   ];
-  r.forEach(function(s) {
+  r.forEach(function(u) {
     var c = document.createElement("div");
     c.className = "livue-devtools__prop";
     var f = document.createElement("span");
-    f.className = "livue-devtools__prop-key", f.textContent = s.label, c.appendChild(f);
+    f.className = "livue-devtools__prop-key", f.textContent = u.label, c.appendChild(f);
     var p = document.createElement("span");
     p.className = "livue-devtools__prop-colon", p.textContent = ": ", c.appendChild(p);
     var h = document.createElement("span");
-    h.className = "livue-devtools__prop-value", h.textContent = s.value, c.appendChild(h), e.appendChild(c);
+    h.className = "livue-devtools__prop-value", h.textContent = u.value, c.appendChild(h), e.appendChild(c);
   });
   var i = document.createElement("div");
   i.className = "livue-devtools__state-title", i.style.marginTop = "12px", i.textContent = "Status", e.appendChild(i);
@@ -2939,24 +2939,24 @@ function pu(e, t) {
     { label: "Streaming Method", value: t.streamingMethod || "-", show: t.streaming },
     { label: "Has Error", value: t.errorState.hasError, color: t.errorState.hasError ? "#f48771" : "#858585" }
   ];
-  o.forEach(function(s) {
-    if (s.show !== !1) {
+  o.forEach(function(u) {
+    if (u.show !== !1) {
       var c = document.createElement("div");
       c.className = "livue-devtools__prop";
       var f = document.createElement("span");
-      f.className = "livue-devtools__prop-key", f.textContent = s.label, c.appendChild(f);
+      f.className = "livue-devtools__prop-key", f.textContent = u.label, c.appendChild(f);
       var p = document.createElement("span");
       p.className = "livue-devtools__prop-colon", p.textContent = ": ", c.appendChild(p);
       var h = document.createElement("span");
-      h.className = "livue-devtools__prop-value", h.style.color = s.color || "#d4d4d4", h.textContent = String(s.value), c.appendChild(h), e.appendChild(c);
+      h.className = "livue-devtools__prop-value", h.style.color = u.color || "#d4d4d4", h.textContent = String(u.value), c.appendChild(h), e.appendChild(c);
     }
   });
   var a = t.composables || {}, l = Object.keys(a);
   if (l.length > 0) {
-    var u = document.createElement("div");
-    u.className = "livue-devtools__state-title", u.style.marginTop = "12px", u.textContent = "Composables", e.appendChild(u), l.forEach(function(s) {
-      var c = a[s], f = document.createElement("div");
-      f.style.cssText = "color: #c586c0; font-weight: 600; margin-top: 8px; margin-bottom: 4px;", f.textContent = s + " (livue." + s + ")", e.appendChild(f);
+    var s = document.createElement("div");
+    s.className = "livue-devtools__state-title", s.style.marginTop = "12px", s.textContent = "Composables", e.appendChild(s), l.forEach(function(u) {
+      var c = a[u], f = document.createElement("div");
+      f.style.cssText = "color: #c586c0; font-weight: 600; margin-top: 8px; margin-bottom: 4px;", f.textContent = u + " (livue." + u + ")", e.appendChild(f);
       var p = Object.keys(c.data || {});
       if (p.length > 0) {
         var h = document.createElement("div");
@@ -2966,7 +2966,7 @@ function pu(e, t) {
           var _ = document.createElement("span");
           _.className = "livue-devtools__prop-key", _.textContent = g, y.appendChild(_);
           var C = document.createElement("span");
-          C.className = "livue-devtools__prop-colon", C.textContent = ": ", y.appendChild(C), y.appendChild(qa(c.data[g], "composable." + s + "." + g)), e.appendChild(y);
+          C.className = "livue-devtools__prop-colon", C.textContent = ": ", y.appendChild(C), y.appendChild(qa(c.data[g], "composable." + u + "." + g)), e.appendChild(y);
         });
       }
       if (c.actions && c.actions.length > 0) {
@@ -3018,8 +3018,8 @@ function vu(e, t) {
   var o = document.createElement("span");
   if (o.textContent = "Array(" + e.length + ")", n.appendChild(o), r) {
     var a = document.createElement("div");
-    a.className = "livue-devtools__object", e.forEach(function(l, u) {
-      a.appendChild(Ti(String(u), l, !1, t + "." + u));
+    a.className = "livue-devtools__object", e.forEach(function(l, s) {
+      a.appendChild(Ti(String(s), l, !1, t + "." + s));
     }), n.appendChild(a);
   }
   return n;
@@ -3037,8 +3037,8 @@ function mu(e, t) {
   var a = document.createElement("span");
   if (a.textContent = "{...} " + r.length + " key" + (r.length > 1 ? "s" : ""), n.appendChild(a), i) {
     var l = document.createElement("div");
-    l.className = "livue-devtools__object", r.forEach(function(u) {
-      l.appendChild(Ti(u, e[u], !1, t + "." + u));
+    l.className = "livue-devtools__object", r.forEach(function(s) {
+      l.appendChild(Ti(s, e[s], !1, t + "." + s));
     }), n.appendChild(l);
   }
   return n;
@@ -3081,18 +3081,18 @@ function bu(e) {
     var l = document.createElement("span");
     l.className = "livue-devtools__request-duration", e.duration < 100 ? l.classList.add("livue-devtools__request-duration--fast") : e.duration < 500 ? l.classList.add("livue-devtools__request-duration--medium") : l.classList.add("livue-devtools__request-duration--slow"), l.textContent = e.duration + "ms", n.appendChild(l);
   }
-  var u = document.createElement("span");
-  u.className = "livue-devtools__request-time", u.textContent = Ci(e.startTime), n.appendChild(u), n.addEventListener("click", function() {
+  var s = document.createElement("span");
+  s.className = "livue-devtools__request-time", s.textContent = Ci(e.startTime), n.appendChild(s), n.addEventListener("click", function() {
     Et.has(e.id) ? (Et.delete(e.id), t.classList.remove("livue-devtools__request--expanded"), r.textContent = "▶") : (Et.add(e.id), t.classList.add("livue-devtools__request--expanded"), r.textContent = "▼");
   }), t.appendChild(n);
-  var s = document.createElement("div");
-  if (s.className = "livue-devtools__request-details", e.updateCount > 0 || e.lazyCount > 0) {
+  var u = document.createElement("div");
+  if (u.className = "livue-devtools__request-details", e.updateCount > 0 || e.lazyCount > 0) {
     var c = document.createElement("div");
     c.className = "livue-devtools__request-section";
     var f = document.createElement("div");
     f.className = "livue-devtools__request-section-title", f.textContent = "Summary", c.appendChild(f);
     var p = document.createElement("div"), h = [];
-    e.updateCount > 0 && h.push(e.updateCount + " update" + (e.updateCount > 1 ? "s" : "")), e.lazyCount > 0 && h.push(e.lazyCount + " lazy load" + (e.lazyCount > 1 ? "s" : "")), p.textContent = h.join(", "), c.appendChild(p), s.appendChild(c);
+    e.updateCount > 0 && h.push(e.updateCount + " update" + (e.updateCount > 1 ? "s" : "")), e.lazyCount > 0 && h.push(e.lazyCount + " lazy load" + (e.lazyCount > 1 ? "s" : "")), p.textContent = h.join(", "), c.appendChild(p), u.appendChild(c);
   }
   if (e.updates && e.updates.length > 0) {
     var m = document.createElement("div");
@@ -3100,7 +3100,7 @@ function bu(e) {
     var v = document.createElement("div");
     v.className = "livue-devtools__request-section-title", v.textContent = "Request Payload", m.appendChild(v);
     var g = document.createElement("pre");
-    g.className = "livue-devtools__request-json", g.textContent = yu(e.updates), m.appendChild(g), s.appendChild(m);
+    g.className = "livue-devtools__request-json", g.textContent = yu(e.updates), m.appendChild(g), u.appendChild(m);
   }
   if (e.responses) {
     var y = document.createElement("div");
@@ -3108,7 +3108,7 @@ function bu(e) {
     var _ = document.createElement("div");
     _.className = "livue-devtools__request-section-title", _.textContent = "Response", y.appendChild(_);
     var C = document.createElement("pre");
-    C.className = "livue-devtools__request-json", C.textContent = _u(e.responses), y.appendChild(C), s.appendChild(y);
+    C.className = "livue-devtools__request-json", C.textContent = _u(e.responses), y.appendChild(C), u.appendChild(y);
   }
   if (e.error) {
     var M = document.createElement("div");
@@ -3116,9 +3116,9 @@ function bu(e) {
     var w = document.createElement("div");
     w.className = "livue-devtools__request-section-title", w.style.color = "#f48771", w.textContent = "Error", M.appendChild(w);
     var O = document.createElement("pre");
-    O.className = "livue-devtools__request-json", O.style.color = "#f48771", O.textContent = e.error.message || String(e.error), M.appendChild(O), s.appendChild(M);
+    O.className = "livue-devtools__request-json", O.style.color = "#f48771", O.textContent = e.error.message || String(e.error), M.appendChild(O), u.appendChild(M);
   }
-  return t.appendChild(s), t;
+  return t.appendChild(u), t;
 }
 function yu(e) {
   var t = e.map(function(n) {
@@ -3282,12 +3282,12 @@ function Tu() {
       Au(m.id);
     }), a.appendChild(v);
   }), F.appendChild(a);
-  var u = document.createElement("div");
-  u.className = "livue-devtools__content";
   var s = document.createElement("div");
-  s.className = "livue-devtools__panel livue-devtools__panel--components", s.dataset.tab = "components", He === "components" && s.classList.add("livue-devtools__panel--active");
+  s.className = "livue-devtools__content";
+  var u = document.createElement("div");
+  u.className = "livue-devtools__panel livue-devtools__panel--components", u.dataset.tab = "components", He === "components" && u.classList.add("livue-devtools__panel--active");
   var c = document.createElement("div");
-  c.className = "livue-devtools__tree", s.appendChild(c);
+  c.className = "livue-devtools__tree", u.appendChild(c);
   var f = document.createElement("div");
   f.className = "livue-devtools__right-pane";
   var p = document.createElement("div");
@@ -3301,10 +3301,10 @@ function Tu() {
   h.className = "livue-devtools__sub-content", ["state", "benchmark"].forEach(function(m) {
     var v = document.createElement("div");
     v.className = "livue-devtools__panel", v.dataset.subtab = m, m === dt && v.classList.add("livue-devtools__panel--active"), h.appendChild(v);
-  }), f.appendChild(h), s.appendChild(f), u.appendChild(s), ["timeline", "events", "stores", "echo", "perf", "settings"].forEach(function(m) {
+  }), f.appendChild(h), u.appendChild(f), s.appendChild(u), ["timeline", "events", "stores", "echo", "perf", "settings"].forEach(function(m) {
     var v = document.createElement("div");
-    v.className = "livue-devtools__panel", v.dataset.tab = m, m === He && v.classList.add("livue-devtools__panel--active"), u.appendChild(v);
-  }), F.appendChild(u), document.body.appendChild(F), uu(function(m) {
+    v.className = "livue-devtools__panel", v.dataset.tab = m, m === He && v.classList.add("livue-devtools__panel--active"), s.appendChild(v);
+  }), F.appendChild(s), document.body.appendChild(F), uu(function(m) {
     Ai = m, cu(m), gr();
   }), er(), Hn = iu(function() {
     er();
@@ -3400,18 +3400,18 @@ function ku(e, t) {
     a.className = "livue-devtools__empty", a.innerHTML = '<div class="livue-devtools__empty-icon">&#9201;</div>No benchmark data for <strong style="color:#4ec9b0">' + t.name + "</strong> yet.", e.appendChild(a);
     return;
   }
-  var l = o[0], u = document.createElement("div");
-  u.className = "livue-devtools__perf-section";
-  var s = document.createElement("div");
-  s.className = "livue-devtools__perf-title", s.textContent = "Latest — " + t.name, u.appendChild(s);
+  var l = o[0], s = document.createElement("div");
+  s.className = "livue-devtools__perf-section";
+  var u = document.createElement("div");
+  u.className = "livue-devtools__perf-title", u.textContent = "Latest — " + t.name, s.appendChild(u);
   var c = document.createElement("div");
-  c.style.cssText = "color: #858585; font-size: 11px; margin-bottom: 6px;", c.textContent = Ci(l.time), u.appendChild(c);
+  c.style.cssText = "color: #858585; font-size: 11px; margin-bottom: 6px;", c.textContent = Ci(l.time), s.appendChild(c);
   var f = ["mount", "method_call", "render", "total"];
   for (var p in l.timings) {
     var h = l.timings[p], m = h / 1e3, v = f.indexOf(p) !== -1, g = v ? 50 : 5, y = v ? 200 : 20, _ = m < g ? "good" : m < y ? "warn" : "bad";
-    u.appendChild(be(p, no(h), _));
+    s.appendChild(be(p, no(h), _));
   }
-  e.appendChild(u);
+  e.appendChild(s);
   var C = nu(t.id);
   if (C && C.count > 1) {
     var M = document.createElement("div");
@@ -3434,14 +3434,14 @@ function Lu(e) {
     return;
   }
   n.forEach(function(l) {
-    var u = document.createElement("div");
-    u.style.cssText = "padding: 8px; background: #2a2d2e; border-radius: 4px; margin-bottom: 8px;";
     var s = document.createElement("div");
-    if (s.style.cssText = "color: #4ec9b0; font-weight: 600; margin-bottom: 4px;", s.textContent = l.name, u.appendChild(s), l.filters) {
+    s.style.cssText = "padding: 8px; background: #2a2d2e; border-radius: 4px; margin-bottom: 8px;";
+    var u = document.createElement("div");
+    if (u.style.cssText = "color: #4ec9b0; font-weight: 600; margin-bottom: 4px;", u.textContent = l.name, s.appendChild(u), l.filters) {
       var c = document.createElement("div");
-      c.style.cssText = "font-size: 11px; color: #858585;", c.textContent = "Filters: " + JSON.stringify(l.filters), u.appendChild(c);
+      c.style.cssText = "font-size: 11px; color: #858585;", c.textContent = "Filters: " + JSON.stringify(l.filters), s.appendChild(c);
     }
-    e.appendChild(u);
+    e.appendChild(s);
   });
   var o = document.createElement("div");
   o.className = "livue-devtools__perf-title", o.style.marginTop = "16px", o.textContent = "Other Registrations", e.appendChild(o);
@@ -3457,12 +3457,12 @@ function Lu(e) {
     }) }
   ];
   a.forEach(function(l) {
-    var u = document.createElement("div");
-    u.className = "livue-devtools__perf-stat";
-    var s = document.createElement("span");
-    s.className = "livue-devtools__perf-label", s.textContent = l.label, u.appendChild(s);
+    var s = document.createElement("div");
+    s.className = "livue-devtools__perf-stat";
+    var u = document.createElement("span");
+    u.className = "livue-devtools__perf-label", u.textContent = l.label, s.appendChild(u);
     var c = document.createElement("span");
-    c.className = "livue-devtools__perf-value", c.textContent = l.count + (l.items.length > 0 ? " (" + l.items.join(", ") + ")" : ""), u.appendChild(c), e.appendChild(u);
+    c.className = "livue-devtools__perf-value", c.textContent = l.count + (l.items.length > 0 ? " (" + l.items.join(", ") + ")" : ""), s.appendChild(c), e.appendChild(s);
   });
 }
 function Du(e) {
@@ -3481,12 +3481,12 @@ function Du(e) {
     l.style.cssText = "color: #858585; font-size: 11px; padding: 8px;", l.textContent = "Configure Laravel Echo and set window.Echo to enable real-time features.", e.appendChild(l);
     return;
   }
-  var u = document.createElement("div");
-  u.className = "livue-devtools__perf-section";
   var s = document.createElement("div");
-  if (s.className = "livue-devtools__perf-title", s.textContent = "Active Channels (" + t.channels.length + ")", u.appendChild(s), t.channels.length === 0) {
+  s.className = "livue-devtools__perf-section";
+  var u = document.createElement("div");
+  if (u.className = "livue-devtools__perf-title", u.textContent = "Active Channels (" + t.channels.length + ")", s.appendChild(u), t.channels.length === 0) {
     var c = document.createElement("div");
-    c.style.cssText = "color: #858585; font-size: 11px;", c.textContent = "No active channels", u.appendChild(c);
+    c.style.cssText = "color: #858585; font-size: 11px;", c.textContent = "No active channels", s.appendChild(c);
   } else
     t.channels.forEach(function(m) {
       var v = document.createElement("div");
@@ -3494,9 +3494,9 @@ function Du(e) {
       var g = document.createElement("span");
       g.style.cssText = "padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600;", m.type === "private" ? (g.style.background = "#4d3a12", g.style.color = "#dcdcaa") : m.type === "presence" ? (g.style.background = "#264f78", g.style.color = "#9cdcfe") : (g.style.background = "#2d4a2d", g.style.color = "#6a9955"), g.textContent = m.type, v.appendChild(g);
       var y = document.createElement("span");
-      y.style.color = "#d4d4d4", y.textContent = m.name, v.appendChild(y), u.appendChild(v);
+      y.style.color = "#d4d4d4", y.textContent = m.name, v.appendChild(y), s.appendChild(v);
     });
-  e.appendChild(u);
+  e.appendChild(s);
   var f = document.createElement("div");
   f.className = "livue-devtools__perf-section";
   var p = document.createElement("div");
@@ -3524,14 +3524,14 @@ function Ou(e) {
   i.appendChild(be("Average", Cn(t.avgRequestTime), a));
   var l = t.minRequestTime < 100 ? "good" : t.minRequestTime < 500 ? "warn" : "bad";
   i.appendChild(be("Fastest", t.minRequestTime === 1 / 0 ? "-" : Cn(t.minRequestTime), l));
-  var u = t.maxRequestTime < 100 ? "good" : t.maxRequestTime < 500 ? "warn" : "bad";
-  i.appendChild(be("Slowest", t.maxRequestTime === 0 ? "-" : Cn(t.maxRequestTime), u)), e.appendChild(i);
-  var s = document.createElement("div");
-  s.className = "livue-devtools__perf-section";
+  var s = t.maxRequestTime < 100 ? "good" : t.maxRequestTime < 500 ? "warn" : "bad";
+  i.appendChild(be("Slowest", t.maxRequestTime === 0 ? "-" : Cn(t.maxRequestTime), s)), e.appendChild(i);
+  var u = document.createElement("div");
+  u.className = "livue-devtools__perf-section";
   var c = document.createElement("div");
-  c.className = "livue-devtools__perf-title", c.textContent = "Template Swaps", s.appendChild(c), s.appendChild(be("Total Swaps", t.totalTemplateSwaps));
+  c.className = "livue-devtools__perf-title", c.textContent = "Template Swaps", u.appendChild(c), u.appendChild(be("Total Swaps", t.totalTemplateSwaps));
   var f = t.avgTemplateSwapTime < 5 ? "good" : t.avgTemplateSwapTime < 20 ? "warn" : "bad";
-  s.appendChild(be("Average Time", Cn(t.avgTemplateSwapTime), f)), e.appendChild(s);
+  u.appendChild(be("Average Time", Cn(t.avgTemplateSwapTime), f)), e.appendChild(u);
   var p = document.createElement("div");
   p.className = "livue-devtools__perf-section";
   var h = document.createElement("div");
@@ -3573,10 +3573,10 @@ function Mu(e) {
   a.className = "livue-devtools__settings-label", a.textContent = "Keyboard Shortcuts", o.appendChild(a);
   var l = document.createElement("div");
   l.className = "livue-devtools__perf-stat";
-  var u = document.createElement("span");
-  u.style.cssText = "color: #dcdcaa; font-family: monospace;", u.textContent = "Ctrl+Shift+L", l.appendChild(u);
   var s = document.createElement("span");
-  s.style.color = "#858585", s.textContent = "Toggle DevTools", l.appendChild(s), o.appendChild(l), e.appendChild(o);
+  s.style.cssText = "color: #dcdcaa; font-family: monospace;", s.textContent = "Ctrl+Shift+L", l.appendChild(s);
+  var u = document.createElement("span");
+  u.style.color = "#858585", u.textContent = "Toggle DevTools", l.appendChild(u), o.appendChild(l), e.appendChild(o);
 }
 function Iu(e) {
   if (tt !== e && (tt = e, Pt(), F)) {
@@ -3718,12 +3718,12 @@ function $n(e, t, n, r, i, o) {
   });
   var a = Ge.get(e);
   a && a.forEach(function(l) {
-    var u = !1;
-    if (n === "broadcast" ? u = !0 : n === "self" ? u = l.componentId === i : n === "to" && (u = l.componentName === o), u)
+    var s = !1;
+    if (n === "broadcast" ? s = !0 : n === "self" ? s = l.componentId === i : n === "to" && (s = l.componentName === o), s)
       try {
         l.handler(t);
-      } catch (s) {
-        console.error('[LiVue] Event handler error for "' + e + '":', s);
+      } catch (u) {
+        console.error('[LiVue] Event handler error for "' + e + '":', u);
       }
   });
 }
@@ -3743,8 +3743,8 @@ function Gu(e) {
 function Zu(e, t) {
   var n = new URL(window.location), r = !1;
   for (var i in e) {
-    var o = e[i], a = o.as || i, l = t[i], u = !1;
-    o.except !== null && o.except !== void 0 && String(l) === String(o.except) && (u = !0), !o.keep && !u && (l === "" || l === null || l === void 0) && (u = !0), u ? n.searchParams.delete(a) : n.searchParams.set(a, l), o.history && (r = !0);
+    var o = e[i], a = o.as || i, l = t[i], s = !1;
+    o.except !== null && o.except !== void 0 && String(l) === String(o.except) && (s = !0), !o.keep && !s && (l === "" || l === null || l === void 0) && (s = !0), s ? n.searchParams.delete(a) : n.searchParams.set(a, l), o.history && (r = !0);
   }
   n.toString() !== window.location.toString() && (r ? history.pushState({}, "", n) : history.replaceState({}, "", n));
 }
@@ -3756,31 +3756,31 @@ function Qu(e, t, n, r, i) {
   return new Promise(function(o, a) {
     var l = new FormData();
     l.append("file", e), l.append("component", t), l.append("property", n), l.append("checksum", r);
-    var u = new XMLHttpRequest(), s = Li();
-    u.open("POST", s, !0);
+    var s = new XMLHttpRequest(), u = Li();
+    s.open("POST", u, !0);
     var c = Rt();
-    c && u.setRequestHeader("X-CSRF-TOKEN", c), u.setRequestHeader("Accept", "application/json"), i && u.upload && u.upload.addEventListener("progress", function(f) {
+    c && s.setRequestHeader("X-CSRF-TOKEN", c), s.setRequestHeader("Accept", "application/json"), i && s.upload && s.upload.addEventListener("progress", function(f) {
       if (f.lengthComputable) {
         var p = Math.round(f.loaded / f.total * 100);
         i(p);
       }
-    }), u.onload = function() {
+    }), s.onload = function() {
       var f;
       try {
-        f = JSON.parse(u.responseText);
+        f = JSON.parse(s.responseText);
       } catch {
         a(new Error("Invalid server response"));
         return;
       }
-      if (u.status >= 200 && u.status < 300)
+      if (s.status >= 200 && s.status < 300)
         o(f);
       else {
         var p = new Error(f.error || f.message || "Upload failed");
-        p.status = u.status, p.data = f, a(p);
+        p.status = s.status, p.data = f, a(p);
       }
-    }, u.onerror = function() {
+    }, s.onerror = function() {
       a(new Error("Network error during upload"));
-    }, u.send(l);
+    }, s.send(l);
   });
 }
 function Ar(e) {
@@ -3799,47 +3799,47 @@ function Ar(e) {
 }
 function ec(e, t, n, r, i) {
   return new Promise(function(o, a) {
-    var l = Array.from(e), u = new FormData();
+    var l = Array.from(e), s = new FormData();
     l.forEach(function(p) {
-      u.append("files[]", p);
-    }), u.append("component", t), u.append("property", n), u.append("checksum", r);
-    var s = new XMLHttpRequest(), c = Li();
-    s.open("POST", c, !0);
+      s.append("files[]", p);
+    }), s.append("component", t), s.append("property", n), s.append("checksum", r);
+    var u = new XMLHttpRequest(), c = Li();
+    u.open("POST", c, !0);
     var f = Rt();
-    f && s.setRequestHeader("X-CSRF-TOKEN", f), s.setRequestHeader("Accept", "application/json"), i && s.upload && s.upload.addEventListener("progress", function(p) {
+    f && u.setRequestHeader("X-CSRF-TOKEN", f), u.setRequestHeader("Accept", "application/json"), i && u.upload && u.upload.addEventListener("progress", function(p) {
       if (p.lengthComputable) {
         var h = Math.round(p.loaded / p.total * 100);
         i({ overall: h });
       }
-    }), s.onload = function() {
+    }), u.onload = function() {
       var p;
       try {
-        p = JSON.parse(s.responseText);
+        p = JSON.parse(u.responseText);
       } catch {
         a(new Error("Invalid server response"));
         return;
       }
-      if (s.status >= 200 && s.status < 300)
+      if (u.status >= 200 && u.status < 300)
         o({
           results: p.results || [],
           errors: p.errors || []
         });
       else {
         var h = new Error(p.error || p.message || "Upload failed");
-        h.status = s.status, h.data = p, a(h);
+        h.status = u.status, h.data = p, a(h);
       }
-    }, s.onerror = function() {
+    }, u.onerror = function() {
       a(new Error("Network error during upload"));
-    }, s.send(u);
+    }, u.send(s);
   });
 }
 let on = /* @__PURE__ */ new Map(), an = /* @__PURE__ */ new Map();
 function Mt(e, t) {
   let n = e + ":debounce:" + t;
   if (!on.has(n)) {
-    let r = null, i = null, o = null, a = null, l = function(u) {
-      return i = u, clearTimeout(r), new Promise(function(s, c) {
-        o = s, a = c, r = setTimeout(function() {
+    let r = null, i = null, o = null, a = null, l = function(s) {
+      return i = s, clearTimeout(r), new Promise(function(u, c) {
+        o = u, a = c, r = setTimeout(function() {
           let f = i, p = o, h = a;
           i = null, o = null, a = null, Promise.resolve(f()).then(p).catch(h);
         }, t);
@@ -3944,8 +3944,8 @@ async function ac(e, t, n) {
     const l = r.split(`
 `);
     r = l.pop() || "";
-    for (const u of l)
-      so(u, n, i);
+    for (const s of l)
+      so(s, n, i);
   }
   return r.trim() && so(r, n, i), i.finalResponse;
 }
@@ -3962,7 +3962,7 @@ async function lc(e, t = {}) {
   let l = null;
   try {
     o > 0 && (l = setTimeout(() => a.abort(), o));
-    const u = await fetch("/livue/stream", {
+    const s = await fetch("/livue/stream", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3978,12 +3978,12 @@ async function lc(e, t = {}) {
       }),
       signal: a.signal
     });
-    if (!u.ok)
-      throw new Error(`HTTP error: ${u.status}`);
-    const s = u.body.getReader(), c = new TextDecoder(), f = await ac(s, c, n);
+    if (!s.ok)
+      throw new Error(`HTTP error: ${s.status}`);
+    const u = s.body.getReader(), c = new TextDecoder(), f = await ac(u, c, n);
     return r(f), f;
-  } catch (u) {
-    throw u.name === "AbortError" ? new Error("[LiVue Stream] Request timed out") : (i(u), u);
+  } catch (s) {
+    throw s.name === "AbortError" ? new Error("[LiVue Stream] Request timed out") : (i(s), s);
   } finally {
     clearTimeout(l);
   }
@@ -4025,15 +4025,15 @@ function cc(e, t) {
     ...Object.keys(r)
   ]);
   for (let a of o) {
-    let l = n[a] || {}, u = r[a] || {}, s = Ii(l), c = {};
-    for (let f in u)
+    let l = n[a] || {}, s = r[a] || {}, u = Ii(l), c = {};
+    for (let f in s)
       c[f] = /* @__PURE__ */ (function(p, h) {
         return function() {
           let m = Array.prototype.slice.call(arguments);
           return t(p + "." + h, m);
         };
       })(a, f);
-    i[a] = Ie(Object.assign({}, s, c));
+    i[a] = Ie(Object.assign({}, u, c));
   }
   return i;
 }
@@ -4059,7 +4059,7 @@ function pc(e, t) {
 }
 function ui(e, t, n, r, i, o, a) {
   a = a || {};
-  let l = a.pinia || null, u = Ms(), s = n.name, c = n.vueMethods || {}, f = n.jsonMethods || [], p = n.confirms || {}, h = Array.isArray(n.methods) ? n.methods.slice() : null, m = n.isolate || !1, v = n.urlParams || null, g = n.uploads || null, y = n.tabSync || null, _ = !1, C = i, M = o, w = [], O = !1, z = !1, R = a.initialHtml || null, k = Ie({}), I = [];
+  let l = a.pinia || null, s = Ms(), u = n.name, c = n.vueMethods || {}, f = n.jsonMethods || [], p = n.confirms || {}, h = Array.isArray(n.methods) ? n.methods.slice() : null, m = n.isolate || !1, v = n.urlParams || null, g = n.uploads || null, y = n.tabSync || null, _ = !1, C = i, M = o, w = [], O = !1, z = !1, R = a.initialHtml || null, k = Ie({}), I = [];
   function H() {
     for (let d = 0; d < I.length; d++)
       try {
@@ -4131,7 +4131,7 @@ function ui(e, t, n, r, i, o, a) {
       for (let T = 0; T < d.length; T++) d[T].resolve(A);
     } catch (b) {
       for (let E = 0; E < d.length; E++)
-        b.status === 422 && b.data && b.data.errors ? (Te(S.errors, b.data.errors), d[E].reject(b)) : (gt(b, s), d[E].reject(b));
+        b.status === 422 && b.data && b.data.errors ? (Te(S.errors, b.data.errors), d[E].reject(b)) : (gt(b, u), d[E].reject(b));
     } finally {
       S.loading = !1, S.processing = null;
       for (let b = 0; b < d.length; b++)
@@ -4155,7 +4155,7 @@ function ui(e, t, n, r, i, o, a) {
       let T = d.errorBoundary;
       S.errorState.hasError = T.hasError, S.errorState.errorMessage = T.errorMessage, S.errorState.errorDetails = T.errorDetails, S.errorState.recover = T.recover, (!T.errorHandled || !T.recover) && we("error.occurred", {
         error: new Error(T.errorMessage || "Component error"),
-        componentName: s,
+        componentName: u,
         componentId: e,
         context: { method: T.errorMethod, serverHandled: T.errorHandled },
         preventDefault: function() {
@@ -4209,7 +4209,7 @@ function ui(e, t, n, r, i, o, a) {
         }
     if (d.benchmark && we("benchmark.received", {
       componentId: e,
-      componentName: s,
+      componentName: u,
       timings: d.benchmark
     }), y && y.enabled && d.snapshot && !_ && JSON.parse(d.snapshot).state) {
       let V = Qo(t), J = [];
@@ -4217,7 +4217,7 @@ function ui(e, t, n, r, i, o, a) {
         (!b || !(X in b)) && J.push(X);
       if (J.length > 0) {
         let X = oc(V, J, y);
-        Object.keys(X).length > 0 && ic(s, X, J, y);
+        Object.keys(X).length > 0 && ic(u, X, J, y);
       }
     }
     if (_ = !1, d.jsonResult !== void 0)
@@ -4230,7 +4230,7 @@ function ui(e, t, n, r, i, o, a) {
   let S = Ie({
     loading: !1,
     processing: null,
-    errors: u,
+    errors: s,
     uploading: !1,
     uploadProgress: 0,
     streaming: !1,
@@ -4435,7 +4435,7 @@ function ui(e, t, n, r, i, o, a) {
         let d = U(), b = await Tr(d.snapshot, null, [], d.diffs, m);
         te(b, d.diffs, !1);
       } catch (d) {
-        d.status === 422 && d.data && d.data.errors ? Te(S.errors, d.data.errors) : gt(d, s);
+        d.status === 422 && d.data && d.data.errors ? Te(S.errors, d.data.errors) : gt(d, u);
       } finally {
         S.loading = !1, S.processing = null;
       }
@@ -4452,7 +4452,7 @@ function ui(e, t, n, r, i, o, a) {
      * @param {*} [data]
      */
     dispatch: function(d, b) {
-      $n(d, b, "broadcast", s, e, null);
+      $n(d, b, "broadcast", u, e, null);
     },
     /**
      * Dispatch an event to a specific component by name.
@@ -4461,7 +4461,7 @@ function ui(e, t, n, r, i, o, a) {
      * @param {*} [data]
      */
     dispatchTo: function(d, b, E) {
-      $n(b, E, "to", s, e, d);
+      $n(b, E, "to", u, e, d);
     },
     /**
      * Dispatch an event to this component only.
@@ -4469,7 +4469,7 @@ function ui(e, t, n, r, i, o, a) {
      * @param {*} [data]
      */
     dispatchSelf: function(d, b) {
-      $n(d, b, "self", s, e, null);
+      $n(d, b, "self", u, e, null);
     },
     /**
      * Navigate to a URL using SPA navigation.
@@ -4496,7 +4496,7 @@ function ui(e, t, n, r, i, o, a) {
       var E = Sr(t, d);
       E && E.__livue_upload && E.ref && Ar([E.ref]), S.uploading = !0, S.uploadProgress = 0;
       try {
-        var L = await Qu(b, s, d, g[d].token, function(A) {
+        var L = await Qu(b, u, d, g[d].token, function(A) {
           S.uploadProgress = A;
         });
         Wt(t, d, {
@@ -4508,7 +4508,7 @@ function ui(e, t, n, r, i, o, a) {
           previewUrl: L.previewUrl
         });
       } catch (A) {
-        A.status === 422 && A.data && A.data.errors ? Te(S.errors, A.data.errors) : gt(A, s);
+        A.status === 422 && A.data && A.data.errors ? Te(S.errors, A.data.errors) : gt(A, u);
       } finally {
         S.uploading = !1, S.uploadProgress = 0;
       }
@@ -4530,7 +4530,7 @@ function ui(e, t, n, r, i, o, a) {
       }
       S.uploading = !0, S.uploadProgress = 0;
       try {
-        var E = await ec(b, s, d, g[d].token, function(Q) {
+        var E = await ec(b, u, d, g[d].token, function(Q) {
           S.uploadProgress = Q.overall;
         }), L = E.results || [], A = E.errors || [], T = Sr(t, d), V = Array.isArray(T) ? T : [];
         if (L.length > 0) {
@@ -4557,7 +4557,7 @@ function ui(e, t, n, r, i, o, a) {
           }), Te(S.errors, X);
         }
       } catch (Q) {
-        Q.status === 422 && Q.data && Q.data.errors ? Te(S.errors, Q.data.errors) : gt(Q, s);
+        Q.status === 422 && Q.data && Q.data.errors ? Te(S.errors, Q.data.errors) : gt(Q, u);
       } finally {
         S.uploading = !1, S.uploadProgress = 0;
       }
@@ -4613,7 +4613,7 @@ function ui(e, t, n, r, i, o, a) {
           }
         })) : L = te(T, A.diffs));
       } catch (A) {
-        A.status === 422 && A.data && A.data.errors ? Te(S.errors, A.data.errors) : gt(A, s);
+        A.status === 422 && A.data && A.data.errors ? Te(S.errors, A.data.errors) : gt(A, u);
       } finally {
         S.loading = !1, S.streaming = !1, S.processing = null, S.streamingMethod = null, delete ce[d];
       }
@@ -4647,7 +4647,7 @@ function ui(e, t, n, r, i, o, a) {
     on: function(d, b) {
       return typeof d != "string" || d.length === 0 ? (console.warn("[LiVue] on() requires a non-empty event name"), function() {
       }) : typeof b != "function" ? (console.warn("[LiVue] on() handler must be a function"), function() {
-      }) : gn(d, s, e, b);
+      }) : gn(d, u, e, b);
     },
     /**
      * Watch a property for changes.
@@ -4700,7 +4700,7 @@ function ui(e, t, n, r, i, o, a) {
      * @returns {string}
      */
     get $name() {
-      return s;
+      return u;
     },
     /**
      * Register an error handler for this component.
@@ -4780,7 +4780,7 @@ function ui(e, t, n, r, i, o, a) {
         dirtyFields: Object.keys(d),
         diffs: d,
         memo: {
-          name: s,
+          name: u,
           isolate: m,
           urlParams: v,
           tabSync: y,
@@ -4810,14 +4810,14 @@ function ui(e, t, n, r, i, o, a) {
       let d = U(), b = await Tr(d.snapshot, null, [], d.diffs, m);
       return te(b, d.diffs);
     } catch (d) {
-      d.status === 422 && d.data && d.data.errors ? Te(S.errors, d.data.errors) : gt(d, s);
+      d.status === 422 && d.data && d.data.errors ? Te(S.errors, d.data.errors) : gt(d, u);
     } finally {
       S.loading = !1, S.processing = null, delete ce.$refresh;
     }
   }
   De.$refresh = function() {
     return Ue();
-  }, y && y.enabled && rc(s, function(d, b, E) {
+  }, y && y.enabled && rc(u, function(d, b, E) {
     let L = !1;
     if (E.reactive === !0)
       L = !0;
@@ -4973,20 +4973,20 @@ function Fn(e, t) {
   let n = document.createElement("div");
   n.innerHTML = e;
   let r = n.querySelectorAll("[v-text], [v-html]");
-  for (let u = 0; u < r.length; u++)
-    r[u].innerHTML = "";
+  for (let s = 0; s < r.length; s++)
+    r[s].innerHTML = "";
   let i = {}, o = {};
   Array.from(
     n.querySelectorAll("[data-livue-id][data-livue-snapshot]:not([data-livue-island])")
-  ).reverse().forEach(function(u) {
-    let s = u.dataset.livueId, c = u.dataset.livueSnapshot || "{}", f, p, h, m, v, g;
+  ).reverse().forEach(function(s) {
+    let u = s.dataset.livueId, c = s.dataset.livueSnapshot || "{}", f, p, h, m, v, g;
     try {
-      f = JSON.parse(c), p = f.memo ? f.memo.name : "", h = Dt(f.state || {}), m = f.memo || {}, v = u.innerHTML, g = u.tagName.toLowerCase();
+      f = JSON.parse(c), p = f.memo ? f.memo.name : "", h = Dt(f.state || {}), m = f.memo || {}, v = s.innerHTML, g = s.tagName.toLowerCase();
     } catch (I) {
-      console.error("[LiVue] Failed to parse child snapshot:", s, I);
+      console.error("[LiVue] Failed to parse child snapshot:", u, I);
       return;
     }
-    let y = u.nextElementSibling;
+    let y = s.nextElementSibling;
     for (; y; ) {
       let I = y.nextElementSibling;
       if (y.tagName === "SCRIPT" && y.getAttribute("type") === "application/livue-setup")
@@ -4995,7 +4995,7 @@ function Fn(e, t) {
         break;
       y = I;
     }
-    let _ = t._childRegistry[s];
+    let _ = t._childRegistry[u];
     if (!_)
       for (let I in t._childRegistry) {
         let H = t._childRegistry[I];
@@ -5025,8 +5025,8 @@ function Fn(e, t) {
       } catch (S) {
         console.error("[LiVue] Failed to clone child server state:", S), K = {};
       }
-      let G = Object.assign({ name: m.name || p }, m), ie = { _updateTemplate: null }, Z = ha(), U = ui(s, re, G, ie, K, c, {
-        el: u,
+      let G = Object.assign({ name: m.name || p }, m), ie = { _updateTemplate: null }, Z = ha(), U = ui(u, re, G, ie, K, c, {
+        el: s,
         rootComponent: t,
         isChild: !0,
         parentLivue: t._rootLivue,
@@ -5034,8 +5034,8 @@ function Fn(e, t) {
         pinia: t._pinia || null
       }), te = U.livue, ce = U.composables;
       we("component.init", {
-        component: { id: s, name: p, state: re, livue: te },
-        el: u,
+        component: { id: u, name: p, state: re, livue: te },
+        el: s,
         cleanup: Z.cleanup,
         isChild: !0
       });
@@ -5048,14 +5048,14 @@ function Fn(e, t) {
         composables: ce,
         componentRef: ie,
         name: p,
-        id: s,
+        id: u,
         rootTag: g
       };
       let de = m.listeners || null;
       if (de)
         for (let S in de)
           (function(Ue, je) {
-            gn(S, p, s, function(vt) {
+            gn(S, p, u, function(vt) {
               je.call(Ue, vt);
             });
           })(de[S], te);
@@ -5064,23 +5064,23 @@ function Fn(e, t) {
         Sa(S, nt, function(je, vt) {
           Ue.call(je, vt);
         });
-      })(s, te), ie._updateTemplate = function(S) {
-        let Ue = t.el.querySelector('[data-livue-id="' + s + '"]');
+      })(u, te), ie._updateTemplate = function(S) {
+        let Ue = t.el.querySelector('[data-livue-id="' + u + '"]');
         Ue && ta(Ue);
         let je = Fn(S, t), vt = rr(
           "<" + _.rootTag + ">" + je.template + "</" + _.rootTag + ">",
-          'data-livue-id="' + s + '"'
+          'data-livue-id="' + u + '"'
         );
         if (!t.vueApp) return;
         for (let b in je.childDefs)
           t.vueApp._context.components[b] || t.vueApp.component(b, je.childDefs[b]);
         t.vueApp._context.components[_.tagName]._updateRender(vt), fr(function() {
-          let b = t.el.querySelector('[data-livue-id="' + s + '"]');
+          let b = t.el.querySelector('[data-livue-id="' + u + '"]');
           b && na(b);
         });
-      }, t._childRegistry[s] = _, o[s] = !0;
+      }, t._childRegistry[u] = _, o[u] = !0;
     }
-    let O = _.tagName, z = u.dataset.livueRef;
+    let O = _.tagName, z = s.dataset.livueRef;
     z && t._rootLivue && (t._rootLivue.refs[z] = {
       /**
        * Call a method on the child component.
@@ -5127,13 +5127,13 @@ function Fn(e, t) {
         return _.livue;
       }
     });
-    let R = u.dataset.livueModel;
-    if (R && t._rootState && gn("$modelUpdate", _.name, s, function(I) {
+    let R = s.dataset.livueModel;
+    if (R && t._rootState && gn("$modelUpdate", _.name, u, function(I) {
       I && I.value !== void 0 && Wt(t._rootState, R, I.value);
     }), w) {
       let I = rr(
         "<" + g + ">" + v + "</" + g + ">",
-        'data-livue-id="' + s + '"'
+        'data-livue-id="' + u + '"'
       ), H = Object.assign({}, el(), _.composables || {});
       i[O] = Yr(
         I,
@@ -5146,11 +5146,11 @@ function Fn(e, t) {
     }
     t._versions[O] === void 0 && (t._versions[O] = 0);
     let k = document.createElement(O);
-    k.setAttribute(":key", "livueV['" + O + "']"), u.parentNode.replaceChild(k, u);
+    k.setAttribute(":key", "livueV['" + O + "']"), s.parentNode.replaceChild(k, s);
   });
   let l = n.querySelectorAll("[data-livue-island]");
-  for (let u = 0; u < l.length; u++)
-    l[u].setAttribute("v-pre", "");
+  for (let s = 0; s < l.length; s++)
+    l[s].setAttribute("v-pre", "");
   return {
     template: n.innerHTML,
     childDefs: i
@@ -5258,17 +5258,17 @@ function Sc(e) {
       async function l() {
         if (!r.value)
           try {
-            let s = await Ls({
+            let u = await Ls({
               component: t.config.name,
               props: t.config.props || {}
             });
-            s.html && s.snapshot && u(s);
-          } catch (s) {
-            console.error("[LiVue] Lazy load failed:", s);
+            u.html && u.snapshot && s(u);
+          } catch (u) {
+            console.error("[LiVue] Lazy load failed:", u);
           }
       }
-      function u(s) {
-        let c = JSON.parse(s.snapshot);
+      function s(u) {
+        let c = JSON.parse(u.snapshot);
         kr++;
         let f = "lazy-" + kr + "-" + Date.now(), p = c.memo ? c.memo.name : "", h = Dt(c.state || {}), m = c.memo || {}, { createLivueHelper: v, buildComponentDef: g, processTemplate: y, createReactiveState: _ } = e._lazyHelpers, C = _(h), M = JSON.parse(JSON.stringify(h)), w = { _updateTemplate: null }, O = v(
           f,
@@ -5276,7 +5276,7 @@ function Sc(e) {
           m,
           w,
           M,
-          s.snapshot,
+          u.snapshot,
           {
             rootComponent: e,
             isChild: !0,
@@ -5285,7 +5285,7 @@ function Sc(e) {
           }
         ), z = O.livue, R = O.composables;
         m.errors && Te(z.errors, m.errors);
-        let k = "livue-lazy-child-" + kr, I = y(s.html, e), H = rr(
+        let k = "livue-lazy-child-" + kr, I = y(u.html, e), H = rr(
           I.template,
           'data-livue-id="' + f + '"'
         ), re = g(
@@ -5336,8 +5336,8 @@ function Sc(e) {
       return Go(function() {
         t.config.onLoad ? requestAnimationFrame(function() {
           l();
-        }) : (o = new IntersectionObserver(function(s) {
-          s[0].isIntersecting && (o.disconnect(), o = null, l());
+        }) : (o = new IntersectionObserver(function(u) {
+          u[0].isIntersecting && (o.disconnect(), o = null, l());
         }, { rootMargin: "50px" }), a.value && o.observe(a.value));
       }), Yo(function() {
         o && (o.disconnect(), o = null);
@@ -5429,18 +5429,18 @@ class xc {
       cleanups: this._cleanups,
       initialHtml: this.el.innerHTML,
       pinia: this._pinia
-    }), l = a.livue, u = a.composables;
-    this._rootLivue = l, this._rootComposables = u, this._rootState = this.state, we("component.init", {
+    }), l = a.livue, s = a.composables;
+    this._rootLivue = l, this._rootComposables = s, this._rootState = this.state, we("component.init", {
       component: { id: this.componentId, name: this.name, state: this.state, livue: l },
       el: this.el,
       cleanup: this._cleanups.cleanup,
       isChild: !1
     });
-    let s;
+    let u;
     try {
-      s = Fn(this.el.innerHTML, this);
+      u = Fn(this.el.innerHTML, this);
     } catch (g) {
-      console.error("[LiVue] Error processing initial template:", g), s = { template: this.el.innerHTML, childDefs: {} };
+      console.error("[LiVue] Error processing initial template:", g), u = { template: this.el.innerHTML, childDefs: {} };
     }
     let c = t.memo && t.memo.errors || null;
     c && Te(l.errors, c);
@@ -5456,7 +5456,7 @@ class xc {
     p && p.length && (this._echoUnsubscribe = Sa(r.componentId, p, function(g, y) {
       l.call(g, y);
     }));
-    let h = Object.assign({}, el(), u), m = Yr(s.template, r.state, l, h, r._versions, r.name);
+    let h = Object.assign({}, el(), s), m = Yr(u.template, r.state, l, h, r._versions, r.name);
     this._currentRootDef = m, this._rootDefRef = gi(m), this.vueApp = Nl({
       setup: function() {
         return {
@@ -5466,8 +5466,8 @@ class xc {
       template: '<component :is="rootDef"></component>'
     });
     let v;
-    for (v in s.childDefs)
-      this.vueApp._context.components[v] || this.vueApp.component(v, s.childDefs[v]);
+    for (v in u.childDefs)
+      this.vueApp._context.components[v] || this.vueApp.component(v, u.childDefs[v]);
     this.vueApp._context.components["livue-lazy"] || this.vueApp.component("livue-lazy", Sc(this)), this._applyPluginsAndMount();
   }
   /**
@@ -5485,25 +5485,39 @@ class xc {
   async _applyPluginsAndMount() {
     let t = this, n = this.vueApp, r = this._pinia || Hi();
     if (n.use(r), window.LiVue && window.LiVue._setupCallbacks && window.LiVue._setupCallbacks.length > 0)
-      for (let a = 0; a < window.LiVue._setupCallbacks.length; a++)
+      for (let l = 0; l < window.LiVue._setupCallbacks.length; l++)
         try {
-          let l = window.LiVue._setupCallbacks[a](n);
-          l && typeof l.then == "function" && await l;
-        } catch (l) {
-          console.error("[LiVue] Error in setup() callback:", l);
+          let s = window.LiVue._setupCallbacks[l](n);
+          s && typeof s.then == "function" && await s;
+        } catch (s) {
+          console.error("[LiVue] Error in setup() callback:", s);
         }
     let i = zs();
-    for (let a = 0; a < i.length; a++)
-      n.directive(i[a].name, i[a].directive);
+    for (let l = 0; l < i.length; l++)
+      n.directive(i[l].name, i[l].directive);
     let o = gc();
-    for (let a = 0; a < o.length; a++)
-      n.directive(o[a].name, o[a].directive);
+    for (let l = 0; l < o.length; l++)
+      n.directive(o[l].name, o[l].directive);
+    let a = null;
+    if (t.el && t.el.attributes) {
+      a = {};
+      let l = t.el.attributes;
+      for (let s = 0; s < l.length; s++) {
+        let u = l[s];
+        u.name === "v-cloak" || u.name === "data-v-app" || (a[u.name] = u.value);
+      }
+    }
     t.el.innerHTML = "";
     try {
       t.vueApp.mount(t.el);
-    } catch (a) {
-      console.error("[LiVue] Vue app mount failed:", a);
+    } catch (l) {
+      console.error("[LiVue] Vue app mount failed:", l);
     }
+    if (a)
+      for (let l in a) {
+        let s = a[l];
+        t.el.getAttribute(l) !== s && t.el.setAttribute(l, s);
+      }
   }
   /**
    * Destroy the Vue app instance and clean up event listeners.
@@ -5568,13 +5582,13 @@ const Cc = {
       console.warn("[LiVue] v-init: livue helper not found in component context");
       return;
     }
-    let i = e.closest("[data-livue-id]"), o = i ? i.dataset.livueId : null, a = t.value, l, u = [];
-    if (Array.isArray(a) ? (l = a[0], u = a[1] || []) : l = a, typeof l != "string") {
+    let i = e.closest("[data-livue-id]"), o = i ? i.dataset.livueId : null, a = t.value, l, s = [];
+    if (Array.isArray(a) ? (l = a[0], s = a[1] || []) : l = a, typeof l != "string") {
       console.warn("[LiVue] v-init: expected method name (string), got", typeof l);
       return;
     }
-    let s = (o || "unknown") + ":" + l;
-    po.has(s) || (po.add(s), r.call(l, u));
+    let u = (o || "unknown") + ":" + l;
+    po.has(u) || (po.add(u), r.call(l, s));
   }
   // NOTE: No unmounted cleanup - v-init should only fire ONCE per component
   // lifetime, even across template swaps. The _initializedComponents set
@@ -5592,8 +5606,8 @@ const Cc = {
       console.warn("[LiVue] v-submit: expected method name (string), got", typeof o);
       return;
     }
-    let l = function(u) {
-      u.preventDefault(), r.call(o, a);
+    let l = function(s) {
+      s.preventDefault(), r.call(o, a);
     };
     e.addEventListener("submit", l), Lr.set(e, l);
   },
@@ -5613,11 +5627,11 @@ const Cc = {
       console.warn("[LiVue] v-intersect: expected method name (string), got", typeof o);
       return;
     }
-    let l = t.modifiers || {}, u = t.arg, s = 0;
-    l.half && (s = 0.5), l.full && (s = 1);
+    let l = t.modifiers || {}, s = t.arg, u = 0;
+    l.half && (u = 0.5), l.full && (u = 1);
     let c = "0px";
-    if (u) {
-      let m = parseInt(u, 10);
+    if (s) {
+      let m = parseInt(s, 10);
       isNaN(m) || (c = m + "px");
     }
     let f = l.leave === !0, p = !1, h = new IntersectionObserver(
@@ -5626,7 +5640,7 @@ const Cc = {
         (f ? !v.isIntersecting : v.isIntersecting) && (!l.once || !p) && (p = !0, r.call(o, a), l.once && (h.disconnect(), An.delete(e)));
       },
       {
-        threshold: s,
+        threshold: u,
         rootMargin: c
       }
     );
@@ -5667,21 +5681,21 @@ function di(e) {
       var r = t.value, i = t.modifiers || {}, o = Nc(n, i);
       if (typeof r == "object" && r !== null) {
         var a = r.active ? kt(r.active) : [], l = r.inactive ? kt(r.inactive) : [];
-        o ? (l.forEach(function(s) {
-          e.classList.remove(s);
-        }), a.forEach(function(s) {
-          e.classList.add(s);
-        }), e.setAttribute("data-current", ""), e.setAttribute("aria-current", "page")) : (a.forEach(function(s) {
-          e.classList.remove(s);
-        }), l.forEach(function(s) {
-          e.classList.add(s);
+        o ? (l.forEach(function(u) {
+          e.classList.remove(u);
+        }), a.forEach(function(u) {
+          e.classList.add(u);
+        }), e.setAttribute("data-current", ""), e.setAttribute("aria-current", "page")) : (a.forEach(function(u) {
+          e.classList.remove(u);
+        }), l.forEach(function(u) {
+          e.classList.add(u);
         }), e.removeAttribute("data-current"), e.removeAttribute("aria-current"));
       } else if (typeof r == "string") {
-        var u = kt(r);
-        o ? (u.forEach(function(s) {
-          e.classList.add(s);
-        }), e.setAttribute("data-current", ""), e.setAttribute("aria-current", "page")) : (u.forEach(function(s) {
-          e.classList.remove(s);
+        var s = kt(r);
+        o ? (s.forEach(function(u) {
+          e.classList.add(u);
+        }), e.setAttribute("data-current", ""), e.setAttribute("aria-current", "page")) : (s.forEach(function(u) {
+          e.classList.remove(u);
         }), e.removeAttribute("data-current"), e.removeAttribute("aria-current"));
       }
     }
@@ -5778,13 +5792,13 @@ function Mc(e) {
       t = parseInt(l[1], 10);
       continue;
     }
-    let u = a.match(/^throttle\.?(\d+)(ms)?$/i);
-    if (u) {
-      n = parseInt(u[1], 10);
+    let s = a.match(/^throttle\.?(\d+)(ms)?$/i);
+    if (s) {
+      n = parseInt(s[1], 10);
       continue;
     }
-    let s = a.match(/^(\d+)(ms)?$/);
-    s && (o = parseInt(s[1], 10));
+    let u = a.match(/^(\d+)(ms)?$/);
+    u && (o = parseInt(u[1], 10));
   }
   return r && o > 0 && (t = o), i && o > 0 && (n = o), r && t === 0 && (t = 150), i && n === 0 && (n = 150), { debounceMs: t, throttleMs: n };
 }
@@ -5829,8 +5843,8 @@ const Pc = {
     }
     let l = t.modifiers || {};
     go++;
-    let u = "model-" + go, s = "input";
-    l.blur && (s = "blur"), (l.change || l.lazy) && (s = "change");
+    let s = "model-" + go, u = "input";
+    l.blur && (u = "blur"), (l.change || l.lazy) && (u = "change");
     let { debounceMs: c, throttleMs: f } = Mc(l);
     l.live && !c && !f && (c = 150);
     function p(w) {
@@ -5841,9 +5855,9 @@ const Pc = {
       l.boolean && (w = !!w && w !== "false" && w !== "0"), Rc(o, a, w);
     }
     function h(w) {
-      c > 0 ? Mt(u, c)(function() {
+      c > 0 ? Mt(s, c)(function() {
         p(w);
-      }) : f > 0 ? bn(u, f)(function() {
+      }) : f > 0 ? bn(s, f)(function() {
         p(w);
       }) : p(w);
     }
@@ -5875,7 +5889,7 @@ const Pc = {
       });
     else {
       if (c > 0) {
-        let w = Mt(u, c);
+        let w = Mt(s, c);
         y = function(O) {
           let z = Nn(O.target);
           w(function() {
@@ -5883,7 +5897,7 @@ const Pc = {
           });
         };
       } else if (f > 0) {
-        let w = bn(u, f);
+        let w = bn(s, f);
         y = function(O) {
           let z = Nn(O.target);
           w(function() {
@@ -5896,11 +5910,11 @@ const Pc = {
         };
       l.enter ? (_ = function(w) {
         w.key === "Enter" && p(Nn(w.target));
-      }, e.addEventListener("keyup", _)) : e.addEventListener(s, y), bo(e, m), jt.set(e, {
+      }, e.addEventListener("keyup", _)) : e.addEventListener(u, y), bo(e, m), jt.set(e, {
         isComponent: !1,
         handler: y,
         keyHandler: _,
-        eventType: s,
+        eventType: u,
         property: a,
         modifiers: l,
         state: o
@@ -5939,7 +5953,7 @@ const Vc = {
     }
     let i = t.value, o = null, a = [];
     Array.isArray(i) ? (o = i[0], a = i[1] || []) : typeof i == "string" && (o = i);
-    let l = t.modifiers || {}, u = jc(l), s = l["keep-alive"] === !0, c = l.visible === !0, f = {
+    let l = t.modifiers || {}, s = jc(l), u = l["keep-alive"] === !0, c = l.visible === !0, f = {
       intervalId: null,
       observer: null,
       isVisible: !c,
@@ -5950,10 +5964,10 @@ const Vc = {
       f.isPaused || c && !f.isVisible || (o ? r.call(o, a) : r.call("$refresh", []));
     }
     function h() {
-      f.intervalId || (f.intervalId = setInterval(p, u));
+      f.intervalId || (f.intervalId = setInterval(p, s));
     }
     function m() {
-      s || (document.hidden ? f.isPaused = !0 : f.isPaused = !1);
+      u || (document.hidden ? f.isPaused = !0 : f.isPaused = !1);
     }
     c && (f.observer = new IntersectionObserver(
       function(v) {
@@ -6111,16 +6125,16 @@ const Wc = {
       console.warn("[LiVue] v-loading: livue helper not found in component context");
       return;
     }
-    let i = zt.get(e), o = t.modifiers || {}, a = Bc(o), l = t.value, u = null, s = null;
-    o.class || o.attr ? s = l : typeof l == "string" && (u = l);
+    let i = zt.get(e), o = t.modifiers || {}, a = Bc(o), l = t.value, s = null, u = null;
+    o.class || o.attr ? u = l : typeof l == "string" && (s = l);
     function c(f) {
       i.delayTimer && (clearTimeout(i.delayTimer), i.delayTimer = null), f && a > 0 ? i.delayTimer = setTimeout(function() {
-        i.isActive = !0, Ir(e, i, o, s, !0);
-      }, a) : f ? (i.isActive = !0, Ir(e, i, o, s, !0)) : (i.isActive = !1, Ir(e, i, o, s, !1));
+        i.isActive = !0, Ir(e, i, o, u, !0);
+      }, a) : f ? (i.isActive = !0, Ir(e, i, o, u, !0)) : (i.isActive = !1, Ir(e, i, o, u, !1));
     }
     i.stopWatch = ke(
       function() {
-        return u ? r.isLoading(u) : r.loading;
+        return s ? r.isLoading(s) : r.loading;
       },
       c,
       { immediate: !0 }
@@ -6255,13 +6269,13 @@ function W(e, t = {}) {
   let n = t.supportsOutside === !0, r = t.isKeyboardEvent === !0, i = t.allowArg !== !1;
   const o = /* @__PURE__ */ new WeakMap();
   return {
-    mounted(a, l, u) {
-      const { arg: s, modifiers: c } = l, f = Le(u);
+    mounted(a, l, s) {
+      const { arg: u, modifiers: c } = l, f = Le(s);
       if (!f) {
         console.warn("[LiVue] v-" + e + ": livue helper not found in component context");
         return;
       }
-      if (s && !i) {
+      if (u && !i) {
         const w = "v-" + e;
         Co.has(w) || (console.warn(
           "[LiVue] " + w + ": argument syntax (v-" + e + ":method) is not supported. Use v-" + e + '="method" or v-' + e + `="['method', ...args]".`
@@ -6273,7 +6287,7 @@ function W(e, t = {}) {
       c.debounce && (m = Mt(p, h)), c.throttle && (v = bn(p, h));
       let g = !1;
       const y = function(w) {
-        let O = Yc(l.value, s, i);
+        let O = Yc(l.value, u, i);
         if (O.directFn) {
           let R = O.directFn;
           m ? m(R) : v ? v(R) : R();
@@ -6319,7 +6333,7 @@ function W(e, t = {}) {
         a.addEventListener(e, _, C);
       o.set(a, M);
     },
-    updated(a, l, u) {
+    updated(a, l, s) {
     },
     unmounted(a) {
       const l = o.get(a);
@@ -6403,8 +6417,8 @@ const ed = {
       function() {
         return a ? r.isDirty(a) : r.isDirty();
       },
-      function(u) {
-        Ao(e, i, o, l, u);
+      function(s) {
+        Ao(e, i, o, l, s);
       },
       { immediate: !0 }
     );
@@ -6495,7 +6509,7 @@ const id = {
     }
     let { livue: o, state: a } = r, l = t.modifiers || {};
     No++;
-    let u = "watch-" + i + "-" + No;
+    let s = "watch-" + i + "-" + No;
     if (l.blur) {
       let p = function() {
         o.sync();
@@ -6503,7 +6517,7 @@ const id = {
       e.addEventListener("focusout", p), Dn.set(e, { blurHandler: p });
       return;
     }
-    let s = td(l) || 150, c = Mt(u, s), f = ke(
+    let u = td(l) || 150, c = Mt(s, u), f = ke(
       function() {
         return rd(a, i);
       },
@@ -6594,8 +6608,8 @@ function _r(e, t, n) {
       let l = ld(i, o);
       if (!l)
         throw new Error("[LiVue] v-" + e + ": Could not find component context");
-      let { state: u } = l, s = ud(u, a);
-      if (!s)
+      let { state: s } = l, u = ud(s, a);
+      if (!u)
         throw new Error("[LiVue] v-" + e + ': Property "' + a + '" not found in component state');
       let c = i.modifiers || {};
       ko++;
@@ -6604,7 +6618,7 @@ function _r(e, t, n) {
         console.warn("[LiVue] v-" + e + ": Could not find input element inside component");
         return;
       }
-      let h = t(p, s, u, c, f);
+      let h = t(p, u, s, c, f);
       p.addEventListener(h.eventType, h.handler, { capture: !0 }), Rr.set(r, {
         targetEl: p,
         handler: h.handler,
@@ -6619,13 +6633,13 @@ function _r(e, t, n) {
 }
 function tl(e, t) {
   return _r(e, function(n, r, i, o, a) {
-    let l = sd(o) || 150, u = t(a, l);
+    let l = sd(o) || 150, s = t(a, l);
     return {
       eventType: "input",
-      handler: function(s) {
-        s.stopImmediatePropagation();
-        let c = br(s.target);
-        u(function() {
+      handler: function(u) {
+        u.stopImmediatePropagation();
+        let c = br(u.target);
+        s(function() {
           yr(i, r, c);
         });
       }
@@ -6825,24 +6839,24 @@ function Pe() {
 }
 function ae(e, t, n, r, i) {
   if (!(!e.getBoundingClientRect && e !== window)) {
-    var o, a, l, u, s, c, f;
-    if (e !== window && e.parentNode && e !== Pe() ? (o = e.getBoundingClientRect(), a = o.top, l = o.left, u = o.bottom, s = o.right, c = o.height, f = o.width) : (a = 0, l = 0, u = window.innerHeight, s = window.innerWidth, c = window.innerHeight, f = window.innerWidth), (t || n) && e !== window && (i = i || e.parentNode, !We))
+    var o, a, l, s, u, c, f;
+    if (e !== window && e.parentNode && e !== Pe() ? (o = e.getBoundingClientRect(), a = o.top, l = o.left, s = o.bottom, u = o.right, c = o.height, f = o.width) : (a = 0, l = 0, s = window.innerHeight, u = window.innerWidth, c = window.innerHeight, f = window.innerWidth), (t || n) && e !== window && (i = i || e.parentNode, !We))
       do
         if (i && i.getBoundingClientRect && (P(i, "transform") !== "none" || n && P(i, "position") !== "static")) {
           var p = i.getBoundingClientRect();
-          a -= p.top + parseInt(P(i, "border-top-width")), l -= p.left + parseInt(P(i, "border-left-width")), u = a + o.height, s = l + o.width;
+          a -= p.top + parseInt(P(i, "border-top-width")), l -= p.left + parseInt(P(i, "border-left-width")), s = a + o.height, u = l + o.width;
           break;
         }
       while (i = i.parentNode);
     if (r && e !== window) {
       var h = Lt(i || e), m = h && h.a, v = h && h.d;
-      h && (a /= v, l /= m, f /= m, c /= v, u = a + c, s = l + f);
+      h && (a /= v, l /= m, f /= m, c /= v, s = a + c, u = l + f);
     }
     return {
       top: a,
       left: l,
-      bottom: u,
-      right: s,
+      bottom: s,
+      right: u,
       width: f,
       height: c
     };
@@ -6946,10 +6960,10 @@ function sl(e) {
 function ul(e, t, n) {
   var r = {};
   return Array.from(e.children).forEach(function(i) {
-    var o, a, l, u;
+    var o, a, l, s;
     if (!(!Ne(i, t.draggable, e, !1) || i.animated || i === n)) {
-      var s = ae(i);
-      r.left = Math.min((o = r.left) !== null && o !== void 0 ? o : 1 / 0, s.left), r.top = Math.min((a = r.top) !== null && a !== void 0 ? a : 1 / 0, s.top), r.right = Math.max((l = r.right) !== null && l !== void 0 ? l : -1 / 0, s.right), r.bottom = Math.max((u = r.bottom) !== null && u !== void 0 ? u : -1 / 0, s.bottom);
+      var u = ae(i);
+      r.left = Math.min((o = r.left) !== null && o !== void 0 ? o : 1 / 0, u.left), r.top = Math.min((a = r.top) !== null && a !== void 0 ? a : 1 / 0, u.top), r.right = Math.max((l = r.right) !== null && l !== void 0 ? l : -1 / 0, u.right), r.bottom = Math.max((s = r.bottom) !== null && s !== void 0 ? s : -1 / 0, u.bottom);
     }
   }), r.width = r.right - r.left, r.height = r.bottom - r.top, r.x = r.left, r.y = r.top, r;
 }
@@ -6992,11 +7006,11 @@ function xd() {
       }
       var o = !1, a = 0;
       e.forEach(function(l) {
-        var u = 0, s = l.target, c = s.fromRect, f = ae(s), p = s.prevFromRect, h = s.prevToRect, m = l.rect, v = Lt(s, !0);
-        v && (f.top -= v.f, f.left -= v.e), s.toRect = f, s.thisAnimationDuration && Pr(p, f) && !Pr(c, f) && // Make sure animatingRect is on line between toRect & fromRect
-        (m.top - f.top) / (m.left - f.left) === (c.top - f.top) / (c.left - f.left) && (u = Td(m, p, h, i.options)), Pr(f, c) || (s.prevFromRect = c, s.prevToRect = f, u || (u = i.options.animation), i.animate(s, m, f, u)), u && (o = !0, a = Math.max(a, u), clearTimeout(s.animationResetTimer), s.animationResetTimer = setTimeout(function() {
-          s.animationTime = 0, s.prevFromRect = null, s.fromRect = null, s.prevToRect = null, s.thisAnimationDuration = null;
-        }, u), s.thisAnimationDuration = u);
+        var s = 0, u = l.target, c = u.fromRect, f = ae(u), p = u.prevFromRect, h = u.prevToRect, m = l.rect, v = Lt(u, !0);
+        v && (f.top -= v.f, f.left -= v.e), u.toRect = f, u.thisAnimationDuration && Pr(p, f) && !Pr(c, f) && // Make sure animatingRect is on line between toRect & fromRect
+        (m.top - f.top) / (m.left - f.left) === (c.top - f.top) / (c.left - f.left) && (s = Td(m, p, h, i.options)), Pr(f, c) || (u.prevFromRect = c, u.prevToRect = f, s || (s = i.options.animation), i.animate(u, m, f, s)), s && (o = !0, a = Math.max(a, s), clearTimeout(u.animationResetTimer), u.animationResetTimer = setTimeout(function() {
+          u.animationTime = 0, u.prevFromRect = null, u.fromRect = null, u.prevToRect = null, u.thisAnimationDuration = null;
+        }, s), u.thisAnimationDuration = s);
       }), clearTimeout(t), o ? t = setTimeout(function() {
         typeof r == "function" && r();
       }, a) : typeof r == "function" && r(), e = [];
@@ -7004,7 +7018,7 @@ function xd() {
     animate: function(r, i, o, a) {
       if (a) {
         P(r, "transition", ""), P(r, "transform", "");
-        var l = Lt(this.el), u = l && l.a, s = l && l.d, c = (i.left - o.left) / (u || 1), f = (i.top - o.top) / (s || 1);
+        var l = Lt(this.el), s = l && l.a, u = l && l.d, c = (i.left - o.left) / (s || 1), f = (i.top - o.top) / (u || 1);
         r.animatingX = !!c, r.animatingY = !!f, P(r, "transform", "translate3d(" + c + "px," + f + "px,0)"), this.forRepaintDummy = Cd(r), P(r, "transition", "transform " + a + "ms" + (this.options.easing ? " " + this.options.easing : "")), P(r, "transform", "translate3d(0,0,0)"), typeof r.animated == "number" && clearTimeout(r.animated), r.animated = setTimeout(function() {
           P(r, "transition", ""), P(r, "transform", ""), r.animated = !1, r.animatingX = !1, r.animatingY = !1;
         }, a);
@@ -7045,10 +7059,10 @@ var bt = [], qr = {
   },
   initializePlugins: function(t, n, r, i) {
     bt.forEach(function(l) {
-      var u = l.pluginName;
-      if (!(!t.options[u] && !l.initializeByDefault)) {
-        var s = new l(t, n, t.options);
-        s.sortable = t, s.options = t.options, t[u] = s, Be(r, s.defaults);
+      var s = l.pluginName;
+      if (!(!t.options[s] && !l.initializeByDefault)) {
+        var u = new l(t, n, t.options);
+        u.sortable = t, u.options = t.options, t[s] = u, Be(r, u.defaults);
       }
     });
     for (var o in t.options)
@@ -7071,13 +7085,13 @@ var bt = [], qr = {
   }
 };
 function Ad(e) {
-  var t = e.sortable, n = e.rootEl, r = e.name, i = e.targetEl, o = e.cloneEl, a = e.toEl, l = e.fromEl, u = e.oldIndex, s = e.newIndex, c = e.oldDraggableIndex, f = e.newDraggableIndex, p = e.originalEvent, h = e.putSortable, m = e.extraEventProperties;
+  var t = e.sortable, n = e.rootEl, r = e.name, i = e.targetEl, o = e.cloneEl, a = e.toEl, l = e.fromEl, s = e.oldIndex, u = e.newIndex, c = e.oldDraggableIndex, f = e.newDraggableIndex, p = e.originalEvent, h = e.putSortable, m = e.extraEventProperties;
   if (t = t || n && n[me], !!t) {
     var v, g = t.options, y = "on" + r.charAt(0).toUpperCase() + r.substr(1);
     window.CustomEvent && !We && !wn ? v = new CustomEvent(r, {
       bubbles: !0,
       cancelable: !0
-    }) : (v = document.createEvent("Event"), v.initEvent(r, !0, !0)), v.to = a || n, v.from = l || n, v.item = i || n, v.clone = o, v.oldIndex = u, v.newIndex = s, v.oldDraggableIndex = c, v.newDraggableIndex = f, v.originalEvent = p, v.pullMode = h ? h.lastPutMode : void 0;
+    }) : (v = document.createEvent("Event"), v.initEvent(r, !0, !0)), v.to = a || n, v.from = l || n, v.item = i || n, v.clone = o, v.oldIndex = s, v.newIndex = u, v.oldDraggableIndex = c, v.newDraggableIndex = f, v.originalEvent = p, v.pullMode = h ? h.lastPutMode : void 0;
     var _ = qe(qe({}, m), En.getEventProperties(r, t));
     for (var C in _)
       v[C] = _[C];
@@ -7140,33 +7154,33 @@ var x, ne, j, Y, lt, Wn, ee, Ze, Tt, ye, un, Xe, On, le, St = !1, sr = !1, ur = 
     return e.style.cssText = "pointer-events:auto", e.style.pointerEvents === "auto";
   }
 })(), dl = function(t, n) {
-  var r = P(t), i = parseInt(r.width) - parseInt(r.paddingLeft) - parseInt(r.paddingRight) - parseInt(r.borderLeftWidth) - parseInt(r.borderRightWidth), o = It(t, 0, n), a = It(t, 1, n), l = o && P(o), u = a && P(a), s = l && parseInt(l.marginLeft) + parseInt(l.marginRight) + ae(o).width, c = u && parseInt(u.marginLeft) + parseInt(u.marginRight) + ae(a).width;
+  var r = P(t), i = parseInt(r.width) - parseInt(r.paddingLeft) - parseInt(r.paddingRight) - parseInt(r.borderLeftWidth) - parseInt(r.borderRightWidth), o = It(t, 0, n), a = It(t, 1, n), l = o && P(o), s = a && P(a), u = l && parseInt(l.marginLeft) + parseInt(l.marginRight) + ae(o).width, c = s && parseInt(s.marginLeft) + parseInt(s.marginRight) + ae(a).width;
   if (r.display === "flex")
     return r.flexDirection === "column" || r.flexDirection === "column-reverse" ? "vertical" : "horizontal";
   if (r.display === "grid")
     return r.gridTemplateColumns.split(" ").length <= 1 ? "vertical" : "horizontal";
   if (o && l.float && l.float !== "none") {
     var f = l.float === "left" ? "left" : "right";
-    return a && (u.clear === "both" || u.clear === f) ? "vertical" : "horizontal";
+    return a && (s.clear === "both" || s.clear === f) ? "vertical" : "horizontal";
   }
-  return o && (l.display === "block" || l.display === "flex" || l.display === "table" || l.display === "grid" || s >= i && r[qo] === "none" || a && r[qo] === "none" && s + c > i) ? "vertical" : "horizontal";
+  return o && (l.display === "block" || l.display === "flex" || l.display === "table" || l.display === "grid" || u >= i && r[qo] === "none" || a && r[qo] === "none" && u + c > i) ? "vertical" : "horizontal";
 }, Ld = function(t, n, r) {
-  var i = r ? t.left : t.top, o = r ? t.right : t.bottom, a = r ? t.width : t.height, l = r ? n.left : n.top, u = r ? n.right : n.bottom, s = r ? n.width : n.height;
-  return i === l || o === u || i + a / 2 === l + s / 2;
+  var i = r ? t.left : t.top, o = r ? t.right : t.bottom, a = r ? t.width : t.height, l = r ? n.left : n.top, s = r ? n.right : n.bottom, u = r ? n.width : n.height;
+  return i === l || o === s || i + a / 2 === l + u / 2;
 }, Dd = function(t, n) {
   var r;
   return ur.some(function(i) {
     var o = i[me].options.emptyInsertThreshold;
     if (!(!o || Pi(i))) {
-      var a = ae(i), l = t >= a.left - o && t <= a.right + o, u = n >= a.top - o && n <= a.bottom + o;
-      if (l && u)
+      var a = ae(i), l = t >= a.left - o && t <= a.right + o, s = n >= a.top - o && n <= a.bottom + o;
+      if (l && s)
         return r = i;
     }
   }), r;
 }, fl = function(t) {
   function n(o, a) {
-    return function(l, u, s, c) {
-      var f = l.options.group.name && u.options.group.name && l.options.group.name === u.options.group.name;
+    return function(l, s, u, c) {
+      var f = l.options.group.name && s.options.group.name && l.options.group.name === s.options.group.name;
       if (o == null && (a || f))
         return !0;
       if (o == null || o === !1)
@@ -7174,8 +7188,8 @@ var x, ne, j, Y, lt, Wn, ee, Ze, Tt, ye, un, Xe, On, le, St = !1, sr = !1, ur = 
       if (a && o === "clone")
         return o;
       if (typeof o == "function")
-        return n(o(l, u, s, c), a)(l, u, s, c);
-      var p = (a ? l : u).options.group.name;
+        return n(o(l, s, u, c), a)(l, s, u, c);
+      var p = (a ? l : s).options.group.name;
       return o === !0 || typeof o == "string" && o === p || o.join && o.indexOf(p) > -1;
     };
   }
@@ -7275,15 +7289,15 @@ q.prototype = /** @lends Sortable.prototype */
   },
   _onTapStart: function(t) {
     if (t.cancelable) {
-      var n = this, r = this.el, i = this.options, o = i.preventOnFilter, a = t.type, l = t.touches && t.touches[0] || t.pointerType && t.pointerType === "touch" && t, u = (l || t).target, s = t.target.shadowRoot && (t.path && t.path[0] || t.composedPath && t.composedPath()[0]) || u, c = i.filter;
-      if (zd(r), !x && !(/mousedown|pointerdown/.test(a) && t.button !== 0 || i.disabled) && !s.isContentEditable && !(!this.nativeDraggable && ln && u && u.tagName.toUpperCase() === "SELECT") && (u = Ne(u, i.draggable, r, !1), !(u && u.animated) && Wn !== u)) {
-        if (Tt = Ee(u), un = Ee(u, i.draggable), typeof c == "function") {
-          if (c.call(this, t, u, this)) {
+      var n = this, r = this.el, i = this.options, o = i.preventOnFilter, a = t.type, l = t.touches && t.touches[0] || t.pointerType && t.pointerType === "touch" && t, s = (l || t).target, u = t.target.shadowRoot && (t.path && t.path[0] || t.composedPath && t.composedPath()[0]) || s, c = i.filter;
+      if (zd(r), !x && !(/mousedown|pointerdown/.test(a) && t.button !== 0 || i.disabled) && !u.isContentEditable && !(!this.nativeDraggable && ln && s && s.tagName.toUpperCase() === "SELECT") && (s = Ne(s, i.draggable, r, !1), !(s && s.animated) && Wn !== s)) {
+        if (Tt = Ee(s), un = Ee(s, i.draggable), typeof c == "function") {
+          if (c.call(this, t, s, this)) {
             fe({
               sortable: n,
-              rootEl: s,
+              rootEl: u,
               name: "filter",
-              targetEl: u,
+              targetEl: s,
               toEl: r,
               fromEl: r
             }), ve("filter", n, {
@@ -7292,12 +7306,12 @@ q.prototype = /** @lends Sortable.prototype */
             return;
           }
         } else if (c && (c = c.split(",").some(function(f) {
-          if (f = Ne(s, f.trim(), r, !1), f)
+          if (f = Ne(u, f.trim(), r, !1), f)
             return fe({
               sortable: n,
               rootEl: f,
               name: "filter",
-              targetEl: u,
+              targetEl: s,
               fromEl: r,
               toEl: r
             }), ve("filter", n, {
@@ -7307,19 +7321,19 @@ q.prototype = /** @lends Sortable.prototype */
           o && t.preventDefault();
           return;
         }
-        i.handle && !Ne(s, i.handle, r, !1) || this._prepareDragStart(t, l, u);
+        i.handle && !Ne(u, i.handle, r, !1) || this._prepareDragStart(t, l, s);
       }
     }
   },
   _prepareDragStart: function(t, n, r) {
-    var i = this, o = i.el, a = i.options, l = o.ownerDocument, u;
+    var i = this, o = i.el, a = i.options, l = o.ownerDocument, s;
     if (r && !x && r.parentNode === o) {
-      var s = ae(r);
+      var u = ae(r);
       if (Y = o, x = r, ne = x.parentNode, lt = x.nextSibling, Wn = r, On = a.group, q.dragged = x, it = {
         target: x,
         clientX: (n || t).clientX,
         clientY: (n || t).clientY
-      }, Ro = it.clientX - s.left, Po = it.clientY - s.top, this._lastX = (n || t).clientX, this._lastY = (n || t).clientY, x.style["will-change"] = "all", u = function() {
+      }, Ro = it.clientX - u.left, Po = it.clientY - u.top, this._lastX = (n || t).clientX, this._lastY = (n || t).clientY, x.style["will-change"] = "all", s = function() {
         if (ve("delayEnded", i, {
           evt: t
         }), q.eventCanceled) {
@@ -7340,9 +7354,9 @@ q.prototype = /** @lends Sortable.prototype */
           this._onDrop();
           return;
         }
-        a.supportPointer ? (B(l, "pointerup", i._disableDelayedDrag), B(l, "pointercancel", i._disableDelayedDrag)) : (B(l, "mouseup", i._disableDelayedDrag), B(l, "touchend", i._disableDelayedDrag), B(l, "touchcancel", i._disableDelayedDrag)), B(l, "mousemove", i._delayedDragTouchMoveHandler), B(l, "touchmove", i._delayedDragTouchMoveHandler), a.supportPointer && B(l, "pointermove", i._delayedDragTouchMoveHandler), i._dragStartTimer = setTimeout(u, a.delay);
+        a.supportPointer ? (B(l, "pointerup", i._disableDelayedDrag), B(l, "pointercancel", i._disableDelayedDrag)) : (B(l, "mouseup", i._disableDelayedDrag), B(l, "touchend", i._disableDelayedDrag), B(l, "touchcancel", i._disableDelayedDrag)), B(l, "mousemove", i._delayedDragTouchMoveHandler), B(l, "touchmove", i._delayedDragTouchMoveHandler), a.supportPointer && B(l, "pointermove", i._delayedDragTouchMoveHandler), i._dragStartTimer = setTimeout(s, a.delay);
       } else
-        u();
+        s();
     }
   },
   _delayedDragTouchMoveHandler: function(t) {
@@ -7403,7 +7417,7 @@ q.prototype = /** @lends Sortable.prototype */
   },
   _onTouchMove: function(t) {
     if (it) {
-      var n = this.options, r = n.fallbackTolerance, i = n.fallbackOffset, o = t.touches ? t.touches[0] : t, a = j && Lt(j, !0), l = j && a && a.a, u = j && a && a.d, s = In && ue && Io(ue), c = (o.clientX - it.clientX + i.x) / (l || 1) + (s ? s[0] - zr[0] : 0) / (l || 1), f = (o.clientY - it.clientY + i.y) / (u || 1) + (s ? s[1] - zr[1] : 0) / (u || 1);
+      var n = this.options, r = n.fallbackTolerance, i = n.fallbackOffset, o = t.touches ? t.touches[0] : t, a = j && Lt(j, !0), l = j && a && a.a, s = j && a && a.d, u = In && ue && Io(ue), c = (o.clientX - it.clientX + i.x) / (l || 1) + (u ? u[0] - zr[0] : 0) / (l || 1), f = (o.clientY - it.clientY + i.y) / (s || 1) + (u ? u[1] - zr[1] : 0) / (s || 1);
       if (!q.active && !St) {
         if (r && Math.max(Math.abs(o.clientX - this._lastX), Math.abs(o.clientY - this._lastY)) < r)
           return;
@@ -7452,7 +7466,7 @@ q.prototype = /** @lends Sortable.prototype */
   },
   // Returns true - if no further action is needed (either inserted or another condition)
   _onDragOver: function(t) {
-    var n = this.el, r = t.target, i, o, a, l = this.options, u = l.group, s = q.active, c = On === u, f = l.sort, p = le || s, h, m = this, v = !1;
+    var n = this.el, r = t.target, i, o, a, l = this.options, s = l.group, u = q.active, c = On === s, f = l.sort, p = le || u, h, m = this, v = !1;
     if (fi) return;
     function g(te, ce) {
       ve(te, m, qe({
@@ -7478,7 +7492,7 @@ q.prototype = /** @lends Sortable.prototype */
     function _(te) {
       return g("dragOverCompleted", {
         insertion: te
-      }), te && (c ? s._hideClone() : s._showClone(m), m !== p && (ge(x, le ? le.options.ghostClass : s.options.ghostClass, !1), ge(x, l.ghostClass, !0)), le !== m && m !== q.active ? le = m : m === q.active && le && (le = null), p === m && (m._ignoreWhileAnimating = r), m.animateAll(function() {
+      }), te && (c ? u._hideClone() : u._showClone(m), m !== p && (ge(x, le ? le.options.ghostClass : u.options.ghostClass, !1), ge(x, l.ghostClass, !0)), le !== m && m !== q.active ? le = m : m === q.active && le && (le = null), p === m && (m._ignoreWhileAnimating = r), m.animateAll(function() {
         g("dragOverAnimationComplete"), m._ignoreWhileAnimating = null;
       }), m !== p && (p.animateAll(), p._ignoreWhileAnimating = null)), (r === x && !x.animated || r === n && !r.animated) && (yt = null), !l.dragoverBubble && !t.rootEl && r !== document && (x.parentNode[me]._isOutsideThisEl(t.target), !te && ot(t)), !l.dragoverBubble && t.stopPropagation && t.stopPropagation(), v = !0;
     }
@@ -7495,7 +7509,7 @@ q.prototype = /** @lends Sortable.prototype */
     if (t.preventDefault !== void 0 && t.cancelable && t.preventDefault(), r = Ne(r, l.draggable, n, !0), g("dragOver"), q.eventCanceled) return v;
     if (x.contains(t.target) || r.animated && r.animatingX && r.animatingY || m._ignoreWhileAnimating === r)
       return _(!1);
-    if (sr = !1, s && !l.disabled && (c ? f || (a = ne !== Y) : le === this || (this.lastPutMode = On.checkPull(this, s, x, t)) && u.checkPut(this, s, x, t))) {
+    if (sr = !1, u && !l.disabled && (c ? f || (a = ne !== Y) : le === this || (this.lastPutMode = On.checkPull(this, u, x, t)) && s.checkPut(this, u, x, t))) {
       if (h = this._getDirection(t, r) === "vertical", i = ae(x), g("dragOverValid"), q.eventCanceled) return v;
       if (a)
         return ne = Y, y(), this._hideClone(), g("revert"), q.eventCanceled || (lt ? Y.insertBefore(x, lt) : Y.appendChild(x)), _(!0);
@@ -7700,11 +7714,11 @@ function Md(e) {
   e.dataTransfer && (e.dataTransfer.dropEffect = "move"), e.cancelable && e.preventDefault();
 }
 function Rn(e, t, n, r, i, o, a, l) {
-  var u, s = e[me], c = s.options.onMove, f;
-  return window.CustomEvent && !We && !wn ? u = new CustomEvent("move", {
+  var s, u = e[me], c = u.options.onMove, f;
+  return window.CustomEvent && !We && !wn ? s = new CustomEvent("move", {
     bubbles: !0,
     cancelable: !0
-  }) : (u = document.createEvent("Event"), u.initEvent("move", !0, !0)), u.to = t, u.from = e, u.dragged = n, u.draggedRect = r, u.related = i || t, u.relatedRect = o || ae(t), u.willInsertAfter = l, u.originalEvent = a, e.dispatchEvent(u), c && (f = c.call(s, u, a)), f;
+  }) : (s = document.createEvent("Event"), s.initEvent("move", !0, !0)), s.to = t, s.from = e, s.dragged = n, s.draggedRect = r, s.related = i || t, s.relatedRect = o || ae(t), s.willInsertAfter = l, s.originalEvent = a, e.dispatchEvent(s), c && (f = c.call(u, s, a)), f;
 }
 function Hr(e) {
   e.draggable = !1;
@@ -7721,17 +7735,17 @@ function Pd(e, t, n) {
   return t ? e.clientX > i.right + o || e.clientY > r.bottom && e.clientX > r.left : e.clientY > i.bottom + o || e.clientX > r.right && e.clientY > r.top;
 }
 function qd(e, t, n, r, i, o, a, l) {
-  var u = r ? e.clientY : e.clientX, s = r ? n.height : n.width, c = r ? n.top : n.left, f = r ? n.bottom : n.right, p = !1;
+  var s = r ? e.clientY : e.clientX, u = r ? n.height : n.width, c = r ? n.top : n.left, f = r ? n.bottom : n.right, p = !1;
   if (!a) {
-    if (l && Un < s * i) {
-      if (!dn && (cn === 1 ? u > c + s * o / 2 : u < f - s * o / 2) && (dn = !0), dn)
+    if (l && Un < u * i) {
+      if (!dn && (cn === 1 ? s > c + u * o / 2 : s < f - u * o / 2) && (dn = !0), dn)
         p = !0;
-      else if (cn === 1 ? u < c + Un : u > f - Un)
+      else if (cn === 1 ? s < c + Un : s > f - Un)
         return -cn;
-    } else if (u > c + s * (1 - i) / 2 && u < f - s * (1 - i) / 2)
+    } else if (s > c + u * (1 - i) / 2 && s < f - u * (1 - i) / 2)
       return jd(t);
   }
-  return p = p || a, p && (u < c + s * o / 2 || u > f - s * o / 2) ? u > c + s / 2 ? 1 : -1 : 0;
+  return p = p || a, p && (s < c + u * o / 2 || s > f - u * o / 2) ? s > c + u / 2 ? 1 : -1 : 0;
 }
 function jd(e) {
   return Ee(x) < Ee(e) ? 1 : -1;
@@ -7828,10 +7842,10 @@ function Hd() {
       var i = this, o = (n.touches ? n.touches[0] : n).clientX, a = (n.touches ? n.touches[0] : n).clientY, l = document.elementFromPoint(o, a);
       if (dr = n, r || this.options.forceAutoScrollFallback || wn || We || ln) {
         Br(n, this.options, l, r);
-        var u = et(l, !0);
+        var s = et(l, !0);
         mi && (!Gt || o !== $r || a !== Fr) && (Gt && jo(), Gt = setInterval(function() {
-          var s = et(document.elementFromPoint(o, a), !0);
-          s !== u && (u = s, Xn()), Br(n, i.options, s, r);
+          var u = et(document.elementFromPoint(o, a), !0);
+          u !== s && (s = u, Xn()), Br(n, i.options, u, r);
         }, 10), $r = o, Fr = a);
       } else {
         if (!this.options.bubbleScroll || et(l, !0) === Pe()) {
@@ -7856,33 +7870,33 @@ function jo() {
 }
 var Br = al(function(e, t, n, r) {
   if (t.scroll) {
-    var i = (e.touches ? e.touches[0] : e).clientX, o = (e.touches ? e.touches[0] : e).clientY, a = t.scrollSensitivity, l = t.scrollSpeed, u = Pe(), s = !1, c;
+    var i = (e.touches ? e.touches[0] : e).clientX, o = (e.touches ? e.touches[0] : e).clientY, a = t.scrollSensitivity, l = t.scrollSpeed, s = Pe(), u = !1, c;
     vi !== n && (vi = n, Xn(), Yt = t.scroll, c = t.scrollFn, Yt === !0 && (Yt = et(n, !0)));
     var f = 0, p = Yt;
     do {
       var h = p, m = ae(h), v = m.top, g = m.bottom, y = m.left, _ = m.right, C = m.width, M = m.height, w = void 0, O = void 0, z = h.scrollWidth, R = h.scrollHeight, k = P(h), I = h.scrollLeft, H = h.scrollTop;
-      h === u ? (w = C < z && (k.overflowX === "auto" || k.overflowX === "scroll" || k.overflowX === "visible"), O = M < R && (k.overflowY === "auto" || k.overflowY === "scroll" || k.overflowY === "visible")) : (w = C < z && (k.overflowX === "auto" || k.overflowX === "scroll"), O = M < R && (k.overflowY === "auto" || k.overflowY === "scroll"));
+      h === s ? (w = C < z && (k.overflowX === "auto" || k.overflowX === "scroll" || k.overflowX === "visible"), O = M < R && (k.overflowY === "auto" || k.overflowY === "scroll" || k.overflowY === "visible")) : (w = C < z && (k.overflowX === "auto" || k.overflowX === "scroll"), O = M < R && (k.overflowY === "auto" || k.overflowY === "scroll"));
       var re = w && (Math.abs(_ - i) <= a && I + C < z) - (Math.abs(y - i) <= a && !!I), K = O && (Math.abs(g - o) <= a && H + M < R) - (Math.abs(v - o) <= a && !!H);
       if (!oe[f])
         for (var G = 0; G <= f; G++)
           oe[G] || (oe[G] = {});
-      (oe[f].vx != re || oe[f].vy != K || oe[f].el !== h) && (oe[f].el = h, oe[f].vx = re, oe[f].vy = K, clearInterval(oe[f].pid), (re != 0 || K != 0) && (s = !0, oe[f].pid = setInterval(function() {
+      (oe[f].vx != re || oe[f].vy != K || oe[f].el !== h) && (oe[f].el = h, oe[f].vx = re, oe[f].vy = K, clearInterval(oe[f].pid), (re != 0 || K != 0) && (u = !0, oe[f].pid = setInterval(function() {
         r && this.layer === 0 && q.active._onTouchMove(dr);
         var ie = oe[this.layer].vy ? oe[this.layer].vy * l : 0, Z = oe[this.layer].vx ? oe[this.layer].vx * l : 0;
         typeof c == "function" && c.call(q.dragged.parentNode[me], Z, ie, e, dr, oe[this.layer].el) !== "continue" || ll(oe[this.layer].el, Z, ie);
       }.bind({
         layer: f
       }), 24))), f++;
-    } while (t.bubbleScroll && p !== u && (p = et(p, !1)));
-    mi = s;
+    } while (t.bubbleScroll && p !== s && (p = et(p, !1)));
+    mi = u;
   }
 }, 30), ml = function(t) {
-  var n = t.originalEvent, r = t.putSortable, i = t.dragEl, o = t.activeSortable, a = t.dispatchSortableEvent, l = t.hideGhostForTarget, u = t.unhideGhostForTarget;
+  var n = t.originalEvent, r = t.putSortable, i = t.dragEl, o = t.activeSortable, a = t.dispatchSortableEvent, l = t.hideGhostForTarget, s = t.unhideGhostForTarget;
   if (n) {
-    var s = r || o;
+    var u = r || o;
     l();
     var c = n.changedTouches && n.changedTouches.length ? n.changedTouches[0] : n, f = document.elementFromPoint(c.clientX, c.clientY);
-    u(), s && !s.el.contains(f) && (a("spill"), this.onSpill({
+    s(), u && !u.el.contains(f) && (a("spill"), this.onSpill({
       dragEl: i,
       putSortable: r
     }));
@@ -7957,7 +7971,7 @@ const Wd = {
     r || console.warn("[LiVue] v-sort: No LiVue component context found. The directive must be used inside a LiVue component."), typeof o != "string" && !Array.isArray(o) && console.warn("[LiVue] v-sort: Invalid value. Expected a string (method name) or array [method, params], got " + typeof o + ".");
     let a = $d(i), l = i.horizontal ? "horizontal" : "vertical";
     Pn.set(e, t);
-    let u = e.dataset.livueSortGroup || null, s = {
+    let s = e.dataset.livueSortGroup || null, u = {
       animation: a,
       direction: l,
       ghostClass: "livue-sort-ghost",
@@ -7975,8 +7989,8 @@ const Wd = {
         Array.isArray(m) ? Fd(p, m) : typeof m == "string" && r && Bd(p, m, r);
       }
     };
-    typeof t.value == "string" && (e.dataset.livueSortMethod = t.value), e.querySelector("[data-livue-sort-handle]") && (s.handle = "[data-livue-sort-handle]"), u && (s.group = u);
-    let f = q.create(e, s);
+    typeof t.value == "string" && (e.dataset.livueSortMethod = t.value), e.querySelector("[data-livue-sort-handle]") && (u.handle = "[data-livue-sort-handle]"), s && (u.group = s);
+    let f = q.create(e, u);
     At.set(e, f);
   },
   updated(e, t) {
@@ -8226,8 +8240,8 @@ async function Pf(e) {
         return;
       }
       a.forEach(function(l) {
-        const u = l.dataset.livueId, s = document.querySelector('[data-livue-id="' + u + '"]');
-        s && (l.dataset.livueSnapshot && (s.dataset.livueSnapshot = l.dataset.livueSnapshot), s.innerHTML = l.innerHTML);
+        const s = l.dataset.livueId, u = document.querySelector('[data-livue-id="' + s + '"]');
+        u && (l.dataset.livueSnapshot && (u.dataset.livueSnapshot = l.dataset.livueSnapshot), u.innerHTML = l.innerHTML);
       }), ft.reboot(), t && (await Vf(), jf(t)), Zt && jn("done");
     } catch (t) {
       console.error("[LiVue HMR] Update failed:", t), Zt && jn("error");

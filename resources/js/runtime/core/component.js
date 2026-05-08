@@ -362,11 +362,42 @@ export default class LiVueComponent {
         }
 
         // 5. Mount the Vue app
+        //
+        // Snapshot host attributes (class, style, id, data-*, aria-*, etc.)
+        // before mounting. Vue's app.mount(el) is documented to only touch
+        // `v-cloak` and `data-v-app`, but in practice some browser/Vue
+        // combinations end up with `class=""` and a cleared `style` on the
+        // host when the component template's first element used to be a
+        // Blade Anonymous Component carrying its own classes (the SSR step
+        // injects data-livue-id alongside those classes — they must not be
+        // dropped at hydration).
+        let hostAttrSnapshot = null;
+        if (self.el && self.el.attributes) {
+            hostAttrSnapshot = {};
+            let attrs = self.el.attributes;
+            for (let i = 0; i < attrs.length; i++) {
+                let attr = attrs[i];
+                // Skip transient or Vue-managed attributes.
+                if (attr.name === 'v-cloak' || attr.name === 'data-v-app') continue;
+                hostAttrSnapshot[attr.name] = attr.value;
+            }
+        }
+
         self.el.innerHTML = '';
         try {
             self.vueApp.mount(self.el);
         } catch (e) {
             console.error('[LiVue] Vue app mount failed:', e);
+        }
+
+        // Restore any host attribute that Vue cleared or modified during mount.
+        if (hostAttrSnapshot) {
+            for (let name in hostAttrSnapshot) {
+                let expected = hostAttrSnapshot[name];
+                if (self.el.getAttribute(name) !== expected) {
+                    self.el.setAttribute(name, expected);
+                }
+            }
         }
     }
 
