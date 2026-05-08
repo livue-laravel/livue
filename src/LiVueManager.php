@@ -64,6 +64,23 @@ class LiVueManager
             return $this->renderLazyPlaceholder($component, $props, $options);
         }
 
+        // Separate "fallthrough" HTML attributes (e.g. class, style, id, data-*,
+        // aria-*) from real props. Real props match a public property of the
+        // component; everything else is treated as a container HTML attribute and
+        // forwarded to the renderer so it can be re-applied to the rendered root.
+        $fallthroughAttrs = $this->extractFallthroughAttributes($component, $props);
+
+        if (! empty($fallthroughAttrs)) {
+            // Don't overwrite caller-provided attributes — explicit options win.
+            $options['attributes'] = array_merge(
+                $fallthroughAttrs,
+                $options['attributes'] ?? []
+            );
+
+            // Strip fallthrough keys from props so they don't reach setState/mount.
+            $props = array_diff_key($props, $fallthroughAttrs);
+        }
+
         if (! empty($props)) {
             $component->setState($props);
         }
@@ -75,6 +92,49 @@ class LiVueManager
         $renderer = new ComponentRenderer();
 
         return $renderer->render($component, $options);
+    }
+
+    /**
+     * Extract HTML "fallthrough" attributes from a $props array.
+     *
+     * A key is a fallthrough attribute when it does NOT match a public
+     * property of the component. These are attributes assigned at the usage
+     * site (e.g. `<livue:counter class="bg-red" id="x" data-test="y" />`)
+     * that aren't declared as component props, so they should be re-applied
+     * to the rendered root element instead of being silently discarded.
+     *
+     * @param  Component  $component  The resolved component instance
+     * @param  array      $props      Raw props from the call site
+     * @return array      Subset of $props that don't match a public property
+     */
+    protected function extractFallthroughAttributes(Component $component, array $props): array
+    {
+        if (empty($props)) {
+            return [];
+        }
+
+        $reflection = new \ReflectionClass($component);
+        $publicProps = [];
+
+        foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
+            if ($prop->isStatic()) {
+                continue;
+            }
+            $publicProps[$prop->getName()] = true;
+        }
+
+        $fallthrough = [];
+
+        foreach ($props as $key => $value) {
+            if (! is_string($key)) {
+                continue;
+            }
+            if (! isset($publicProps[$key])) {
+                $fallthrough[$key] = $value;
+            }
+        }
+
+        return $fallthrough;
     }
 
     /**

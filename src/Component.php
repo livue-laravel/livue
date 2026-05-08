@@ -119,6 +119,35 @@ abstract class Component
     }
 
     /**
+     * Whether HTML attributes assigned at usage site (e.g. `class`, `style`,
+     * `id`, `data-*`, `aria-*`) that don't match a public component property
+     * should automatically fall through to the root element of the rendered
+     * template.
+     *
+     * When true (default), Vue-style auto-merge: `class` and `style` are
+     * concatenated with any value already on the root, other attributes are
+     * appended (existing root values win). The Blade `$attributes` bag is
+     * "consumed" (empty) inside the template.
+     *
+     * When false, fallthrough attributes are NOT applied to the root. The
+     * Blade view receives them as `$attributes` (an Illuminate
+     * ComponentAttributeBag) so the developer can place them explicitly.
+     *
+     * Override on a component to opt out:
+     *
+     *     protected bool $inheritAttrs = false;
+     */
+    protected bool $inheritAttrs = true;
+
+    /**
+     * Whether fallthrough HTML attributes should be applied to the root tag.
+     */
+    public function inheritsAttrs(): bool
+    {
+        return $this->inheritAttrs;
+    }
+
+    /**
      * Get extra data to pass to the layout view.
      *
      * Override this in subclasses to pass additional variables

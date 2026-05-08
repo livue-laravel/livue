@@ -64,6 +64,20 @@ class ComponentRenderer
             $viewData['slot'] = $options['slots']['default'] ?? '';
         }
 
+        // Provide $attributes (Illuminate ComponentAttributeBag) to the Blade view.
+        //
+        // When inheritsAttrs() is true (default), the bag is empty in the view
+        // because the attributes are auto-applied to the root element below.
+        // When false, the full bag is available so the developer can place it
+        // explicitly with {{ $attributes }} or $attributes->merge([...]).
+        $rawFallthroughAttrs = isset($options['attributes']) && is_array($options['attributes'])
+            ? $options['attributes']
+            : [];
+
+        $viewData['attributes'] = new \Illuminate\View\ComponentAttributeBag(
+            $component->inheritsAttrs() ? [] : $rawFallthroughAttrs
+        );
+
         $viewName = $component->getView();
 
         // Call rendering() hook - allows modifying view data before render
@@ -194,12 +208,20 @@ class ComponentRenderer
             $styleTag = "<style>{$scopedCss}</style>\n";
         }
 
-        // Build attributes string to inject into the root HTML tag
+        // Build the LiVue-internal attributes string to inject into the root HTML tag
         $vCloak = $component->shouldCloak() ? 'v-cloak ' : '';
-        $attributes = $vCloak . 'data-livue-id="' . $componentId . '" data-livue-snapshot="' . $encodedSnapshot . '"';
-        $attributes .= $islandAttr . $scopeAttr . $refAttr . $modelAttr;
+        $livueAttrs = $vCloak . 'data-livue-id="' . $componentId . '" data-livue-snapshot="' . $encodedSnapshot . '"';
+        $livueAttrs .= $islandAttr . $scopeAttr . $refAttr . $modelAttr;
 
-        $html = $this->insertAttributesIntoHtmlRoot($html, $attributes, $componentName);
+        // Resolve fallthrough HTML attributes (class, style, id, data-*, aria-*, ...)
+        // passed at the usage site that don't match a component property.
+        $fallthroughAttrs = isset($options['attributes']) && is_array($options['attributes'])
+            ? $options['attributes']
+            : [];
+
+        $rootMergeAttrs = $component->inheritsAttrs() ? $fallthroughAttrs : [];
+
+        $html = $this->insertAttributesIntoHtmlRoot($html, $livueAttrs, $componentName, $rootMergeAttrs);
 
         return $styleTag . $html;
     }
@@ -394,17 +416,25 @@ HTML;
     /**
      * Insert attributes into the first HTML root tag of the template.
      *
-     * and inject the attribute string right after the tag name.
+     * Injects the LiVue-internal attribute string right after the tag name.
+     * When $fallthroughAttrs is non-empty, also merges those attributes into
+     * the existing attribute list of the root element (smart merge for
+     * class/style; existing root values win for any other attribute).
      *
-     * @param  string  $html            The component template HTML
-     * @param  string  $attributeString  The attributes to inject (e.g., 'v-cloak data-livue-id="..."')
-     * @param  string  $componentName   The component name (for error messages)
+     * @param  string  $html              The component template HTML
+     * @param  string  $attributeString   LiVue-internal attrs (e.g., 'v-cloak data-livue-id="..."')
+     * @param  string  $componentName     The component name (for error messages)
+     * @param  array   $fallthroughAttrs  Fallthrough HTML attributes to merge into root tag
      * @return string  The HTML with attributes injected
      *
      * @throws RootTagMissingFromViewException
      */
-    protected function insertAttributesIntoHtmlRoot(string $html, string $attributeString, string $componentName = ''): string
-    {
+    protected function insertAttributesIntoHtmlRoot(
+        string $html,
+        string $attributeString,
+        string $componentName = '',
+        array $fallthroughAttrs = []
+    ): string {
         // Find the first HTML tag in the output (skipping whitespace/newlines)
         if (! preg_match('/(?:\n\s*|^\s*)<([a-zA-Z0-9\-]+)/', $html, $matches, PREG_OFFSET_CAPTURE)) {
             throw new RootTagMissingFromViewException($componentName);
@@ -412,11 +442,160 @@ HTML;
 
         $tagName = $matches[1][0];
         $tagNameStart = $matches[1][1];
+        $afterTagName = $tagNameStart + strlen($tagName);
 
-        // Insert the attributes right after the tag name
+        // If we have fallthrough attributes to merge, find the end of the opening
+        // tag (first '>' not inside a quoted attribute value) and merge them into
+        // the existing attribute string of the root element.
+        if (! empty($fallthroughAttrs)) {
+            $tagEnd = $this->findRootTagEnd($html, $afterTagName);
+
+            if ($tagEnd !== -1) {
+                $existingAttrs = substr($html, $afterTagName, $tagEnd - $afterTagName);
+
+                // Self-closing slash at the end (e.g. " />") must stay outside
+                // the merged attribute string.
+                $trailingSlash = '';
+                $stripped = rtrim($existingAttrs);
+                if (str_ends_with($stripped, '/')) {
+                    $trailingSlash = '/';
+                    $existingAttrs = substr($stripped, 0, -1);
+                }
+
+                $merged = $this->mergeFallthroughAttributes($existingAttrs, $fallthroughAttrs);
+
+                $rebuilt = ' ' . trim($merged);
+                if ($trailingSlash !== '') {
+                    $rebuilt .= ' ' . $trailingSlash;
+                }
+
+                $html = substr($html, 0, $afterTagName) . $rebuilt . substr($html, $tagEnd);
+            }
+        }
+
+        // Re-find the position (the html may have changed length above).
+        if (! preg_match('/(?:\n\s*|^\s*)<([a-zA-Z0-9\-]+)/', $html, $matches, PREG_OFFSET_CAPTURE)) {
+            throw new RootTagMissingFromViewException($componentName);
+        }
+
+        $tagName = $matches[1][0];
+        $tagNameStart = $matches[1][1];
         $insertPosition = $tagNameStart + strlen($tagName);
 
         return substr($html, 0, $insertPosition) . ' ' . $attributeString . substr($html, $insertPosition);
+    }
+
+    /**
+     * Find the position of the closing '>' of the opening root tag, skipping
+     * '>' characters inside quoted attribute values.
+     *
+     * @param  string  $html        The full rendered HTML
+     * @param  int     $startAfter  Position just after the tag name (where attributes begin)
+     * @return int     Position of the closing '>', or -1 if not found
+     */
+    protected function findRootTagEnd(string $html, int $startAfter): int
+    {
+        $len = strlen($html);
+        $inQuote = null;
+
+        for ($i = $startAfter; $i < $len; $i++) {
+            $ch = $html[$i];
+
+            if ($inQuote !== null) {
+                if ($ch === $inQuote) {
+                    $inQuote = null;
+                }
+                continue;
+            }
+
+            if ($ch === '"' || $ch === "'") {
+                $inQuote = $ch;
+                continue;
+            }
+
+            if ($ch === '>') {
+                return $i;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
+     * Merge fallthrough attributes into the existing attribute string of an HTML tag.
+     *
+     * Rules:
+     *  - `class`: concatenated (existing class + ' ' + fallthrough class)
+     *  - `style`: concatenated with ';' separator
+     *  - other attributes: existing value wins; fallthrough is added only if absent
+     *  - boolean true: emitted as name-only attribute
+     *  - false / null values: skipped
+     *
+     * @param  string  $existingAttrs  Existing attribute substring of the root tag
+     * @param  array   $fallthrough    Map of attribute name => value to merge in
+     * @return string  Merged attribute substring
+     */
+    protected function mergeFallthroughAttributes(string $existingAttrs, array $fallthrough): string
+    {
+        $result = $existingAttrs;
+
+        foreach ($fallthrough as $name => $value) {
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            if ($value === false || $value === null) {
+                continue;
+            }
+
+            $isBool = ($value === true);
+            $stringValue = $isBool ? '' : (string) $value;
+            $lowerName = strtolower($name);
+            $isMergeable = ($lowerName === 'class' || $lowerName === 'style');
+
+            $quotedPattern = '/(?<=^|\s)(' . preg_quote($name, '/') . ')\s*=\s*(["\'])(.*?)\2/i';
+            $bareSpacePattern = '/(?<=^|\s)(' . preg_quote($name, '/') . ')(?=\s|$)/i';
+
+            if (preg_match($quotedPattern, $result, $m, PREG_OFFSET_CAPTURE)) {
+                if (! $isMergeable) {
+                    // Existing value wins; skip the fallthrough.
+                    continue;
+                }
+
+                $current = $m[3][0];
+                $quote = $m[2][0];
+
+                if ($lowerName === 'class') {
+                    $merged = trim($current . ' ' . $stringValue);
+                } else {
+                    $current = rtrim($current);
+                    $separator = ($current === '' || str_ends_with($current, ';')) ? '' : ';';
+                    $merged = trim($current . $separator . $stringValue, " \t\n\r\0\x0B;");
+                }
+
+                $escaped = htmlspecialchars($merged, ENT_QUOTES);
+                $replacement = $name . '=' . $quote . $escaped . $quote;
+                $matchStart = $m[0][1];
+                $matchLen = strlen($m[0][0]);
+                $result = substr($result, 0, $matchStart) . $replacement . substr($result, $matchStart + $matchLen);
+                continue;
+            }
+
+            if (preg_match($bareSpacePattern, $result)) {
+                continue;
+            }
+
+            $prefix = ($result === '' || str_ends_with($result, ' ')) ? '' : ' ';
+
+            if ($isBool) {
+                $result .= $prefix . $name;
+            } else {
+                $escaped = htmlspecialchars($stringValue, ENT_QUOTES);
+                $result .= $prefix . $name . '="' . $escaped . '"';
+            }
+        }
+
+        return $result;
     }
 
     /**
