@@ -2,6 +2,16 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.5.22] - 2026-06-11
+
+### Added
+
+- `livue.runAction(name, callMethod, params?)` — invokes a server method and tracks the call under a semantic action name (e.g. `'refresh_from_packagist'`), distinct from the underlying PHP method name. Concurrent invocations with the same `name` are dropped (multi-click guard).
+- `livue.runActionWithConfirm(name, callMethod, message, params?)` — shows a confirmation dialog; the action is tracked only after the user confirms.
+- `livue.isCallingAction(name?)` — reactive predicate that returns `true` while an action with the given semantic name is in flight (or any action, if `name` is omitted).
+- `livue.runFormSubmit(formName, method, params?)` and `livue.isSubmittingForm(formName?)` — same pattern, scoped to form submissions. Useful for binding `<p-button type="submit" :loading="livue.isSubmittingForm('myForm')">`.
+- New reactive maps exposed on the helper: `livue.actionTargets` and `livue.formTargets` (kept in sync by the helpers above).
+
 ## [1.5.1] - 2026-03-05
 
 ### Fixed

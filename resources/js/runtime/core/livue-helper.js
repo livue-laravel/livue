@@ -492,6 +492,14 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     // Reactive object tracking loading state per method
     let loadingTargets = reactive({});
 
+    // Reactive object tracking in-flight server actions by their semantic name
+    // (e.g. 'refresh_from_packagist'), distinct from loadingTargets which keys
+    // on the PHP method name (typically 'callAction').
+    let actionTargets = reactive({});
+
+    // Reactive object tracking forms currently being submitted, keyed by form name.
+    let formTargets = reactive({});
+
     // Magic methods registry: extensible map of $-prefixed methods handled client-side
     let magicMethods = {};
 
@@ -515,6 +523,8 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         streaming: false,
         streamingMethod: null,
         loadingTargets: loadingTargets,
+        actionTargets: actionTargets,
+        formTargets: formTargets,
         refs: {},
         stores: stores,
         _pinia: pinia,
@@ -599,6 +609,103 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 'aria-busy': isActive,
                 'disabled': isActive,
             };
+        },
+
+        /**
+         * Check if a server action with the given semantic name is in-flight.
+         * Action names are arbitrary identifiers (e.g. 'refresh', 'export.csv')
+         * passed to runAction/runActionWithConfirm.
+         *
+         * @param {string} actionName
+         * @returns {boolean}
+         */
+        isCallingAction: function (actionName) {
+            if (!actionName) return Object.keys(actionTargets).length > 0;
+            return actionTargets[actionName] || false;
+        },
+
+        /**
+         * Invoke a server method on behalf of a named action, tracking its
+         * in-flight state under actionName so templates can drive
+         * `:loading` bindings via isCallingAction(actionName).
+         *
+         * Multi-click guard: concurrent invocations with the same actionName
+         * are dropped (returns a resolved Promise without dispatching).
+         *
+         * @param {string} actionName - Semantic action identifier
+         * @param {string} callMethod - PHP method to invoke (e.g. 'callAction')
+         * @param {object} [params] - Extra params merged into the payload (e.g. recordKey)
+         * @returns {Promise}
+         */
+        runAction: function (actionName, callMethod, params) {
+            if (!actionName || !callMethod) {
+                return Promise.resolve();
+            }
+            if (actionTargets[actionName]) {
+                return Promise.resolve();
+            }
+
+            actionTargets[actionName] = true;
+            let payload = Object.assign({ name: actionName }, params || {});
+
+            return livue.call(callMethod, [payload]).finally(function () {
+                delete actionTargets[actionName];
+            });
+        },
+
+        /**
+         * Show a confirmation dialog, then run the action on confirm. The
+         * loading state is only triggered after the user confirms — the
+         * initial click only opens the dialog.
+         *
+         * @param {string} actionName
+         * @param {string} callMethod
+         * @param {string} message - Confirmation prompt
+         * @param {object} [params] - Extra params for the action payload
+         * @returns {Promise}
+         */
+        runActionWithConfirm: async function (actionName, callMethod, message, params) {
+            let confirmed = await livue._showConfirm({ message: message || 'Are you sure?' });
+            if (!confirmed) {
+                return;
+            }
+            return livue.runAction(actionName, callMethod, params);
+        },
+
+        /**
+         * Check if a form is currently being submitted. Pass a form name to
+         * scope the check; omit to check whether any form is submitting.
+         *
+         * @param {string} [formName]
+         * @returns {boolean}
+         */
+        isSubmittingForm: function (formName) {
+            if (!formName) return Object.keys(formTargets).length > 0;
+            return formTargets[formName] || false;
+        },
+
+        /**
+         * Wrap a form submission so isSubmittingForm(formName) reflects its
+         * in-flight state. Drops concurrent submits for the same formName.
+         *
+         * @param {string} formName
+         * @param {string} method - Server method to call on submit
+         * @param {Array} [params]
+         * @returns {Promise}
+         */
+        runFormSubmit: function (formName, method, params) {
+            if (!formName || !method) {
+                return Promise.resolve();
+            }
+            if (formTargets[formName]) {
+                return Promise.resolve();
+            }
+
+            formTargets[formName] = true;
+
+            return livue.call(method, params || []).finally(function () {
+                delete formTargets[formName];
+            });
         },
 
         /**
