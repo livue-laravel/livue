@@ -404,15 +404,16 @@ class AssetManager
      * Render the import map as a script tag.
      * Must be placed BEFORE any module scripts in the HTML.
      */
-    public function renderImportMap(): string
+    public function renderImportMap(?string $nonce = null): string
     {
         if (empty($this->importMap)) {
             return '';
         }
 
+        $nonceAttr = $nonce ? ' nonce="' . e($nonce) . '"' : '';
         $json = json_encode(['imports' => $this->importMap], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
 
-        return '<script type="importmap">' . $json . '</script>';
+        return '<script type="importmap"' . $nonceAttr . '>' . $json . '</script>';
     }
 
     /**
@@ -648,7 +649,7 @@ class AssetManager
 
         $nonceAttr = $nonce ? ' nonce="' . e($nonce) . '"' : '';
 
-        return '<script' . $nonceAttr . '>window.LiVueData = ' . json_encode($data, JSON_UNESCAPED_SLASHES) . ';</script>' . "\n";
+        return '<script' . $nonceAttr . ' data-livue-script-data>window.LiVueData = ' . json_encode($data, JSON_UNESCAPED_SLASHES) . ';</script>' . "\n";
     }
 
     /**

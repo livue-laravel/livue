@@ -227,6 +227,67 @@ HTML;
         expect(substr_count($result, 'style:primix/tables:table-css'))->toBe(1);
     });
 
+    it('hoists the module prelude before any script on full-page responses', function () {
+        $assetManager = app(AssetManager::class);
+        $manager = app(LiVueManager::class);
+        $middleware = app(LiVueAssetInjectionMiddleware::class);
+
+        $assetManager->registerImports([
+            'vue' => '/vendor/livue/primix/support/vue.esm-browser.prod.js',
+            'livue' => '/livue/livue.js?module',
+        ]);
+        $assetManager->register([
+            Js::make('forms-js', 'https://cdn.example.com/forms.js')->module()->onRequest(),
+        ], 'primix/forms');
+
+        $scriptLoader = $manager->renderOnRequestScript('forms-js', 'primix/forms');
+        $liVueScripts = $manager->renderScripts();
+
+        $html = <<<HTML
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Test</title>
+    <script>var darkMode = true;</script>
+</head>
+<body>
+    <div id="content" data-livue-id="abc" data-livue-snapshot="{}">Hello</div>
+    {$scriptLoader}
+    {$liVueScripts}
+</body>
+</html>
+HTML;
+
+        $request = Request::create('/test', 'GET');
+        $response = new Response($html, 200, ['Content-Type' => 'text/html']);
+
+        $result = $middleware->handle($request, fn () => $response)->getContent();
+
+        $importMapPos = strpos($result, 'type="importmap"');
+        $configPos = strpos($result, 'window.LiVueConfig');
+        $loaderPos = strpos($result, 'script:primix/forms:forms-js');
+        $firstScriptPos = stripos($result, '<script');
+        $darkModePos = strpos($result, 'var darkMode');
+        $headEndPos = stripos($result, '</head>');
+
+        expect($importMapPos)->not->toBeFalse();
+        expect($configPos)->not->toBeFalse();
+        expect($loaderPos)->not->toBeFalse();
+
+        // The prelude is the first script in the document, ahead of user
+        // head scripts and the hoisted on-request loader.
+        expect($importMapPos)->toBeLessThan($headEndPos);
+        expect($importMapPos)->toBeLessThan($darkModePos);
+        expect($configPos)->toBeLessThan($loaderPos);
+        expect($importMapPos)->toBeLessThan($loaderPos);
+        expect($firstScriptPos)->toBe(strpos($result, '<script type="importmap"'));
+
+        // Prelude tags are moved, not duplicated.
+        expect(substr_count($result, 'type="importmap"'))->toBe(1);
+        expect(substr_count($result, 'window.LiVueConfig'))->toBe(1);
+    });
+
     it('does not hoist on-request loaders for SPA navigate responses', function () {
         $assetManager = app(AssetManager::class);
         $manager = app(LiVueManager::class);

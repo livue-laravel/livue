@@ -236,7 +236,7 @@ class LiVueManager
         // renders them in a fullscreen overlay instead of silently failing.
         $jsConfig['debug'] = (bool) config('app.debug', false);
 
-        $configScript = '<script' . $nonceAttr . '>window.LiVueConfig = ' . json_encode($jsConfig) . ';</script>';
+        $configScript = '<script' . $nonceAttr . ' data-livue-config>window.LiVueConfig = ' . json_encode($jsConfig) . ';</script>';
 
         // Smart loader: checks if LiVue.setup() was called (ESM mode)
         // If not, loads the standalone bundle dynamically
@@ -279,7 +279,7 @@ JS;
 
         // Then import map - MUST come before any module scripts
         if ($assetManager->hasImportMap()) {
-            $output .= $assetManager->renderImportMap() . "\n";
+            $output .= $assetManager->renderImportMap($nonce) . "\n";
         }
 
         // Then config and loader
