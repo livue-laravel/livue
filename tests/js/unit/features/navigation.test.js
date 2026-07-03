@@ -439,6 +439,65 @@ describe('Navigation Module', () => {
         });
     });
 
+    describe('handleSessionExpired()', () => {
+        let originalLocation;
+
+        beforeEach(() => {
+            navigation.initNavigation(mockRuntime);
+            originalLocation = window.location;
+            delete window.location;
+            window.location = { href: '', reload: vi.fn() };
+        });
+
+        afterEach(() => {
+            window.location = originalLocation;
+        });
+
+        it('should reload the current page by default', () => {
+            navigation.handleSessionExpired(419);
+
+            expect(window.location.reload).toHaveBeenCalled();
+            expect(window.location.href).toBe('');
+        });
+
+        it('should redirect to the configured sessionExpiredUrl', () => {
+            navigation.configure({ sessionExpiredUrl: '/admin/login' });
+
+            navigation.handleSessionExpired(401);
+
+            expect(window.location.href).toBe('/admin/login');
+            expect(window.location.reload).not.toHaveBeenCalled();
+        });
+
+        it('should let a listener override the destination via the event', () => {
+            const listener = function (event) {
+                event.detail.redirectUrl = '/custom-login';
+            };
+            window.addEventListener('livue:session-expired', listener);
+
+            navigation.handleSessionExpired(419);
+
+            expect(window.location.href).toBe('/custom-login');
+            expect(window.location.reload).not.toHaveBeenCalled();
+
+            window.removeEventListener('livue:session-expired', listener);
+        });
+
+        it('should not navigate if a listener cancels the event', () => {
+            const listener = function (event) {
+                event.preventDefault();
+            };
+            window.addEventListener('livue:session-expired', listener);
+
+            navigation.handleSessionExpired(401);
+
+            expect(window.location.reload).not.toHaveBeenCalled();
+            expect(window.location.href).toBe('');
+
+            window.removeEventListener('livue:session-expired', listener);
+        });
+    });
+
     describe('isNavigating()', () => {
         beforeEach(() => {
             navigation.initNavigation(mockRuntime);

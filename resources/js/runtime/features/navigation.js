@@ -47,6 +47,7 @@ var _config = {
     cachePages: true,
     maxCacheSize: 10,
     restoreScroll: true,
+    sessionExpiredUrl: null,
 };
 
 /**
@@ -92,6 +93,7 @@ var _currentPageKey = null;
  * @param {boolean} [options.cachePages] - Cache pages for back/forward (default: true)
  * @param {number} [options.maxCacheSize] - Max cached pages (default: 10)
  * @param {boolean} [options.restoreScroll] - Restore scroll position on back/forward (default: true)
+ * @param {string|null} [options.sessionExpiredUrl] - URL to redirect to when the session expires / auth fails (401/419). Default: null (reload the current page so the server can redirect to login).
  */
 export function configure(options) {
     Object.assign(_config, options);
@@ -544,6 +546,54 @@ export function handleRedirect(redirect) {
     } else {
         _navigating = true;
         window.location.href = redirect.url;
+    }
+}
+
+/**
+ * Handle an expired session or failed authentication.
+ *
+ * Triggered when a LiVue request returns 401 (unauthenticated) or
+ * 419 (CSRF token / session expired). Without this, the request would reject
+ * silently — the user clicks an action and nothing happens except a console
+ * error. Instead, we navigate away so the server-side auth middleware can take
+ * over (typically a redirect to the login page).
+ *
+ * Destination resolution order:
+ *   1. `redirectUrl` set by a listener on the cancelable `livue:session-expired` event
+ *   2. The configured `sessionExpiredUrl` navigation option
+ *   3. A full reload of the current page (the server then redirects to login)
+ *
+ * A listener may call `event.preventDefault()` to handle re-authentication
+ * itself (e.g. show a re-login modal in place without leaving the page).
+ *
+ * @param {number} status - The HTTP status that triggered this (401 or 419)
+ */
+export function handleSessionExpired(status) {
+    if (_navigating) {
+        return;
+    }
+
+    var detail = {
+        status: status,
+        redirectUrl: _config.sessionExpiredUrl || null,
+    };
+
+    var event = new CustomEvent('livue:session-expired', {
+        detail: detail,
+        cancelable: true,
+    });
+
+    // A listener may cancel to handle re-authentication itself.
+    if (!window.dispatchEvent(event)) {
+        return;
+    }
+
+    _navigating = true;
+
+    if (detail.redirectUrl) {
+        window.location.href = detail.redirectUrl;
+    } else {
+        window.location.reload();
     }
 }
 

@@ -22,6 +22,7 @@ beforeEach(async () => {
     vi.doMock('@/features/navigation.js', () => ({
         handleRedirect: vi.fn(),
         clearCache: vi.fn(),
+        handleSessionExpired: vi.fn(),
     }));
 
     // Mock progress module
@@ -225,6 +226,69 @@ describe('Request Pool', () => {
             await flushMicrotasks();
 
             expect(handleRedirect).toHaveBeenCalledWith({ url: '/dashboard', navigate: true });
+        });
+
+        it('should redirect to login on 419 (CSRF/session expired) instead of rejecting', async () => {
+            const { handleSessionExpired } = await import('@/features/navigation.js');
+
+            mockFetch.mockResolvedValue(createMockResponse(
+                { message: 'CSRF token mismatch.' },
+                { ok: false, status: 419 }
+            ));
+
+            // Page is navigating away — promise never settles, so don't await it.
+            pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'open', params: [] });
+
+            await flushMicrotasks();
+
+            expect(handleSessionExpired).toHaveBeenCalledWith(419);
+        });
+
+        it('should redirect to login on transport-level 401', async () => {
+            const { handleSessionExpired } = await import('@/features/navigation.js');
+
+            mockFetch.mockResolvedValue(createMockResponse(
+                { message: 'Unauthenticated.' },
+                { ok: false, status: 401 }
+            ));
+
+            pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'open', params: [] });
+
+            await flushMicrotasks();
+
+            expect(handleSessionExpired).toHaveBeenCalledWith(401);
+        });
+
+        it('should redirect to login on a per-component 401 inside a 200 batch', async () => {
+            const { handleSessionExpired } = await import('@/features/navigation.js');
+
+            mockFetch.mockResolvedValue(createMockResponse({
+                responses: [
+                    { error: 'Unauthenticated.', status: 401 },
+                ],
+            }));
+
+            pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'open', params: [] });
+
+            await flushMicrotasks();
+
+            expect(handleSessionExpired).toHaveBeenCalledWith(401);
+        });
+
+        it('should redirect to login on 419 for isolated requests', async () => {
+            const { handleSessionExpired } = await import('@/features/navigation.js');
+
+            mockFetch.mockResolvedValue(createMockResponse(
+                { message: 'CSRF token mismatch.' },
+                { ok: false, status: 419 }
+            ));
+
+            // Never resolves (navigating away); don't await.
+            pool.poolRequest({ snapshot: '{}', diffs: {}, method: 'open', params: [], isolate: true });
+
+            await flushMicrotasks();
+
+            expect(handleSessionExpired).toHaveBeenCalledWith(419);
         });
 
         it('should strip isolate flag from payload sent to server', async () => {

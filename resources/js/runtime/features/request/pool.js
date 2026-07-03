@@ -6,7 +6,7 @@
  */
 
 import { getToken } from '../../helpers/csrf.js';
-import { handleRedirect, clearCache } from '../navigation.js';
+import { handleRedirect, clearCache, handleSessionExpired } from '../navigation.js';
 import { trigger } from '../../helpers/hooks.js';
 import { maybeShowFromResponse } from '../../helpers/error-overlay.js';
 
@@ -143,6 +143,17 @@ async function flush() {
             credentials: 'same-origin',
         });
 
+        // Session expired / unauthenticated at the transport level:
+        //  - 419: CSRF token mismatch (the page's token no longer matches the
+        //         new session after it expired)
+        //  - 401: auth middleware rejected the request
+        // Redirect to login instead of rejecting silently. Promises are left
+        // unresolved on purpose — the page is navigating away.
+        if (response.status === 419 || response.status === 401) {
+            handleSessionExpired(response.status);
+            return;
+        }
+
         // If the server returned an HTML error page (Ignition / Whoops / dd())
         // and debug mode is on, show it in the overlay and reject the batch.
         // response.json() below would throw on HTML, so handle this first.
@@ -193,6 +204,16 @@ async function flush() {
         for (var i = 0; i < responses.length; i++) {
             if (responses[i] && responses[i].redirect) {
                 handleRedirect(responses[i].redirect);
+                return;
+            }
+        }
+
+        // Per-component auth failure: persistent auth middleware can reject a
+        // single update with a 401 inside an otherwise-200 batch. Treat it the
+        // same as a transport-level session expiry and redirect to login.
+        for (var i = 0; i < responses.length; i++) {
+            if (responses[i] && responses[i].status === 401) {
+                handleSessionExpired(401);
                 return;
             }
         }
@@ -314,6 +335,13 @@ async function sendIsolated(payload) {
         credentials: 'same-origin',
     });
 
+    // Session expired / unauthenticated (419 CSRF mismatch or 401 auth):
+    // redirect to login. Return a never-resolving promise — page is navigating away.
+    if (response.status === 419 || response.status === 401) {
+        handleSessionExpired(response.status);
+        return new Promise(function () {});
+    }
+
     // Debug: intercept HTML error pages (Ignition / Whoops / dd()).
     if (await maybeShowFromResponse(response, url)) {
         var overlayError = new Error('LiVue debug overlay: server returned HTML error page');
@@ -340,6 +368,12 @@ async function sendIsolated(payload) {
     if (result.redirect) {
         handleRedirect(result.redirect);
         // Return a never-resolving promise — page is navigating away
+        return new Promise(function () {});
+    }
+
+    // Per-component auth failure (401 from persistent auth middleware).
+    if (result.status === 401) {
+        handleSessionExpired(401);
         return new Promise(function () {});
     }
 

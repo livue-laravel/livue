@@ -6,6 +6,7 @@
  */
 
 import { getToken } from '../../helpers/csrf.js';
+import { handleSessionExpired } from '../navigation.js';
 
 /**
  * Registry of stream targets.
@@ -133,6 +134,13 @@ export async function streamRequest(payload, callbacks = {}) {
             }),
             signal: controller.signal,
         });
+
+        // Session expired / unauthenticated (419 CSRF mismatch or 401 auth):
+        // redirect to login instead of surfacing a generic stream error.
+        if (response.status === 419 || response.status === 401) {
+            handleSessionExpired(response.status);
+            return null;
+        }
 
         if (!response.ok) {
             throw new Error(`HTTP error: ${response.status}`);

@@ -52,6 +52,14 @@ class EloquentModelSynth extends PropertySynthesizer
             $query->withTrashed();
         }
 
+        // Opt-in: models hidden from ordinary queries by a global scope (e.g. a
+        // "published" scope) can still be restored in admin components. Security
+        // is the re-fetch by primary key plus the component's authorization, as
+        // with withTrashed() above.
+        if (in_array(\LiVue\Contracts\RestoresWithoutGlobalScopes::class, class_implements($class) ?: [], true)) {
+            $query->withoutGlobalScopes();
+        }
+
         return $query->findOrFail($key);
     }
 }
