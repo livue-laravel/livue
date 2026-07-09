@@ -66,13 +66,28 @@ trait HandlesRendering
         // component stack via flushStateIfDoneRendering().
         $__env->incrementRender();
 
+        $__obLevel = ob_get_level();
+
         ob_start();
 
         try {
             include $__path;
         } catch (\Throwable $e) {
-            ob_end_clean();
-            $__env->decrementRender();
+            // Close every buffer opened during this render, not just ours:
+            // an exception deep in a nested include can leave levels behind.
+            while (ob_get_level() > $__obLevel) {
+                ob_end_clean();
+            }
+
+            // Mirror Laravel's View::render(): a failed render must reset the
+            // whole Factory state (render count, sections, component stack).
+            // A nested Laravel View::render() that failed has already called
+            // flushState() and reset renderCount to 0 — a plain
+            // decrementRender() here would leave it at -1, so
+            // flushStateIfDoneRendering() would never fire again and, on
+            // long-lived workers (Octane), every later render of any page
+            // would see the corrupted section/component stacks.
+            $__env->flushState();
 
             if ($e instanceof LiVueException) {
                 throw $e;
