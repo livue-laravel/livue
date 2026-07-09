@@ -23,7 +23,10 @@ describe('Render Failure State', function () {
             livue(BrokenViewComponent::class);
             $this->fail('Expected the broken component render to throw');
         } catch (ComponentRenderException $e) {
-            expect($e->getMessage())->toContain('kaboom');
+            expect($e->getMessage())->toContain('kaboom')
+                // The message must point at the file that actually threw
+                // (the nested view), not just the component's root view.
+                ->toContain('broken-inner.blade.php');
         }
 
         expect($factory->doneRendering())->toBeTrue()
