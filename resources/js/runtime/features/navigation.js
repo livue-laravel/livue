@@ -499,6 +499,13 @@ export function prefetchUrl(url) {
  * @param {string} html - Page HTML
  */
 function cachePage(url, html) {
+    // Never cache pages containing a render error box: the failure may be
+    // transient (or fixed server-side), but a cached copy would keep
+    // resurfacing it on back/forward until a hard reload.
+    if (html.indexOf('data-livue-render-error') !== -1) {
+        return;
+    }
+
     // Parse to get title
     var parser = new DOMParser();
     var doc = parser.parseFromString(html, 'text/html');

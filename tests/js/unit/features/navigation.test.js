@@ -349,6 +349,17 @@ describe('Navigation Module', () => {
             expect(mockFetch).toHaveBeenCalledTimes(1);
         });
 
+        it('should not cache pages containing a render error box', async () => {
+            const errorHtml = '<html><body><div data-livue-render-error>boom</div></body></html>';
+            mockFetch.mockResolvedValue(createMockResponse(errorHtml));
+
+            await navigation.prefetchUrl('/broken');
+            await navigation.prefetchUrl('/broken');
+
+            // Not cached: the second prefetch must fetch again
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+        });
+
         it('should not duplicate in-flight prefetches', async () => {
             mockFetch.mockImplementation(() =>
                 new Promise(resolve => setTimeout(() => resolve(createMockResponse('<html></html>')), 100))

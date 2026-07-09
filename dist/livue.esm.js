@@ -981,15 +981,17 @@ function gr(e) {
   return dt.set(t, n), n;
 }
 function ga(e, t) {
-  for (var n = new DOMParser(), r = n.parseFromString(t, "text/html"), i = r.querySelector("title"); qe.size >= we.maxCacheSize; ) {
-    var o = qe.keys().next().value;
-    qe.delete(o);
+  if (t.indexOf("data-livue-render-error") === -1) {
+    for (var n = new DOMParser(), r = n.parseFromString(t, "text/html"), i = r.querySelector("title"); qe.size >= we.maxCacheSize; ) {
+      var o = qe.keys().next().value;
+      qe.delete(o);
+    }
+    qe.set(e, {
+      html: t,
+      title: i ? i.textContent : "",
+      timestamp: Date.now()
+    });
   }
-  qe.set(e, {
-    html: t,
-    title: i ? i.textContent : "",
-    timestamp: Date.now()
-  });
 }
 function Ei() {
   qe.clear();
