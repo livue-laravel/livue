@@ -104,8 +104,28 @@ class LifecycleManager
         } catch (LiVueException $e) {
             throw $e;
         } catch (\Throwable $e) {
+            // Le eccezioni che l'handler di Laravel mappa su risposte HTTP
+            // (abort(), findOrFail(), authorize(), validazione, auth) devono
+            // uscire intatte: incapsularle le trasformerebbe tutte in 500.
+            if ($this->isHttpRenderableException($e)) {
+                throw $e;
+            }
+
             throw new ComponentMountException($component->getDisplayName(), $e);
         }
+    }
+
+    /**
+     * Eccezioni intenzionali con semantica HTTP: non vanno incapsulate.
+     */
+    protected function isHttpRenderableException(\Throwable $e): bool
+    {
+        return $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+            || $e instanceof \Illuminate\Http\Exceptions\HttpResponseException
+            || $e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException
+            || $e instanceof \Illuminate\Auth\AuthenticationException
+            || $e instanceof \Illuminate\Auth\Access\AuthorizationException
+            || $e instanceof \Illuminate\Validation\ValidationException;
     }
 
     /**
