@@ -256,15 +256,25 @@ class LifecycleManager
 
         // 2a. Snapshot baseline HTML BEFORE applying diffs.
         //     This ensures we detect changes from diffs (tab sync) not just methods.
+        //     Pure refresh (no calls, no diffs — e.g. v-poll / $refresh): the client
+        //     is explicitly asking to re-render against fresh data. Both renders in
+        //     this request would read the SAME fresh state, so the comparison could
+        //     never detect externally-changed data (DB updated by jobs/commands):
+        //     skip the baseline (one render saved) and always ship the html.
         if ($bench) {
             $benchT = hrtime(true);
         }
+        $isPureRefresh = empty($calls) && empty($diffs);
         $renderer = new ComponentRenderer();
-        try {
-            $htmlBefore = $renderer->renderInnerHtml($component);
-        } catch (\Throwable $e) {
-            error_log('[LiVue] Baseline render failed for ' . $componentName . ': ' . $e->getMessage());
-            $htmlBefore = '';
+        $htmlBefore = null;
+
+        if (! $isPureRefresh) {
+            try {
+                $htmlBefore = $renderer->renderInnerHtml($component);
+            } catch (\Throwable $e) {
+                error_log('[LiVue] Baseline render failed for ' . $componentName . ': ' . $e->getMessage());
+                $htmlBefore = '';
+            }
         }
         if ($bench) {
             $benchTimings['baseline_render'] = (int) ((hrtime(true) - $benchT) / 1000);
@@ -581,7 +591,7 @@ class LifecycleManager
             $result['renderError'] = config('app.debug', false)
                 ? $renderException->getMessage()
                 : true;
-        } elseif ($htmlAfter !== null && $htmlAfter !== $htmlBefore) {
+        } elseif ($htmlAfter !== null && ($htmlBefore === null || $htmlAfter !== $htmlBefore)) {
             $fragmentNames = $store->get('fragmentNames');
 
             if ($fragmentNames) {
