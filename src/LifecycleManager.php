@@ -586,11 +586,22 @@ class LifecycleManager
         ];
 
         if ($renderException !== null) {
-            // Render failed: send error placeholder directly, skip fragment extraction
-            $result['html'] = $htmlAfter;
-            $result['renderError'] = config('app.debug', false)
-                ? $renderException->getMessage()
-                : true;
+            if ($isPureRefresh) {
+                // Un pure refresh è un aggiornamento in background (v-poll):
+                // l'error box sostituirebbe il componente — e con esso
+                // l'elemento v-poll, uccidendo il polling per sempre anche
+                // per un errore transitorio. Il DOM resta quello precedente
+                // e il prossimo tick ritenta; l'eccezione è già loggata.
+                $result['renderError'] = config('app.debug', false)
+                    ? $renderException->getMessage()
+                    : true;
+            } else {
+                // Render failed: send error placeholder directly, skip fragment extraction
+                $result['html'] = $htmlAfter;
+                $result['renderError'] = config('app.debug', false)
+                    ? $renderException->getMessage()
+                    : true;
+            }
         } elseif ($htmlAfter !== null && ($htmlBefore === null || $htmlAfter !== $htmlBefore)) {
             $fragmentNames = $store->get('fragmentNames');
 
