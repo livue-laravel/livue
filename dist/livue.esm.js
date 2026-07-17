@@ -6074,23 +6074,36 @@ const Fc = {
       observer: null,
       isVisible: !c,
       // If not visibleOnly, assume visible
-      isPaused: !1
+      isPaused: !1,
+      missedTick: !1
+      // A tick fired while hidden/off-screen
     };
     function p() {
-      f.isPaused || c && !f.isVisible || (o ? r.call(o, a) : r.call("$refresh", []));
+      if (f.isPaused) {
+        f.missedTick = !0;
+        return;
+      }
+      if (c && !f.isVisible) {
+        f.missedTick = !0;
+        return;
+      }
+      f.missedTick = !1, o ? r.call(o, a) : r.call("$refresh", []);
     }
     function h() {
-      f.intervalId || (f.intervalId = setInterval(p, s));
+      f.missedTick && p();
     }
     function m() {
-      u || (document.hidden ? f.isPaused = !0 : f.isPaused = !1);
+      f.intervalId || (f.intervalId = setInterval(p, s));
+    }
+    function v() {
+      u || (document.hidden ? f.isPaused = !0 : (f.isPaused = !1, h()));
     }
     c && (f.observer = new IntersectionObserver(
-      function(v) {
-        f.isVisible = v[0].isIntersecting;
+      function(g) {
+        f.isVisible = g[0].isIntersecting, f.isVisible && h();
       },
       { threshold: 0 }
-    ), f.observer.observe(e)), document.addEventListener("visibilitychange", m), f.visibilityHandler = m, h(), Ir.set(e, f);
+    ), f.observer.observe(e)), document.addEventListener("visibilitychange", v), f.visibilityHandler = v, m(), Ir.set(e, f);
   },
   unmounted(e) {
     let t = Ir.get(e);

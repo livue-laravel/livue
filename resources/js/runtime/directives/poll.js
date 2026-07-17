@@ -89,6 +89,7 @@ export default {
             observer: null,
             isVisible: !visibleOnly, // If not visibleOnly, assume visible
             isPaused: false,
+            missedTick: false, // A tick fired while hidden/off-screen
         };
 
         /**
@@ -97,19 +98,34 @@ export default {
         function doPoll() {
             // Skip if paused (tab inactive and not keep-alive)
             if (state.isPaused) {
+                state.missedTick = true;
                 return;
             }
 
             // Skip if visibleOnly and not visible
             if (visibleOnly && !state.isVisible) {
+                state.missedTick = true;
                 return;
             }
+
+            state.missedTick = false;
 
             if (method) {
                 livue.call(method, params);
             } else {
                 // No method specified = refresh component
                 livue.call('$refresh', []);
+            }
+        }
+
+        /**
+         * Catch-up: if a tick was skipped while hidden/off-screen, poll
+         * immediately on becoming visible again instead of waiting up to a
+         * full interval (stale data would linger after returning to the tab).
+         */
+        function catchUp() {
+            if (state.missedTick) {
+                doPoll();
             }
         }
 
@@ -143,6 +159,7 @@ export default {
                 state.isPaused = true;
             } else {
                 state.isPaused = false;
+                catchUp();
             }
         }
 
@@ -151,6 +168,10 @@ export default {
             state.observer = new IntersectionObserver(
                 function (entries) {
                     state.isVisible = entries[0].isIntersecting;
+
+                    if (state.isVisible) {
+                        catchUp();
+                    }
                 },
                 { threshold: 0 }
             );
