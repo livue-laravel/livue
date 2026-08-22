@@ -285,6 +285,12 @@ class Testable
         // Reset status code to success before the update
         $this->lastStatusCode = 200;
 
+        // processUpdate() accetta una lista di chiamate, non una singola coppia
+        // metodo/parametri: e' la stessa forma che costruisce LiVueUpdateController.
+        $calls = $method === null
+            ? []
+            : [['method' => $method, 'params' => $params]];
+
         try {
             $result = $this->lifecycle->processUpdate(
                 $component,
@@ -292,8 +298,7 @@ class Testable
                 $state,
                 $memo,
                 $diffs,
-                $method,
-                $params
+                $calls
             );
 
             $this->component = $component;
