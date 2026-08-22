@@ -547,7 +547,9 @@ abstract class Form
      */
     protected function getDataForValidation(array $rules): array
     {
-        return array_intersect_key($this->all(), $rules);
+        // Same reasoning as HandlesValidation::getDataForValidation(): cross-field rules
+        // need the referenced property to be present even when it carries no rules.
+        return $this->all();
     }
 
     // -----------------------------------------------------------------

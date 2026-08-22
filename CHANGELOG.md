@@ -2,6 +2,13 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Testing: `Testable` was calling `LifecycleManager::processUpdate()` with the old signature**, passing `(diffs, method, params)` where a single `array $calls` is expected. Every `->set()` raised a `TypeError` (`null` given for `array $calls`) and every `->call()` passed a string in place of the call list, so the whole component testing API was unusable. `sendUpdate()` now builds `[['method' => ..., 'params' => ...]]`, the same shape `LiVueUpdateController` produces. This alone turned 171 failing tests in the suite green.
+- **Validation: cross-field rules failed silently.** `getDataForValidation()` narrowed the payload to the keys present in `rules()`, so a field referenced by another field's rule never reached the validator. `confirmed` could never pass, because `{field}_confirmation` was not part of the data; the same applied to `same`, `different`, `required_if`, `required_with`, `gt`, `after` and every other cross-field rule. Both `HandlesValidation` and `Form` now pass the component's full public state. Laravel still validates only the attributes listed in `rules()`, and `validate()` still returns only those keys, so no unvalidated property can leak into the result.
+
 ## [1.5.22] - 2026-06-11
 
 ### Added

@@ -315,14 +315,19 @@ trait HandlesValidation
      */
     protected function getDataForValidation(array $rules): array
     {
-        $state = $this->getState();
-
-        // Extract root keys from dot notation (e.g., 'data.name' -> 'data')
-        $rootKeys = [];
-        foreach (array_keys($rules) as $key) {
-            $rootKeys[explode('.', $key)[0]] = true;
-        }
-
-        return array_intersect_key($state, $rootKeys);
+        // The validator receives the component's full public state, not only the
+        // properties that carry rules.
+        //
+        // Cross-field rules -- confirmed, same:other, different:other,
+        // required_with:other, gt:other, after:other and friends -- read a second field
+        // that usually has no rules of its own. Narrowing the data down to the rule keys
+        // hid that field from the validator, so those rules failed silently: confirmed
+        // could never pass, because the matching confirmation property was never part of
+        // the payload.
+        //
+        // Passing everything is safe: Laravel validates only the attributes listed in
+        // $rules, and validate()/validated() return only those same keys, so no
+        // unvalidated property can leak into the returned array.
+        return $this->getState();
     }
 }
