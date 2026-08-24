@@ -2,7 +2,7 @@
 
 All notable changes to LiVue are documented in this file.
 
-## [Unreleased]
+## [1.6.9] - 2026-08-24
 
 ### Fixed
 
