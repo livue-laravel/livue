@@ -26,3 +26,6 @@ coverage
 # Misc
 *.bak
 *.tmp
+
+# Il grafo di graphify: generato, si ricostruisce con 'graphify update'
+graphify-out/

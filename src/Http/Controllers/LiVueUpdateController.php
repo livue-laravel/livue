@@ -14,6 +14,7 @@ use LiVue\Features\SupportRendering\ComponentRenderer;
 use LiVue\LifecycleManager;
 use LiVue\LiVueManager;
 use LiVue\Security\StateChecksum;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 class LiVueUpdateController extends Controller
 {
@@ -166,6 +167,21 @@ class LiVueUpdateController extends Controller
             return ['errors' => $e->errors(), 'status' => 422];
         } catch (\BadMethodCallException $e) {
             return ['error' => $e->getMessage(), 'status' => 422];
+        } catch (HttpExceptionInterface $e) {
+            // An HTTP exception is a *deliberate* answer, not a crash: `abort(403, '…')`,
+            // a rate limiter, a domain rule saying no. Its status and its message were
+            // chosen by the developer for the person on the other side, so both survive —
+            // in production too, exactly like Laravel does for a normal request.
+            //
+            // Without this branch every one of those fell through to the catch below and
+            // reached the browser as a 500 "Server error.", with the message discarded.
+            // The failure was invisible from tests, because Testable already handled
+            // HttpException correctly: assertions on 403 and 429 passed while the real
+            // client got a 500.
+            return [
+                'error' => $e->getMessage() !== '' ? $e->getMessage() : 'Request failed.',
+                'status' => $e->getStatusCode(),
+            ];
         } catch (\Throwable $e) {
             if (isset($component)) {
                 $lifecycle->handleException($component, $e);
@@ -216,6 +232,13 @@ class LiVueUpdateController extends Controller
             return [
                 'html' => $html,
                 'snapshot' => $snapshot,
+            ];
+        } catch (HttpExceptionInterface $e) {
+            // Same reasoning as processUpdate(): a component that aborts while mounting
+            // is answering, not failing.
+            return [
+                'error' => $e->getMessage() !== '' ? $e->getMessage() : 'Request failed.',
+                'status' => $e->getStatusCode(),
             ];
         } catch (\Throwable $e) {
             $error = config('app.debug')

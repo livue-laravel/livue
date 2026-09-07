@@ -46,6 +46,30 @@ export function patchFragments(html, fragments) {
 }
 
 /**
+ * Strip the outer root element from server response HTML.
+ *
+ * The server includes the component's root element in response.html
+ * (e.g. <div class="workflow-page">…</div>), but _updateTemplate
+ * expects only the inner content — matching what this.el.innerHTML
+ * provides at mount time. Strips the wrapper when the single top-level
+ * element's tag matches the component's root element.
+ *
+ * @param {string} html - Server response HTML
+ * @param {Element} el - The component's root DOM element
+ * @returns {string} Inner HTML if outer tag matches el, original html otherwise
+ */
+function stripOuterElement(html, el) {
+    if (!el || !html) return html;
+    let temp = document.createElement('div');
+    temp.innerHTML = html;
+    let children = temp.children;
+    if (children.length === 1 && children[0].tagName === el.tagName) {
+        return children[0].innerHTML;
+    }
+    return html;
+}
+
+/**
  * Create a livue helper object for a component (root or child).
  *
  * @param {string} componentId - Unique livue instance ID
@@ -103,6 +127,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
     let _pendingCommitCalls = [];   // [{method, params, resolve, reject}]
     let _commitInProgress = false;
     let _commitScheduled = false;
+
+    // Number of concurrently running stream requests. livue.streaming stays
+    // true until the last one settles, so parallel background streams don't
+    // flip the flag off while a sibling is still running.
+    let _activeStreamCount = 0;
 
     // Last raw HTML from the server, used as base for fragment patching.
     // When the server sends only fragments, we patch this cached copy
@@ -420,9 +449,13 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                     componentRef._updateTemplate(patchedHtml, transitionOpts);
                 }
             } else {
-                // Full update: replace entire template
-                lastRawHtml = response.html;
-                componentRef._updateTemplate(response.html, transitionOpts);
+                // Full update: replace entire template.
+                // Strip the outer root element if present — server response.html wraps the
+                // component's own root tag, but _updateTemplate expects inner content only
+                // (matching what this.el.innerHTML provides at mount time).
+                let innerHtml = stripOuterElement(response.html, context.el);
+                lastRawHtml = innerHtml;
+                componentRef._updateTemplate(innerHtml, transitionOpts);
             }
         }
         if (response.events && response.events.length > 0) {
@@ -1159,6 +1192,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             options = options || {};
             params = params || [];
 
+            _activeStreamCount++;
             livue.loading = true;
             livue.streaming = true;
             livue.processing = method;
@@ -1187,10 +1221,17 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
 
                 if (response) {
                     if (options.background) {
+                        // Background streams don't apply their own response —
+                        // the caller decides when/whether to. We both return it
+                        // (preferred: the caller has its own context in scope)
+                        // and dispatch an event (for detached listeners).
+                        result = response;
+
                         livue.$el.dispatchEvent(new CustomEvent('livue:stream-complete', {
                             bubbles: true,
                             detail: {
                                 method: method,
+                                params: params,
                                 response: response,
                                 componentId: componentId,
                             },
@@ -1200,16 +1241,31 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                     }
                 }
             } catch (error) {
+                livue.$el.dispatchEvent(new CustomEvent('livue:stream-error', {
+                    bubbles: true,
+                    detail: {
+                        method: method,
+                        params: params,
+                        error: error,
+                        componentId: componentId,
+                    },
+                }));
+
                 if (error.status === 422 && error.data && error.data.errors) {
                     setErrors(livue.errors, error.data.errors);
                 } else {
                     handleError(error, name);
                 }
             } finally {
-                livue.loading = false;
-                livue.streaming = false;
-                livue.processing = null;
-                livue.streamingMethod = null;
+                _activeStreamCount = Math.max(0, _activeStreamCount - 1);
+
+                if (_activeStreamCount === 0) {
+                    livue.loading = false;
+                    livue.streaming = false;
+                    livue.processing = null;
+                    livue.streamingMethod = null;
+                }
+
                 delete loadingTargets[method];
             }
 

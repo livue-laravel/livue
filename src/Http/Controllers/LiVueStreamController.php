@@ -61,6 +61,7 @@ class LiVueStreamController extends Controller
 
         // Verify state integrity
         if (! StateChecksum::verify($componentName, $state, $checksum)) {
+            \Illuminate\Support\Facades\Log::warning('LiVue stream: checksum failed', ['component' => $componentName, 'method' => $method]);
             return response()->json(['error' => 'State integrity check failed.'], 403);
         }
 
@@ -68,8 +69,10 @@ class LiVueStreamController extends Controller
         try {
             SupportPersistentMiddleware::applyMiddleware($memo, request());
         } catch (AuthenticationException) {
+            \Illuminate\Support\Facades\Log::warning('LiVue stream: 401 Unauthenticated', ['component' => $componentName, 'method' => $method]);
             return response()->json(['error' => 'Unauthenticated.'], 401);
         } catch (AuthorizationException) {
+            \Illuminate\Support\Facades\Log::warning('LiVue stream: 403 Unauthorized', ['component' => $componentName, 'method' => $method]);
             return response()->json(['error' => 'Unauthorized.'], 403);
         }
 

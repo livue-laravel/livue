@@ -2,6 +2,28 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.6.10] - 2026-09-07
+
+### Fixed
+
+- **`LiVueUpdateController` turned every HTTP exception into a 500 "Server error.", discarding the message.** An `abort(403, '…')`, a rate limiter answering 429, any deliberate refusal raised inside an action fell through to the generic `Throwable` handler: the browser received status 500 and, outside `app.debug`, the string `Server error.`. An application could therefore refuse an action but could not tell the person **why** — every message written for the user was thrown away at the last step.
+
+  The controller now catches `HttpExceptionInterface` before `Throwable` and returns the real status with the real message, in production too — the same thing Laravel does for a normal request, and for the same reason: unlike a crash, the message of an HTTP exception is chosen by the developer *for* the reader. `abort(403)` without a message falls back to `Request failed.`, so the client never receives an error with nothing to show. A genuine exception is untouched: still 500, still hidden outside debug, because it can carry a query or a credential.
+
+  The bug was **invisible from tests**: `Testable::sendUpdate()` already caught `HttpException` and kept its status, so `assertForbidden()` and `assertStatus(429)` passed while the real client got a 500. The two paths have now been brought into line, and `tests/Feature/UpdateControllerTest.php` covers the four cases through the actual `/livue/update` endpoint.
+
+  The same branch was added to `processLazyLoad()`: a component that aborts while mounting is answering, not failing.
+
+- **Assets were served with `max-age=31536000` from a URL without a content hash.** `/livue.js` and its map are a fixed address, so an immutable year-long cache meant a plugin update never reached a browser that had already loaded the old bundle — the only cure was a hard reload, per user. They now go out with `public, no-cache` plus an ETag, so every load revalidates and an unchanged bundle costs a 304 instead of a download.
+- **The ESM source map returned 404.** The bundle served from `/livue.js?module` ends with `sourceMappingURL=livue.esm.js.map`, so the browser asks for that literal path — and no route answered it. Added `livue.script.esm-map`.
+- **Streaming: a full update replaced the component's own root element with a copy of itself.** The server includes the root tag in `response.html` while `_updateTemplate()` expects the inner content, the way `this.el.innerHTML` gives it at mount time. `stripOuterElement()` now removes the wrapper when the single top-level tag matches the component's root.
+- **Streaming: `livue.streaming` flipped to false while a sibling stream was still running.** Two background streams in parallel and the first to finish cleared the flag for both. Replaced by a counter that only clears when the last one settles.
+- **Streaming: the transformed template was compiled twice on update.** `_updateRender()` called `transformTemplate()` inside the `Vue.compile()` argument and again for the comparison; now it transforms once.
+
+### Added
+
+- Diagnostic logging on the stream endpoint (`LiVueStreamController`): a warning on checksum failure, on 401 and on 403. These refusals were previously silent server-side, which made a stream that stopped working impossible to tell apart from one that was never called.
+
 ## [1.6.9] - 2026-08-24
 
 ### Fixed

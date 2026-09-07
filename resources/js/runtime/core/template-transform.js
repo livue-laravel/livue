@@ -357,7 +357,8 @@ export function buildComponentDef(templateHtml, state, livue, composables, versi
     def._updateRender = function (newHtml) {
         try {
             let newExtracted = extractSetupScript(newHtml);
-            let newCompiled = Vue.compile(transformTemplate(newExtracted.html));
+            let newTransformed = transformTemplate(newExtracted.html);
+            let newCompiled = Vue.compile(newTransformed);
             if (newCompiled === currentRenderRef.value) return;
             renderCache.length = 0;
             currentRenderRef.value = newCompiled;

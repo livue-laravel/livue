@@ -15,6 +15,10 @@ class SupportAssets extends ComponentHook
         Route::prefix($prefix)->group(function () {
             Route::get('/livue.js', [LiVueAssetController::class, 'script'])->name('livue.script');
             Route::get('/livue.js.map', [LiVueAssetController::class, 'sourceMap'])->name('livue.script.map');
+            // The ESM bundle served via /livue.js?module ends with
+            // `sourceMappingURL=livue.esm.js.map`, so browsers request the
+            // map at this literal path relative to the route prefix.
+            Route::get('/livue.esm.js.map', [LiVueAssetController::class, 'esmSourceMap'])->name('livue.script.esm-map');
         });
     }
 }
