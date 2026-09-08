@@ -2,6 +2,14 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.6.11] - 2026-09-08
+
+### Fixed
+
+- **An empty query parameter crashed any component with a typed `#[Url]` property.** `?q=`, `?where=`, `?scope=` — a search form submitted with the box empty, a link with a leftover parameter — reached the component as `null`, because Laravel's `ConvertEmptyStringsToNull` rewrites empty request values before anyone looks at them. Assigning that to `public string $q` is a `TypeError`, so the page answered **500** on a URL that any user can produce by pressing a submit button.
+
+  `BaseUrl::mount()` now skips the assignment when the value is `null` and the property does not accept `null`, keeping the value the component declared. Keeping the default rather than forcing `''` is deliberate: an empty parameter says «I chose nothing», and the default is exactly what holds then — forcing an empty string would erase a default like `public string $kind = 'artist'`. A nullable property still receives `null`, because the guard is about types and not about null being unwelcome.
+
 ## [1.6.10] - 2026-09-07
 
 ### Fixed

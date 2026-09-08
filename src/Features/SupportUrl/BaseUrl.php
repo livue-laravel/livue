@@ -46,9 +46,26 @@ class BaseUrl extends LiVueAttribute
         $paramName = $this->as ?? $this->getName();
         $query = request()->query();
 
-        if (array_key_exists($paramName, $query)) {
-            $this->setValue($this->castQueryValue($query[$paramName]));
+        if (! array_key_exists($paramName, $query)) {
+            return;
         }
+
+        $raw = $query[$paramName];
+
+        // `?q=` arriva qui come **null**, non come stringa vuota: Laravel converte le
+        // stringhe vuote della richiesta con `ConvertEmptyStringsToNull`. Assegnarlo a una
+        // proprieta' tipizzata non nullable e' un `TypeError`, cioe' un 500 su un indirizzo
+        // che chiunque puo' produrre premendo «cerca» con la casella vuota.
+        //
+        // Si tiene il valore dichiarato invece di inventarne uno: un parametro vuoto dice
+        // «non ho scelto niente», e il valore predefinito e' esattamente cio' che vale
+        // quando non si e' scelto — mentre forzare `''` cancellerebbe un default come
+        // `public string $kind = 'artist'`.
+        if ($raw === null && ! $this->propertyAllowsNull()) {
+            return;
+        }
+
+        $this->setValue($this->castQueryValue($raw));
     }
 
     /**
@@ -69,6 +86,22 @@ class BaseUrl extends LiVueAttribute
     /**
      * Cast a query string value to the property's PHP type.
      */
+    /** Se la proprieta' accetta `null`: senza, un parametro vuoto non le si puo' dare. */
+    private function propertyAllowsNull(): bool
+    {
+        $reflection = new ReflectionClass($this->getComponent());
+        $property = $this->getName();
+
+        if (! $reflection->hasProperty($property)) {
+            return true;
+        }
+
+        $type = $reflection->getProperty($property)->getType();
+
+        // Senza tipo dichiarato tutto e' ammesso, `null` compreso.
+        return $type === null || $type->allowsNull();
+    }
+
     private function castQueryValue(mixed $value): mixed
     {
         $component = $this->getComponent();
