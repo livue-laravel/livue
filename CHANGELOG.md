@@ -2,6 +2,14 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [1.6.12] - 2026-09-15
+
+### Fixed
+
+- **Pages rendered without the LiVue runtime whenever the HTTP kernel was resolved after the providers booted.** The asset injection middleware was pushed straight onto the router's `web` group during `boot()`. But `Illuminate\Foundation\Http\Kernel` copies its own middleware groups onto the router in its constructor, so a kernel built *after* boot silently wiped the push. That is the normal order of a test suite and of servers that resolve the kernel lazily — Pest's browser plugin among them — and the symptom gave nothing away: HTTP 200, the `<!-- livue-assets -->` marker still in the page, no loader, no import map, and in a real browser `Failed to resolve module specifier "vue"` with every Vue-rendered element simply missing. Under `public/index.php` or Octane the kernel exists before boot, which is why production never showed it.
+
+  `registerAssetInjection()` now appends the middleware through the kernel (`appendMiddlewareToGroup()`, which dedupes and re-syncs the router): immediately if the kernel is already resolved, otherwise from an `afterResolving` callback. Kernels that are not the framework's, or have no `web` group, still get the router push as before.
+
 ## [1.6.11] - 2026-09-08
 
 ### Fixed

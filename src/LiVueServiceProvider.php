@@ -2,7 +2,10 @@
 
 namespace LiVue;
 
+use Illuminate\Contracts\Http\Kernel as HttpKernelContract;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
+use Illuminate\Routing\Router;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
@@ -140,6 +143,14 @@ class LiVueServiceProvider extends ServiceProvider
 
     /**
      * Register asset auto-injection middleware if enabled.
+     *
+     * The middleware is appended through the HTTP kernel, not pushed onto the router.
+     * The kernel copies its own middleware groups onto the router when it is
+     * constructed, so a middleware pushed onto the router before that moment is
+     * silently overwritten. That is precisely the order of a test suite, and of any
+     * server that resolves the kernel lazily (Pest's browser plugin, for one):
+     * providers boot first, the kernel comes later, and every page renders without
+     * the LiVue runtime or the import map — with no error anywhere.
      */
     protected function registerAssetInjection(): void
     {
@@ -147,9 +158,23 @@ class LiVueServiceProvider extends ServiceProvider
             return;
         }
 
-        // Add middleware to web group
-        $router = $this->app->make(\Illuminate\Routing\Router::class);
-        $router->pushMiddlewareToGroup('web', LiVueAssetInjectionMiddleware::class);
+        $register = function (mixed $kernel): void {
+            if ($kernel instanceof HttpKernel && array_key_exists('web', $kernel->getMiddlewareGroups())) {
+                $kernel->appendMiddlewareToGroup('web', LiVueAssetInjectionMiddleware::class);
+
+                return;
+            }
+
+            $this->app->make(Router::class)->pushMiddlewareToGroup('web', LiVueAssetInjectionMiddleware::class);
+        };
+
+        if ($this->app->resolved(HttpKernelContract::class)) {
+            $register($this->app->make(HttpKernelContract::class));
+
+            return;
+        }
+
+        $this->app->afterResolving(HttpKernelContract::class, $register);
     }
 
     /**
