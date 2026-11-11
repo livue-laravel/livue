@@ -260,7 +260,12 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             let calls = batch.map(function(c) { return { method: c.method, params: c.params }; });
             let response = await sendCommit(payload.snapshot, calls, payload.diffs, isolate);
             let result = applyResponse(response, payload.diffs);
-            for (let i = 0; i < batch.length; i++) batch[i].resolve(result);
+            // Calls batched together each get their own return value.
+            let results = Array.isArray(response && response.jsonResults) ? response.jsonResults : null;
+            for (let i = 0; i < batch.length; i++) {
+                let own = results ? results[i] : result;
+                batch[i].resolve(own === null ? undefined : own);
+            }
         } catch (error) {
             for (let i = 0; i < batch.length; i++) {
                 if (error.status === 422 && error.data && error.data.errors) {

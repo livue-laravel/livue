@@ -325,10 +325,14 @@ class LifecycleManager
             $benchT = hrtime(true);
         }
         $methodReturnValue = null;
+        // One return value per call, in order: calls batched into one request
+        // each get their own back (the client resolves each with its own).
+        $methodReturnValues = [];
 
-        foreach ($calls as $callSpec) {
+        foreach (array_values($calls) as $callIndex => $callSpec) {
             $callMethod = $callSpec['method'] ?? null;
             $callParams = $callSpec['params'] ?? [];
+            $methodReturnValues[$callIndex] = null;
 
             if ($callMethod === null) continue;
 
@@ -341,6 +345,7 @@ class LifecycleManager
                     $store = $this->hookRegistry->store($component);
                     if (! $store->get('composableActionHandled', false)) {
                         $methodReturnValue = $this->callMethod($component, $callMethod, $callParams);
+                        $methodReturnValues[$callIndex] = $methodReturnValue;
                     }
 
                     $component->fireLifecycleEvent('called', false, $callMethod, $callParams);
@@ -621,6 +626,10 @@ class LifecycleManager
         // 11b. Include return value if method returned something
         if ($methodReturnValue !== null) {
             $result['jsonResult'] = $methodReturnValue;
+        }
+
+        if (count($methodReturnValues) > 1) {
+            $result['jsonResults'] = $methodReturnValues;
         }
 
         if (! empty($events)) {

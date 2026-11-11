@@ -23,6 +23,12 @@ class Counter extends Component
         $this->count += $amount;
     }
 
+    /** A method that answers, for calls batched with others. */
+    public function answer(string $what): string
+    {
+        return 'answer:'.$what;
+    }
+
     /** A deliberate refusal carrying a message meant for the person on the other side. */
     public function refuse(): void
     {

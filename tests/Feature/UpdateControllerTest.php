@@ -38,6 +38,30 @@ describe('Update Controller', function () {
         return $update;
     }
 
+    describe('batched calls', function () {
+        it('gives each call its own return value', function () {
+            $update = buildUpdatePayload(['count' => 0], 'counter');
+            $update['calls'] = [
+                ['method' => 'answer', 'params' => ['first']],
+                ['method' => 'increment', 'params' => []],
+                ['method' => 'answer', 'params' => ['third']],
+            ];
+
+            $response = $this->postJson('/livue/update', ['updates' => [$update]]);
+
+            $response->assertOk();
+            expect($response->json('responses.0.jsonResults'))->toBe(['answer:first', null, 'answer:third'])
+                ->and($response->json('responses.0.jsonResult'))->toBe('answer:third');
+        });
+
+        it('keeps a single call as it was', function () {
+            $response = $this->postJson('/livue/update', ['updates' => [buildUpdatePayload(['count' => 0], 'counter', 'answer', ['only'])]]);
+
+            expect($response->json('responses.0.jsonResult'))->toBe('answer:only')
+                ->and($response->json('responses.0'))->not->toHaveKey('jsonResults');
+        });
+    });
+
     describe('checksum verification', function () {
         it('returns 403 for tampered state', function () {
             $state = ['count' => 0];
