@@ -3950,23 +3950,24 @@ function uc(e, t, n) {
 }
 const Pi = /* @__PURE__ */ new Map();
 function po(e, t, n) {
-  if (e.trim())
-    try {
-      const r = JSON.parse(e);
-      if (r.stream)
-        fc(r.stream), t(r.stream);
-      else {
-        if (r.error)
-          throw new Error(r.error);
-        r.snapshot && (n.finalResponse = r);
-      }
-    } catch (r) {
-      console.error("[LiVue Stream] Parse error:", r, e);
-    }
+  if (!e.trim()) return;
+  let r;
+  try {
+    r = JSON.parse(e);
+  } catch (i) {
+    n.unreadable++, console.error("[LiVue Stream] Parse error:", i, e);
+    return;
+  }
+  if (r && r.stream)
+    fc(r.stream), t(r.stream);
+  else if (r && r.error) {
+    const i = new Error(r.error);
+    i.status = r.status ?? null, i.errors = r.errors ?? null, n.error = n.error || i;
+  } else r && r.snapshot && (n.finalResponse = r);
 }
 async function cc(e, t, n) {
   let r = "";
-  const i = { finalResponse: null };
+  const i = { finalResponse: null, error: null, unreadable: 0 };
   for (; ; ) {
     const { done: o, value: a } = await e.read();
     if (o) break;
@@ -3977,7 +3978,11 @@ async function cc(e, t, n) {
     for (const s of l)
       po(s, n, i);
   }
-  return r.trim() && po(r, n, i), i.finalResponse;
+  if (r.trim() && po(r, n, i), i.error)
+    throw i.error;
+  if (!i.finalResponse)
+    throw new Error(i.unreadable > 0 ? "[LiVue Stream] The server answered with something that is not a LiVue stream" : "[LiVue Stream] The server ended the stream without a response");
+  return i.finalResponse;
 }
 async function dc(e, t = {}) {
   const {

@@ -2,6 +2,12 @@
 
 All notable changes to LiVue are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **A stream that failed could look like a success, and the page lost what the user sent.** `streamRequest()` resolved `null` in two cases. First, an `{"error": …}` line from the server was thrown inside its own `try` and only logged. Second, a 200 response that was not NDJSON at all ended with no final snapshot: PHP prints its `post_max_size` warning before the headers, which pins the status to 200, and the error page follows as HTML. Callers took `null` for a finished call. Now the server's error line is thrown as an `Error` carrying `status` and `errors`, after the chunks already streamed are applied. A stream that ends without a final snapshot throws too. `tests/js/unit/features/request/stream.test.js` covers it.
+
 ## [1.6.12] - 2026-09-15
 
 ### Fixed

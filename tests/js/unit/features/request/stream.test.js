@@ -105,6 +105,56 @@ describe('Streaming', () => {
             expect(onError).toHaveBeenCalled();
         });
 
+        it('should throw the error line the server sent', async () => {
+            mockFetch.mockResolvedValue(createStreamResponse([{ error: 'Boom', status: 500 }], false));
+
+            const onError = vi.fn();
+
+            await expect(
+                stream.streamRequest({ snapshot: '{}', method: 'generate', params: [] }, { onError })
+            ).rejects.toThrow('Boom');
+
+            expect(onError).toHaveBeenCalled();
+        });
+
+        it('should keep the chunks streamed before an error line', async () => {
+            const el = document.createElement('div');
+            stream.registerStreamTarget('output', el, false);
+
+            mockFetch.mockResolvedValue(createStreamResponse([
+                { stream: { to: 'output', content: 'Half', replace: false } },
+                { error: 'Validation failed', errors: { name: ['Required'] }, status: 422 },
+            ], false));
+
+            const error = await stream.streamRequest({ snapshot: '{}', method: 'generate', params: [] })
+                .catch((e) => e);
+
+            expect(el.innerHTML).toBe('Half');
+            expect(error.message).toBe('Validation failed');
+            expect(error.status).toBe(422);
+            expect(error.errors).toEqual({ name: ['Required'] });
+        });
+
+        it('should throw when a 200 response is not a LiVue stream', async () => {
+            // PHP prints its post_max_size warning before the headers, which
+            // pins the status to 200, then the error page follows as HTML.
+            const html = '<br />\n<b>Warning</b>: PHP Request Startup: POST Content-Length exceeds the limit\n<!DOCTYPE html><html></html>';
+            mockFetch.mockResolvedValue({ ok: true, status: 200, body: { getReader: () => createMockReader(html) } });
+            vi.spyOn(console, 'error').mockImplementation(() => {});
+
+            await expect(
+                stream.streamRequest({ snapshot: '{}', method: 'generate', params: [] })
+            ).rejects.toThrow('not a LiVue stream');
+        });
+
+        it('should throw when the stream ends without a final response', async () => {
+            mockFetch.mockResolvedValue(createStreamResponse([], false));
+
+            await expect(
+                stream.streamRequest({ snapshot: '{}', method: 'generate', params: [] })
+            ).rejects.toThrow('without a response');
+        });
+
         it('should update streaming state during request', async () => {
             let stateduringRequest = null;
 
@@ -264,8 +314,10 @@ describe('Streaming', () => {
  */
 function createStreamResponse(chunks, finalResponse = null, trailingNewline = false) {
     let lines = chunks.map(c => JSON.stringify(c));
-    if (finalResponse) {
-        lines.push(JSON.stringify(finalResponse));
+    // Like the server, every stream ends with a final snapshot unless a test
+    // passes false to leave it out.
+    if (finalResponse !== false) {
+        lines.push(JSON.stringify(finalResponse ?? { snapshot: '{}', html: '' }));
     }
     let ndjson = lines.join('\n');
     if (trailingNewline) {

@@ -27,26 +27,41 @@ export let streamingState = {
 };
 
 /**
- * Process a single NDJSON line: apply stream chunk, capture final response, or log parse errors.
+ * Process a single NDJSON line: apply stream chunk, capture final response,
+ * or capture the error the server reported.
+ *
+ * A line that is not JSON is logged and skipped. An error line ends the
+ * request: it is thrown once the stream is read, so the caller's catch sees
+ * it instead of a silent `null` result.
  *
  * @param {string} line
  * @param {Function} onChunk
- * @param {{ finalResponse: object|null }} state - Mutable object to capture finalResponse
+ * @param {{ finalResponse: object|null, error: Error|null, unreadable: number }} state - Mutable read state
  */
 function processNdjsonLine(line, onChunk, state) {
     if (!line.trim()) return;
+
+    let data;
+
     try {
-        const data = JSON.parse(line);
-        if (data.stream) {
-            applyStreamChunk(data.stream);
-            onChunk(data.stream);
-        } else if (data.error) {
-            throw new Error(data.error);
-        } else if (data.snapshot) {
-            state.finalResponse = data;
-        }
+        data = JSON.parse(line);
     } catch (parseError) {
+        state.unreadable++;
         console.error('[LiVue Stream] Parse error:', parseError, line);
+
+        return;
+    }
+
+    if (data && data.stream) {
+        applyStreamChunk(data.stream);
+        onChunk(data.stream);
+    } else if (data && data.error) {
+        const error = new Error(data.error);
+        error.status = data.status ?? null;
+        error.errors = data.errors ?? null;
+        state.error = state.error || error;
+    } else if (data && data.snapshot) {
+        state.finalResponse = data;
     }
 }
 
@@ -56,11 +71,12 @@ function processNdjsonLine(line, onChunk, state) {
  * @param {ReadableStreamDefaultReader} reader
  * @param {TextDecoder} decoder
  * @param {Function} onChunk
- * @returns {Promise<object|null>} Final snapshot response
+ * @returns {Promise<object>} Final snapshot response
+ * @throws {Error} the server's error line, or a stream that ended without a response
  */
 async function readNdjsonStream(reader, decoder, onChunk) {
     let buffer = '';
-    const state = { finalResponse: null };
+    const state = { finalResponse: null, error: null, unreadable: 0 };
 
     while (true) {
         const { done, value } = await reader.read();
@@ -75,6 +91,20 @@ async function readNdjsonStream(reader, decoder, onChunk) {
 
     if (buffer.trim()) {
         processNdjsonLine(buffer, onChunk, state);
+    }
+
+    if (state.error) {
+        throw state.error;
+    }
+
+    // The server always ends a stream with the final snapshot or an error
+    // line. Ending with neither means the body was not LiVue's at all: a PHP
+    // startup warning or an error page sent with status 200 (for instance a
+    // request over post_max_size). Returning null would look like success.
+    if (!state.finalResponse) {
+        throw new Error(state.unreadable > 0
+            ? '[LiVue Stream] The server answered with something that is not a LiVue stream'
+            : '[LiVue Stream] The server ended the stream without a response');
     }
 
     return state.finalResponse;
