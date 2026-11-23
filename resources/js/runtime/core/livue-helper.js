@@ -259,7 +259,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             let payload = buildPayload();
             let calls = batch.map(function(c) { return { method: c.method, params: c.params }; });
             let response = await sendCommit(payload.snapshot, calls, payload.diffs, isolate);
-            let result = applyResponse(response, payload.diffs);
+            let result = applyResponse(response, payload.diffs, true, payload.base);
             // Calls batched together each get their own return value.
             let results = Array.isArray(response && response.jsonResults) ? response.jsonResults : null;
             for (let i = 0; i < batch.length; i++) {
@@ -300,6 +300,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         return {
             snapshot: serverSnapshot,
             diffs: diffs,
+            // What the server last told us, as it was when this request left
+            // (shallow: serverState's keys are replaced, never edited in place).
+            // With the diffs it is what the client sent, so the response can
+            // tell a value the server changed from one it merely echoed.
+            base: Object.assign({}, serverState),
         };
     }
 
@@ -309,8 +314,10 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
      *
      * @param {object} response - Server response
      * @param {object} [sentDiffs] - Diffs that were sent with this request (client changes to exclude from broadcast)
+     * @param {boolean} [shouldClearErrors]
+     * @param {object} [sentBase] - The server state the request was built on (payload.base)
      */
-    function applyResponse(response, sentDiffs, shouldClearErrors = true) {
+    function applyResponse(response, sentDiffs, shouldClearErrors = true, sentBase) {
         // Handle redirect if present (defense-in-depth; primary handling is in pool.js)
         if (response.redirect) {
             handleRedirect(response.redirect);
@@ -360,7 +367,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
 
             if (parsed && parsed.state) {
                 let newState = unwrapState(parsed.state);
-                updateState(state, newState, sentDiffs);
+                updateState(state, newState, sentDiffs, sentBase);
                 serverState = JSON.parse(JSON.stringify(newState));
             }
 
@@ -829,7 +836,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                     try {
                         let payload = buildPayload();
                         let response = await sendAction(payload.snapshot, method, params, payload.diffs, true);
-                        result = applyResponse(response, payload.diffs);
+                        result = applyResponse(response, payload.diffs, true, payload.base);
                     } catch (error) {
                         // #[Json]: don't pollute the error bag, reject with structured errors
                         throw { status: error.status, errors: error.data && error.data.errors, message: error.message };
@@ -977,7 +984,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
             try {
                 let payload = buildPayload();
                 let response = await sendAction(payload.snapshot, null, [], payload.diffs, isolate);
-                applyResponse(response, payload.diffs, false);
+                applyResponse(response, payload.diffs, false, payload.base);
             } catch (error) {
                 if (error.status === 422 && error.data && error.data.errors) {
                     setErrors(livue.errors, error.data.errors);
@@ -1191,7 +1198,8 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          *
          * @param {string} method - Method name to call
          * @param {Array} [params] - Method parameters
-         * @returns {Promise<*>} Final result after streaming completes
+         * @returns {Promise<*>} Final result after streaming completes; rejects
+         *   when the stream fails (after the error hooks and handlers ran)
          */
         stream: async function (method, params, options) {
             options = options || {};
@@ -1230,6 +1238,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                         // the caller decides when/whether to. We both return it
                         // (preferred: the caller has its own context in scope)
                         // and dispatch an event (for detached listeners).
+                        // What was sent rides along, hidden, for applyStreamResponse().
+                        Object.defineProperty(response, '_livueSent', {
+                            value: { diffs: payload.diffs, base: payload.base },
+                            enumerable: false,
+                        });
                         result = response;
 
                         livue.$el.dispatchEvent(new CustomEvent('livue:stream-complete', {
@@ -1242,7 +1255,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                             },
                         }));
                     } else {
-                        result = applyResponse(response, payload.diffs);
+                        result = applyResponse(response, payload.diffs, true, payload.base);
                     }
                 }
             } catch (error) {
@@ -1261,6 +1274,11 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
                 } else {
                     handleError(error, name);
                 }
+
+                // Rejected, as call() is: resolving undefined told the caller
+                // the stream had finished, and a page that then re-read its
+                // data from the server dropped what the user had just sent.
+                throw error;
             } finally {
                 _activeStreamCount = Math.max(0, _activeStreamCount - 1);
 
@@ -1286,7 +1304,10 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
          */
         applyStreamResponse: function (response) {
             if (response) {
-                applyResponse(response, {});
+                // A stream lasts long: what the user typed meanwhile is kept
+                // wherever the server only echoed what the stream was sent with.
+                let sent = response._livueSent || { diffs: {}, base: undefined };
+                applyResponse(response, sent.diffs, true, sent.base);
             }
         },
 
@@ -1526,7 +1547,7 @@ export function createLivueHelper(componentId, state, memo, componentRef, initia
         try {
             let payload = buildPayload();
             let response = await sendAction(payload.snapshot, null, [], payload.diffs, isolate);
-            return applyResponse(response, payload.diffs);
+            return applyResponse(response, payload.diffs, true, payload.base);
         } catch (error) {
             if (error.status === 422 && error.data && error.data.errors) {
                 setErrors(livue.errors, error.data.errors);

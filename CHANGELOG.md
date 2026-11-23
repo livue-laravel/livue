@@ -8,6 +8,10 @@ All notable changes to LiVue are documented in this file.
 
 - **A stream that failed could look like a success, and the page lost what the user sent.** `streamRequest()` resolved `null` in two cases. First, an `{"error": …}` line from the server was thrown inside its own `try` and only logged. Second, a 200 response that was not NDJSON at all ended with no final snapshot: PHP prints its `post_max_size` warning before the headers, which pins the status to 200, and the error page follows as HTML. Callers took `null` for a finished call. Now the server's error line is thrown as an `Error` carrying `status` and `errors`, after the chunks already streamed are applied. A stream that ends without a final snapshot throws too. `tests/js/unit/features/request/stream.test.js` covers it.
 
+- **`livue.stream()` swallowed the failure it was now told about.** After the fix above `streamRequest()` threw, but `stream()` caught the error, ran the error hooks and handlers, and then resolved `undefined`, so an awaiting caller still read the failure as a finished stream. In Laratomic the chat re-read the conversation from the database and the CEO's message vanished without a word. `stream()` now rejects with the error once the hooks, the handlers and the error bag have run, as `call()` already did. A stream started from a template (`@click="livue.stream(...)"`) or without `await` now also reports an unhandled rejection: catch it where the failure matters. `tests/js/unit/core/stream-failure.test.js` covers it.
+
+- **What the user typed while a request was out was replaced by the older text.** A response re-applied every scalar the server returned, including a field it had only echoed, so with polling the cursor jumped back and the last letters were lost. Requests now keep the server state they were built on (`payload.base`), and `updateState()` keeps the client's value wherever the server returned a key as it was sent and the client has changed it since. A value the server changed still wins. `applyStreamResponse()` does the same for background streams. `tests/js/unit/core/typing-during-request.test.js` covers it.
+
 ## [1.6.12] - 2026-09-15
 
 ### Fixed

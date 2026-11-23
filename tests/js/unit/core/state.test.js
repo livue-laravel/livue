@@ -119,6 +119,52 @@ describe('State Utilities', () => {
             expect(reactiveState.user).toEqual({ name: 'Jane', age: 25 });
             expect(reactiveState.items).toEqual([1, 2, 3]);
         });
+
+        describe('while the user types during a request', () => {
+            it('keeps the newer text when the server echoes what was sent', () => {
+                // Sent "ab" as a diff, typed "c" before the answer came back.
+                const reactiveState = { draft: 'abc', count: 1 };
+
+                state.updateState(reactiveState, { draft: 'ab', count: 2 }, { draft: 'ab' }, { draft: '', count: 1 });
+
+                expect(reactiveState.draft).toBe('abc');
+                expect(reactiveState.count).toBe(2);
+            });
+
+            it('keeps it when the key was not even in the diffs', () => {
+                // Server and client both had "ab" when the request left (a poll).
+                const reactiveState = { draft: 'abc' };
+
+                state.updateState(reactiveState, { draft: 'ab' }, {}, { draft: 'ab' });
+
+                expect(reactiveState.draft).toBe('abc');
+            });
+
+            it('applies a value the server changed', () => {
+                // send() cleared the composer: that is not an echo.
+                const reactiveState = { draft: 'abc' };
+
+                state.updateState(reactiveState, { draft: '' }, { draft: 'ab' }, { draft: '' });
+
+                expect(reactiveState.draft).toBe('');
+            });
+
+            it('keeps an edited object the server returned unchanged', () => {
+                const reactiveState = { filters: { q: 'shoes', page: 2 } };
+
+                state.updateState(reactiveState, { filters: { q: 'sho', page: 1 } }, {}, { filters: { q: 'sho', page: 1 } });
+
+                expect(reactiveState.filters).toEqual({ q: 'shoes', page: 2 });
+            });
+
+            it('replaces as before when it is not told what was sent', () => {
+                const reactiveState = { draft: 'abc' };
+
+                state.updateState(reactiveState, { draft: 'ab' });
+
+                expect(reactiveState.draft).toBe('ab');
+            });
+        });
     });
 
     describe('serializeState()', () => {

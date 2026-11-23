@@ -62,14 +62,30 @@ export function createReactiveState(initialState) {
  * are preserved from the client's current state, protecting in-flight edits from
  * being overwritten by stale server echoes (watch race condition).
  *
+ * When sentBase is provided too (the server state the request was built on),
+ * a key the server left as the client sent it keeps the client's current
+ * value: what the user typed while the request was out is not replaced by
+ * the server echoing the older text, a scalar or not, sent as a diff or not.
+ *
  * @param {object} reactiveState
  * @param {object} newState
  * @param {object} [sentDiffs] - Diffs that were sent with the request (from computeDiffs)
+ * @param {object} [sentBase] - Server state the request was built on (diffs apply on top)
  */
-export function updateState(reactiveState, newState, sentDiffs) {
+export function updateState(reactiveState, newState, sentDiffs, sentBase) {
     let key;
 
     for (key in newState) {
+        // Echo: the server returns this key as the client sent it, and the
+        // client has changed it since. The client's value is the newer one.
+        if (sentBase && key in reactiveState && ((sentDiffs && key in sentDiffs) || key in sentBase)) {
+            let sentJson = safeStringify(sentDiffs && key in sentDiffs ? sentDiffs[key] : sentBase[key]);
+
+            if (safeStringify(newState[key]) === sentJson && safeStringify(reactiveState[key]) !== sentJson) {
+                continue;
+            }
+        }
+
         // Smart merge: if sentDiffs has this key and both values are plain objects,
         // only apply sub-fields the server actually changed, preserving in-flight
         // client edits for sub-fields the server just echoed back.
